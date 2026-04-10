@@ -1,11 +1,11 @@
-# Switchyard
+<p align="center">
+  <img src="assets/switchyard.svg" alt="Switchyard logo" width="200" height="200" />
+</p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-nshkrdotcom%2Fswitchyard-181717.svg?logo=github)](https://github.com/nshkrdotcom/switchyard)
 
-<p align="center">
-  <img src="assets/switchyard.svg" alt="Switchyard logo" width="200" height="200" />
-</p>
+# Switchyard
 
 Switchyard is a terminal-native operator workbench for multi-site terminal
 applications. It is designed as a non-umbrella Elixir monorepo with a local
