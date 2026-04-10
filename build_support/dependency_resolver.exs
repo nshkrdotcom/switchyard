@@ -3,6 +3,48 @@ defmodule Switchyard.Build.DependencyResolver do
 
   @repo_root Path.expand("..", __DIR__)
 
+  def switchyard_contracts(opts \\ []),
+    do: resolve_internal(:switchyard_contracts, "core/workbench_contracts", opts)
+
+  def switchyard_platform(opts \\ []),
+    do: resolve_internal(:switchyard_platform, "core/workbench_platform", opts)
+
+  def switchyard_daemon(opts \\ []),
+    do: resolve_internal(:switchyard_daemon, "core/workbench_daemon", opts)
+
+  def switchyard_transport_local(opts \\ []),
+    do: resolve_internal(:switchyard_transport_local, "core/workbench_transport_local", opts)
+
+  def switchyard_process_runtime(opts \\ []),
+    do: resolve_internal(:switchyard_process_runtime, "core/workbench_process_runtime", opts)
+
+  def switchyard_log_runtime(opts \\ []),
+    do: resolve_internal(:switchyard_log_runtime, "core/workbench_log_runtime", opts)
+
+  def switchyard_job_runtime(opts \\ []),
+    do: resolve_internal(:switchyard_job_runtime, "core/workbench_job_runtime", opts)
+
+  def switchyard_store_local(opts \\ []),
+    do: resolve_internal(:switchyard_store_local, "core/workbench_store_local", opts)
+
+  def switchyard_shell(opts \\ []),
+    do: resolve_internal(:switchyard_shell, "core/workbench_shell_core", opts)
+
+  def switchyard_site_local(opts \\ []),
+    do: resolve_internal(:switchyard_site_local, "sites/site_local", opts)
+
+  def switchyard_site_jido_hive(opts \\ []),
+    do: resolve_internal(:switchyard_site_jido_hive, "sites/site_jido_hive", opts)
+
+  def switchyard_tui(opts \\ []),
+    do: resolve_internal(:switchyard_tui, "apps/terminal_workbench_tui", opts)
+
+  def switchyard_cli(opts \\ []),
+    do: resolve_internal(:switchyard_cli, "apps/terminal_workbench_cli", opts)
+
+  def switchyard_daemon_app(opts \\ []),
+    do: resolve_internal(:switchyard_daemon_app, "apps/terminal_workbenchd", opts)
+
   def blitz(opts \\ []) do
     resolve_external(
       :blitz,
@@ -21,13 +63,42 @@ defmodule Switchyard.Build.DependencyResolver do
     )
   end
 
+  def ex_ratatui(opts \\ []) do
+    resolve_external(
+      :ex_ratatui,
+      local_root_path("EX_RATATUI_PATH", "../ex_ratatui"),
+      [github: "nshkrdotcom/ex_ratatui", branch: "main"],
+      opts
+    )
+  end
+
+  def jason(opts \\ []) do
+    {:jason, "~> 1.4", opts}
+  end
+
+  def nimble_options(opts \\ []) do
+    {:nimble_options, "~> 1.1", opts}
+  end
+
   def repo_root, do: @repo_root
+
+  defp resolve_internal(app, subdir, opts) do
+    case internal_workspace_path(subdir) do
+      nil -> {app, [path: Path.expand(subdir, @repo_root)] ++ opts}
+      path -> {app, Keyword.merge([path: path], opts)}
+    end
+  end
 
   defp resolve_external(app, path, requirement, opts) do
     case existing_path(path) do
       nil -> {app, requirement, opts}
       resolved_path -> {app, Keyword.merge([path: resolved_path], opts)}
     end
+  end
+
+  defp internal_workspace_path(subdir) do
+    Path.join(@repo_root, subdir)
+    |> existing_path()
   end
 
   defp local_root_path(env_var, default_relative_path) do

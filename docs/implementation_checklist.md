@@ -1,6 +1,6 @@
 # Switchyard Implementation Checklist
 
-Status: active
+Status: complete
 Scope: greenfield monorepo bootstrap and foundational platform packages
 
 ## Required Reading
@@ -11,8 +11,11 @@ Read these before making structural changes:
 2. `guides/index.md`
 3. `guides/vision.md`
 4. `guides/monorepo_strategy.md`
-5. `build_support/workspace_contract.exs`
-6. `build_support/weld_contract.exs`
+5. `guides/package_boundaries.md`
+6. `guides/runtime_model.md`
+7. `guides/testing_and_delivery.md`
+8. `build_support/workspace_contract.exs`
+9. `build_support/weld_contract.exs`
 
 Reference implementation patterns:
 
@@ -42,37 +45,38 @@ Reference implementation patterns:
 
 ### Phase 1: Monorepo Bootstrap
 
-- [ ] Expand `build_support/workspace_contract.exs` to include `core/*`, `sites/*`, and `apps/*`.
-- [ ] Create the child Mix projects for `core`, `sites`, and `apps`.
-- [ ] Add package-local READMEs for every child project.
-- [ ] Add root docs describing package boundaries and runtime model.
+- [x] Expand `build_support/workspace_contract.exs` to include `core/*`, `sites/*`, and `apps/*`.
+- [x] Create the child Mix projects for `core`, `sites`, and `apps`.
+- [x] Add package-local READMEs for every child project.
+- [x] Add root docs describing package boundaries and runtime model.
 
 ### Phase 2: Foundational Contracts And Runtime
 
-- [ ] Implement `workbench_contracts` with tests written first.
-- [ ] Implement platform registry and local site mapping with tests written first.
-- [ ] Implement daemon, process, log, job, store, and local transport foundations with tests written first.
-- [ ] Implement CLI and TUI host packages with tests written first where practical.
-- [ ] Add the Jido Hive site package over a clean seam.
+- [x] Implement `workbench_contracts` with tests written first.
+- [x] Implement platform registry and local site mapping with tests written first.
+- [x] Implement daemon, process, log, job, store, and local transport foundations with tests written first.
+- [x] Implement CLI and TUI host packages with tests written first where practical.
+- [x] Add the Jido Hive site package over a clean seam.
 
 ### Phase 3: Workspace Quality
 
-- [ ] Ensure `mix mr.deps.get` passes.
-- [ ] Ensure `mix mr.format --check-formatted` passes.
-- [ ] Ensure `mix mr.compile` passes.
-- [ ] Ensure `mix mr.test` passes.
-- [ ] Ensure `mix mr.credo --strict` passes.
-- [ ] Ensure `mix mr.dialyzer` passes.
-- [ ] Ensure `mix mr.docs --warnings-as-errors` passes.
-- [ ] Ensure `mix ci` passes.
-- [ ] Commit and push the finished monorepo foundation.
+- [x] Ensure `mix mr.deps.get` passes.
+- [x] Ensure `mix mr.format --check-formatted` passes.
+- [x] Ensure `mix mr.compile` passes.
+- [x] Ensure `mix mr.test` passes.
+- [x] Ensure `mix weld.verify` passes.
+- [x] Ensure `mix mr.credo --strict` passes.
+- [x] Ensure `mix mr.dialyzer` passes.
+- [x] Ensure `mix mr.docs --warnings-as-errors` passes.
+- [x] Ensure `mix ci` passes.
+- [x] Commit and push the finished monorepo foundation.
 
 ## Recontextualization Instructions
 
 If work resumes after compaction:
 
 1. Read this file top to bottom.
-2. Re-read the required reading list.
+2. Re-read the required reading list, especially the architecture guides.
 3. Confirm current repo state with `git status --short --branch`.
 4. Confirm workspace status with `mix help` and `mix ci`.
 5. Resume from the earliest unchecked item instead of jumping ahead to UI polish.

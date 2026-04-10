@@ -119,13 +119,18 @@ defmodule Switchyard.Workspace.MixProject do
         {"guides/index.md", title: "Guide Index"},
         {"guides/vision.md", title: "Vision"},
         {"guides/monorepo_strategy.md", title: "Monorepo Strategy"},
+        {"guides/package_boundaries.md", title: "Package Boundaries"},
+        {"guides/runtime_model.md", title: "Runtime Model"},
+        {"guides/testing_and_delivery.md", title: "Testing And Delivery"},
         {"docs/implementation_checklist.md", title: "Implementation Checklist"},
         {"CHANGELOG.md", title: "Changelog"},
         {"LICENSE", title: "License"}
       ],
       groups_for_extras: [
         "Start Here": ~r/README.md|guides\/index.md|guides\/vision.md/,
-        Architecture: ~r/guides\/monorepo_strategy.md|docs\/implementation_checklist.md/,
+        Architecture:
+          ~r/guides\/monorepo_strategy.md|guides\/package_boundaries.md|guides\/runtime_model.md/,
+        Execution: ~r/guides\/testing_and_delivery.md|docs\/implementation_checklist.md/,
         Project: ~r/CHANGELOG.md|LICENSE/
       ]
     ]

@@ -24,18 +24,23 @@ The project goal is straightforward:
 
 This repository is greenfield and intentionally staged.
 
-The initial workspace establishes:
+The current foundation establishes:
 
 - root workspace orchestration with Blitz
 - early Weld integration for artifact shaping
 - branded documentation and implementation tracking
-- the monorepo contract for the packages that follow
+- typed contracts for sites, apps, resources, actions, jobs, and logs
+- a local daemon seam for process, job, log, and snapshot ownership
+- initial CLI, TUI, and site packages proving the non-umbrella split
 
 ## Start Here
 
 - [Guide Index](guides/index.md)
 - [Vision](guides/vision.md)
 - [Monorepo Strategy](guides/monorepo_strategy.md)
+- [Package Boundaries](guides/package_boundaries.md)
+- [Runtime Model](guides/runtime_model.md)
+- [Testing And Delivery](guides/testing_and_delivery.md)
 - [Implementation Checklist](docs/implementation_checklist.md)
 
 ## Planned Monorepo Shape
@@ -54,6 +59,37 @@ switchyard/
 The repo root is a workspace and documentation layer. It is not a true umbrella
 application.
 
+## Package Families
+
+### `core/*`
+
+Reusable platform internals:
+
+- `workbench_contracts`
+- `workbench_platform`
+- `workbench_daemon`
+- `workbench_transport_local`
+- `workbench_process_runtime`
+- `workbench_log_runtime`
+- `workbench_job_runtime`
+- `workbench_store_local`
+- `workbench_shell_core`
+
+### `sites/*`
+
+Pluggable site adapters:
+
+- `site_local`
+- `site_jido_hive`
+
+### `apps/*`
+
+Runnable entrypoints:
+
+- `terminal_workbench_tui`
+- `terminal_workbench_cli`
+- `terminal_workbenchd`
+
 ## Principles
 
 - the daemon owns long-lived local operational state
@@ -61,6 +97,19 @@ application.
 - site packages own domain mapping and actions
 - meaningful operator behavior must exist headlessly beneath the TUI
 - Jido Hive remains one site inside the platform, not the platform itself
+
+## Workspace Commands
+
+The repo root uses Blitz to run child Mix projects as one workspace:
+
+- `mix mr.deps.get`
+- `mix mr.format`
+- `mix mr.compile`
+- `mix mr.test`
+- `mix mr.credo --strict`
+- `mix mr.dialyzer`
+- `mix mr.docs --warnings-as-errors`
+- `mix ci`
 
 ## License
 
