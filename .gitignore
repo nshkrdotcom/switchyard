@@ -1,0 +1,11 @@
+/_build/
+/cover/
+/deps/
+/doc/
+/dist/
+/erl_crash.dump
+/priv/plts/
+/tmp/
+/.elixir_ls/
+/.DS_Store
+
