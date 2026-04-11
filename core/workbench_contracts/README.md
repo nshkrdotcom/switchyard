@@ -1,6 +1,7 @@
 # Switchyard Contracts
 
-`switchyard_contracts` defines the typed vocabulary for the Switchyard platform.
+`switchyard_contracts` defines the typed vocabulary for the Switchyard
+platform.
 
 ## Responsibilities
 
@@ -11,13 +12,50 @@
 - streams, jobs, logs, and search results
 - provider behaviours for sites, apps, actions, and search
 
-## Why This Package Exists
+## Quick Start
 
-Every other package in the monorepo needs the same language for describing
-sites, apps, resources, and operator actions. This package keeps that language
-small, explicit, and testable.
+This is a pure library package. The fastest way to validate it locally is:
 
-## Current Scope
+```bash
+cd core/workbench_contracts
+mix deps.get
+mix test
+```
 
-The package currently focuses on constructor validation and provider behaviours.
-It is the base layer for the platform registry, daemon, sites, CLI, and TUI.
+If you want an interactive entry point, open `iex` and build contracts directly:
+
+```elixir
+alias Switchyard.Contracts.{AppDescriptor, SiteDescriptor}
+
+site = SiteDescriptor.new!(%{id: "local", title: "Local", provider: MySite})
+AppDescriptor.new!(%{id: "local.processes", site_id: site.id, title: "Processes", provider: MySite})
+```
+
+## Developer Workflow
+
+Run package-local checks:
+
+```bash
+mix format --check-formatted
+mix compile --warnings-as-errors
+mix test
+mix credo --strict
+mix dialyzer
+mix docs --warnings-as-errors
+```
+
+For workspace-wide validation:
+
+```bash
+cd ../..
+mix ci
+```
+
+## Examples
+
+- [test/switchyard/contracts_test.exs](test/switchyard/contracts_test.exs) is the canonical example set for descriptors, resources, actions, jobs, search results, streams, and logs.
+
+## Related Reading
+
+- [Workspace README](../../README.md)
+- [Package Boundaries](../../guides/package_boundaries.md)

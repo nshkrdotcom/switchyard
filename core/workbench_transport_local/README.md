@@ -8,12 +8,44 @@ daemon.
 - send request messages to the local daemon
 - support local notifications without inventing remote transport too early
 
-## Why This Package Exists
+## Quick Start
 
-Meaningful behavior must exist beneath the TUI. This package lets tests and
-headless tools exercise daemon behavior directly without needing terminal code.
+Validate the package locally:
 
-## Current Scope
+```bash
+cd core/workbench_transport_local
+mix deps.get
+mix test
+```
 
-The initial transport is in-process and deliberately small. It exists to prove
-the local daemon seam first.
+The transport is intentionally small and in-process. Its job is to prove the
+daemon seam first, not to invent a network protocol too early.
+
+## Developer Workflow
+
+Run package-local checks:
+
+```bash
+mix format --check-formatted
+mix compile --warnings-as-errors
+mix test
+mix credo --strict
+mix dialyzer
+mix docs --warnings-as-errors
+```
+
+For workspace-wide validation:
+
+```bash
+cd ../..
+mix ci
+```
+
+## Examples
+
+- [test/switchyard/transport/local_test.exs](test/switchyard/transport/local_test.exs) covers synchronous request forwarding and asynchronous notifications.
+
+## Related Reading
+
+- [Workspace README](../../README.md)
+- [Testing And Delivery](../../guides/testing_and_delivery.md)

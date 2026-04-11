@@ -9,13 +9,44 @@
 - track progress counters
 - keep job state consistent across daemon operations
 
-## Why This Package Exists
+## Quick Start
 
-Process execution alone is not enough for an operator workbench. The platform
-also needs durable, inspectable job state that can outlive one UI frame or one
-terminal session.
+Validate the package locally:
 
-## Current Scope
+```bash
+cd core/workbench_job_runtime
+mix deps.get
+mix test
+```
 
-The initial runtime focuses on predictable job transitions and progress updates.
-It is intentionally small and proven by focused tests.
+If you want to inspect the API in `iex`, start with `Switchyard.JobRuntime.new/1`
+and `Switchyard.JobRuntime.transition/2`.
+
+## Developer Workflow
+
+Run package-local checks:
+
+```bash
+mix format --check-formatted
+mix compile --warnings-as-errors
+mix test
+mix credo --strict
+mix dialyzer
+mix docs --warnings-as-errors
+```
+
+For workspace validation:
+
+```bash
+cd ../..
+mix ci
+```
+
+## Examples
+
+- [test/switchyard/job_runtime_test.exs](test/switchyard/job_runtime_test.exs) covers new jobs, lifecycle transitions, progress updates, and invalid transition rejection.
+
+## Related Reading
+
+- [Workspace README](../../README.md)
+- [Runtime Model](../../guides/runtime_model.md)

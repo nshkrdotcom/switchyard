@@ -9,12 +9,44 @@
 - drawer visibility
 - notifications
 
-## Why This Package Exists
+## Quick Start
 
-The shell should be reducible, testable, and presentation-agnostic. Terminal
-rendering belongs above this layer, not inside it.
+This package is a pure reducer/state layer. Validate it locally with:
 
-## Current Scope
+```bash
+cd core/workbench_shell_core
+mix deps.get
+mix test
+```
 
-The current shell core proves the reducer seam for global shell interaction
-state. More advanced navigation and layout behavior can grow from this base.
+Its purpose is to keep global shell behavior reducible and presentation-agnostic.
+Terminal rendering belongs above this layer, not inside it.
+
+## Developer Workflow
+
+Run package-local checks:
+
+```bash
+mix format --check-formatted
+mix compile --warnings-as-errors
+mix test
+mix credo --strict
+mix dialyzer
+mix docs --warnings-as-errors
+```
+
+For workspace validation:
+
+```bash
+cd ../..
+mix ci
+```
+
+## Examples
+
+- [test/switchyard/shell_test.exs](test/switchyard/shell_test.exs) shows route changes, site/app selection, pane focus, drawer toggles, overlays, and notifications.
+
+## Related Reading
+
+- [Workspace README](../../README.md)
+- [Package Boundaries](../../guides/package_boundaries.md)

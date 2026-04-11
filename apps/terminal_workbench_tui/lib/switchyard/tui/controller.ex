@@ -11,8 +11,8 @@ defmodule Switchyard.TUI.Controller do
 
   def event_to_msg(%Event.Key{} = event, %Model{} = state), do: Keymap.to_msg(event, state)
 
-  @spec update(term(), Model.t()) :: {Model.t(), [term()]}
-  def update(:quit, state), do: {state, [:quit]}
+  @spec update(term(), Model.t()) :: {Model.t(), [term()]} | {:stop, Model.t()}
+  def update(:quit, state), do: {:stop, state}
 
   def update(:select_prev, %Model{shell: %{route: :home}} = state),
     do: {Model.move_home_cursor(state, -1), []}

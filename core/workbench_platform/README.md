@@ -8,13 +8,44 @@
 - enumerate apps and actions for a site
 - provide a global catalog view across all configured sites
 
-## Why This Package Exists
+## Quick Start
 
-The shell and daemon need one consistent way to ask, "what sites exist here and
-what can an operator do with them?" This package answers that question without
-pulling in UI or transport concerns.
+This package is a pure registry/catalog seam. The fastest validation path is:
 
-## Current Scope
+```bash
+cd core/workbench_platform
+mix deps.get
+mix test
+```
 
-The current implementation is intentionally small: provider-driven registry
-helpers and catalog derivation. It is a seam, not a framework.
+Its job is intentionally small: provider-driven registry helpers and catalog
+derivation. It should stay a seam, not become a framework.
+
+## Developer Workflow
+
+Run package-local checks:
+
+```bash
+mix format --check-formatted
+mix compile --warnings-as-errors
+mix test
+mix credo --strict
+mix dialyzer
+mix docs --warnings-as-errors
+```
+
+For workspace-wide validation:
+
+```bash
+cd ../..
+mix ci
+```
+
+## Examples
+
+- [test/switchyard/platform_test.exs](test/switchyard/platform_test.exs) shows provider registration, site/app/action lookup, and flat catalog generation.
+
+## Related Reading
+
+- [Workspace README](../../README.md)
+- [Package Boundaries](../../guides/package_boundaries.md)

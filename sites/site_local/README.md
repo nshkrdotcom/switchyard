@@ -8,17 +8,50 @@
 - map daemon snapshots into generic Switchyard resources
 - expose recommended actions and resource details for local runtime state
 
-## Why This Package Exists
+## Quick Start
 
-Switchyard needs one first-party site that proves the platform is useful even
-before any remote domain integration is plugged in.
+Validate the package locally:
 
-## Current Scope
+```bash
+cd sites/site_local
+mix deps.get
+mix test
+```
 
 The site currently maps:
 
 - processes
 - jobs
 
-The logs app exists in the catalog now, and richer log-stream resource mapping
-can grow on this same seam.
+The logs app already exists in the catalog, and richer log-stream resource
+mapping can grow on the same seam.
+
+## Developer Workflow
+
+Run package-local checks:
+
+```bash
+mix format --check-formatted
+mix compile --warnings-as-errors
+mix test
+mix credo --strict
+mix dialyzer
+mix docs --warnings-as-errors
+```
+
+For workspace-wide validation:
+
+```bash
+cd ../..
+mix ci
+```
+
+## Examples
+
+- [test/switchyard/site/local_test.exs](test/switchyard/site/local_test.exs) shows site/app descriptors, snapshot-to-resource mapping, and detail rendering.
+
+## Related Reading
+
+- [Workspace README](../../README.md)
+- [Package Boundaries](../../guides/package_boundaries.md)
+- [Runtime Model](../../guides/runtime_model.md)

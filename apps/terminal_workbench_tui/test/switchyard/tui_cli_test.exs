@@ -5,6 +5,7 @@ defmodule Switchyard.TUICLITest do
   alias Switchyard.Contracts.{AppDescriptor, SiteDescriptor}
   alias Switchyard.TUI.App
   alias Switchyard.TUI.CLI
+  alias Switchyard.TUI.EscriptBootstrap
   alias Switchyard.TUI.Model
   alias Switchyard.TUI.Mount
 
@@ -82,6 +83,10 @@ defmodule Switchyard.TUICLITest do
     assert Keyword.get(opts, :log_level) == "debug"
   end
 
+  test "escript bootstrap is a no-op outside escript runtime" do
+    assert :ok = EscriptBootstrap.start_tui_dependencies()
+  end
+
   test "app init can open an external mounted app directly" do
     assert {:ok, %Model{} = state, commands: commands} =
              App.init(
@@ -95,5 +100,10 @@ defmodule Switchyard.TUICLITest do
     assert state.shell.selected_app_id == "example.workspace"
     assert state.mount_states["example.workspace"].opened?
     assert [%Command{kind: :async}] = Command.normalize(commands)
+  end
+
+  test "app update stops cleanly on quit messages" do
+    assert {:ok, %Model{} = state} = App.init([])
+    assert {:stop, ^state} = App.update({:info, :quit}, state)
   end
 end

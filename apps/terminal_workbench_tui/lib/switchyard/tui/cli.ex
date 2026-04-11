@@ -4,6 +4,7 @@ defmodule Switchyard.TUI.CLI do
   require Logger
 
   alias Switchyard.TUI
+  alias Switchyard.TUI.EscriptBootstrap
 
   @switches [debug: :boolean]
 
@@ -15,12 +16,19 @@ defmodule Switchyard.TUI.CLI do
       Logger.configure(level: :debug)
     end
 
-    case TUI.run(opts) do
+    case EscriptBootstrap.start_tui_dependencies() do
       :ok ->
-        System.halt(0)
+        case TUI.run(opts) do
+          :ok ->
+            System.halt(0)
+
+          {:error, reason} ->
+            IO.puts(:stderr, "Switchyard TUI failed: #{inspect(reason)}")
+            System.halt(1)
+        end
 
       {:error, reason} ->
-        IO.puts(:stderr, "Switchyard TUI failed: #{inspect(reason)}")
+        IO.puts(:stderr, "Switchyard TUI bootstrap failed: #{inspect(reason)}")
         System.halt(1)
     end
   end

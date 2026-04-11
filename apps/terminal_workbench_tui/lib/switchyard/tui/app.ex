@@ -51,6 +51,7 @@ defmodule Switchyard.TUI.App do
   def update({:event, _event}, state), do: {:noreply, state}
   def update({:info, msg}, state), do: runtime_reply(Controller.update(msg, state))
 
+  defp runtime_reply({:stop, state}), do: {:stop, state}
   defp runtime_reply({state, commands}), do: {:noreply, state, commands: commands}
 
   defp site_modules(opts), do: Keyword.get(opts, :site_modules, [Local])

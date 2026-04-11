@@ -9,12 +9,44 @@ daemon.
 - read persisted snapshots back
 - enumerate stored snapshot keys
 
-## Why This Package Exists
+## Quick Start
 
-Durable local state should have one storage seam. The daemon uses this package
-to persist snapshots without coupling storage details to UI or site code.
+Validate the package locally:
 
-## Current Scope
+```bash
+cd core/workbench_store_local
+mix deps.get
+mix test
+```
 
-The current store implementation is intentionally simple: filesystem-backed JSON
-snapshots for local daemon state.
+The storage seam is intentionally simple: filesystem-backed JSON snapshots for
+local daemon state.
+
+## Developer Workflow
+
+Run package-local checks:
+
+```bash
+mix format --check-formatted
+mix compile --warnings-as-errors
+mix test
+mix credo --strict
+mix dialyzer
+mix docs --warnings-as-errors
+```
+
+For workspace-wide validation:
+
+```bash
+cd ../..
+mix ci
+```
+
+## Examples
+
+- [test/switchyard/store/local_test.exs](test/switchyard/store/local_test.exs) covers snapshot persistence, retrieval, and key listing behavior.
+
+## Related Reading
+
+- [Workspace README](../../README.md)
+- [Runtime Model](../../guides/runtime_model.md)

@@ -12,6 +12,15 @@ defmodule Switchyard.CLITest do
     %{daemon: daemon}
   end
 
+  test "ensure_runtime_started boots an in-process daemon when missing" do
+    daemon_name = :"switchyard-cli-daemon-#{System.unique_integer([:positive])}"
+    refute Process.whereis(daemon_name)
+
+    assert :ok = CLI.ensure_runtime_started(daemon: daemon_name)
+    assert is_pid(Process.whereis(daemon_name))
+    assert :ok = CLI.ensure_runtime_started(daemon: daemon_name)
+  end
+
   test "lists sites", %{daemon: daemon} do
     assert {:ok, sites} = CLI.run(["sites"], daemon: daemon)
     assert Enum.any?(sites, &(&1.id == "local"))

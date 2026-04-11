@@ -136,6 +136,10 @@ defmodule Switchyard.TUI.ControllerTest do
     assert next_state.site_app_cursor == 0
   end
 
+  test "quit requests a reducer stop instead of an unsupported command" do
+    assert {:stop, %Model{}} = Controller.update(:quit, base_state())
+  end
+
   test "enter on a mounted app opens the generic app route and runs mount open" do
     state =
       base_state()

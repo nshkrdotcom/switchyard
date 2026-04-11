@@ -1,9 +1,11 @@
-unless Code.ensure_loaded?(Switchyard.Build.DependencyResolver) do
-  Code.require_file("../../build_support/dependency_resolver.exs", __DIR__)
+unless Code.ensure_loaded?(Switchyard.Build.PackageDocs) do
+  Code.require_file("../../build_support/package_docs.exs", __DIR__)
 end
 
 defmodule Switchyard.Contracts.MixProject do
   use Mix.Project
+
+  alias Switchyard.Build.PackageDocs
 
   def project do
     [
@@ -16,12 +18,7 @@ defmodule Switchyard.Contracts.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       dialyzer: dialyzer(),
-      docs: [
-        main: "readme",
-        extras: ["README.md"],
-        source_ref: "main",
-        source_url: "https://github.com/nshkrdotcom/switchyard"
-      ]
+      docs: docs()
     ]
   end
 
@@ -47,5 +44,9 @@ defmodule Switchyard.Contracts.MixProject do
 
   defp dialyzer do
     [plt_add_apps: [:mix], plt_local_path: "priv/plts"]
+  end
+
+  defp docs do
+    PackageDocs.docs(package_title: "Switchyard Contracts")
   end
 end

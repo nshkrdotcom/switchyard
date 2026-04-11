@@ -2,10 +2,14 @@ unless Code.ensure_loaded?(Switchyard.Build.DependencyResolver) do
   Code.require_file("../../build_support/dependency_resolver.exs", __DIR__)
 end
 
+unless Code.ensure_loaded?(Switchyard.Build.PackageDocs) do
+  Code.require_file("../../build_support/package_docs.exs", __DIR__)
+end
+
 defmodule Switchyard.DaemonApp.MixProject do
   use Mix.Project
 
-  alias Switchyard.Build.DependencyResolver
+  alias Switchyard.Build.{DependencyResolver, PackageDocs}
 
   def project do
     [
@@ -21,12 +25,7 @@ defmodule Switchyard.DaemonApp.MixProject do
         plt_local_path: "priv/plts",
         ignore_warnings: Path.expand("../../dialyzer.ignore.exs", __DIR__)
       ],
-      docs: [
-        main: "readme",
-        extras: ["README.md"],
-        source_ref: "main",
-        source_url: "https://github.com/nshkrdotcom/switchyard"
-      ]
+      docs: docs()
     ]
   end
 
@@ -52,4 +51,8 @@ defmodule Switchyard.DaemonApp.MixProject do
   end
 
   defp preferred_cli_env, do: [credo: :test, dialyzer: :dev, docs: :dev]
+
+  defp docs do
+    PackageDocs.docs(package_title: "Switchyard Daemon App")
+  end
 end
