@@ -8,4 +8,5 @@
 /tmp/
 /.elixir_ls/
 /.DS_Store
-
+apps/terminal_workbench_tui/switchyard
+apps/terminal_workbench_cli/switchyard_cli
