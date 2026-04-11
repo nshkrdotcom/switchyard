@@ -13,12 +13,15 @@ defmodule Switchyard.CLI.MixProject do
       name: "Switchyard CLI",
       description: "Headless CLI for inspecting and driving a local Switchyard daemon",
       version: "0.1.0",
-      elixir: "~> 1.18",
+      elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       escript: [main_module: Switchyard.CLI],
-      preferred_cli_env: preferred_cli_env(),
-      dialyzer: [plt_add_apps: [:mix], plt_local_path: "priv/plts"],
+      dialyzer: [
+        plt_add_apps: [:mix],
+        plt_local_path: "priv/plts",
+        ignore_warnings: Path.expand("../../dialyzer.ignore.exs", __DIR__)
+      ],
       docs: [
         main: "readme",
         extras: ["README.md"],
@@ -34,13 +37,16 @@ defmodule Switchyard.CLI.MixProject do
     ]
   end
 
+  def cli do
+    [preferred_envs: preferred_cli_env()]
+  end
+
   defp deps do
     [
       DependencyResolver.switchyard_contracts(),
       DependencyResolver.switchyard_daemon(),
       DependencyResolver.switchyard_transport_local(),
       DependencyResolver.switchyard_site_local(),
-      DependencyResolver.switchyard_site_jido_hive(),
       DependencyResolver.jason(),
       {:credo, "~> 1.7.18", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4.7", only: [:dev, :test], runtime: false},

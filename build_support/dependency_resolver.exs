@@ -33,9 +33,6 @@ defmodule Switchyard.Build.DependencyResolver do
   def switchyard_site_local(opts \\ []),
     do: resolve_internal(:switchyard_site_local, "sites/site_local", opts)
 
-  def switchyard_site_jido_hive(opts \\ []),
-    do: resolve_internal(:switchyard_site_jido_hive, "sites/site_jido_hive", opts)
-
   def switchyard_tui(opts \\ []),
     do: resolve_internal(:switchyard_tui, "apps/terminal_workbench_tui", opts)
 

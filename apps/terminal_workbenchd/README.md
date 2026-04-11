@@ -16,5 +16,5 @@ for local operation.
 
 ## Current Scope
 
-The initial daemon app wires together the built-in local site and the Jido Hive
-site over the shared daemon foundation.
+The initial daemon app wires together the built-in local site over the shared
+daemon foundation.

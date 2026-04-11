@@ -12,10 +12,9 @@ defmodule Switchyard.Contracts.MixProject do
       description:
         "Typed platform contracts for Switchyard sites, apps, resources, actions, jobs, and logs",
       version: "0.1.0",
-      elixir: "~> 1.18",
+      elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      preferred_cli_env: preferred_cli_env(),
       dialyzer: dialyzer(),
       docs: [
         main: "readme",
@@ -30,6 +29,10 @@ defmodule Switchyard.Contracts.MixProject do
     [
       extra_applications: [:logger]
     ]
+  end
+
+  def cli do
+    [preferred_envs: preferred_cli_env()]
   end
 
   defp deps do

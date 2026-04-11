@@ -15,10 +15,19 @@ shell and site catalog become an operator-facing terminal experience.
 
 ## Current Scope
 
-The current TUI foundation is intentionally small:
+Current scope:
 
-- initial shell state
-- a home-screen view model
-- a draw-spec that proves the render seam
+- home screen with site selection
+- site app selection
+- generic list/detail rendering for resource-backed apps
+- external mounted-app hosting through `site_modules` and `mount_modules`
+- a reusable `Switchyard.TUI.Mount` seam for domain-specific UIs
 
-That keeps the UI honest while the daemon and site contracts mature.
+## Build
+
+```bash
+cd apps/terminal_workbench_tui
+mix deps.get
+mix escript.build
+./switchyard
+```

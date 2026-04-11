@@ -9,16 +9,15 @@
 
 Switchyard is a terminal-native operator workbench for multi-site terminal
 applications. It is designed as a non-umbrella Elixir monorepo with a local
-control daemon, a generic terminal shell, and pluggable site packages such as
-Jido Hive.
+control daemon, a generic terminal shell, and pluggable site packages.
 
 The project goal is straightforward:
 
 - host multiple "sites" inside one terminal workbench
 - manage jobs, logs, processes, and connections from the same shell
 - keep durable local operational state out of the UI process
-- let domain systems such as Jido Hive plug in as sites rather than defining
-  the platform itself
+- let domain systems plug in as external sites rather than defining the
+  platform itself
 
 ## Project Status
 
@@ -32,6 +31,8 @@ The current foundation establishes:
 - typed contracts for sites, apps, resources, actions, jobs, and logs
 - a local daemon seam for process, job, log, and snapshot ownership
 - initial CLI, TUI, and site packages proving the non-umbrella split
+- a generic mounted-app seam so external repos can host domain UIs without
+  changing Switchyard core
 
 ## Start Here
 
@@ -80,7 +81,6 @@ Reusable platform internals:
 Pluggable site adapters:
 
 - `site_local`
-- `site_jido_hive`
 
 ### `apps/*`
 
@@ -96,7 +96,7 @@ Runnable entrypoints:
 - the shell owns navigation and presentation
 - site packages own domain mapping and actions
 - meaningful operator behavior must exist headlessly beneath the TUI
-- Jido Hive remains one site inside the platform, not the platform itself
+- external product integrations must remain outside Switchyard core
 
 ## Workspace Commands
 

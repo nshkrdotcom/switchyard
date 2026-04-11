@@ -3,11 +3,11 @@ defmodule Switchyard.CLITest do
 
   alias Switchyard.CLI
   alias Switchyard.Daemon
-  alias Switchyard.Site.{JidoHive, Local}
+  alias Switchyard.Site.Local
 
   setup do
     {:ok, daemon} =
-      start_supervised({Daemon, site_modules: [Local, JidoHive], name: nil})
+      start_supervised({Daemon, site_modules: [Local], name: nil})
 
     %{daemon: daemon}
   end
@@ -15,12 +15,11 @@ defmodule Switchyard.CLITest do
   test "lists sites", %{daemon: daemon} do
     assert {:ok, sites} = CLI.run(["sites"], daemon: daemon)
     assert Enum.any?(sites, &(&1.id == "local"))
-    assert Enum.any?(sites, &(&1.id == "jido-hive"))
   end
 
   test "lists apps for a site", %{daemon: daemon} do
-    assert {:ok, apps} = CLI.run(["apps", "jido-hive"], daemon: daemon)
-    assert Enum.any?(apps, &(&1.id == "jido-hive.rooms"))
+    assert {:ok, apps} = CLI.run(["apps", "local"], daemon: daemon)
+    assert Enum.any?(apps, &(&1.id == "local.processes"))
   end
 
   test "returns the local snapshot", %{daemon: daemon} do

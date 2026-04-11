@@ -13,10 +13,9 @@ defmodule Switchyard.Daemon.MixProject do
       name: "Switchyard Daemon",
       description: "Local control-plane daemon runtime for Switchyard",
       version: "0.1.0",
-      elixir: "~> 1.18",
+      elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      preferred_cli_env: preferred_cli_env(),
       dialyzer: [plt_add_apps: [:mix], plt_local_path: "priv/plts"],
       docs: [
         main: "readme",
@@ -32,6 +31,10 @@ defmodule Switchyard.Daemon.MixProject do
       extra_applications: [:logger],
       mod: {Switchyard.Daemon.Application, []}
     ]
+  end
+
+  def cli do
+    [preferred_envs: preferred_cli_env()]
   end
 
   defp deps do

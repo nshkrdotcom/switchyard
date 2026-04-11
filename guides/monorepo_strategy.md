@@ -9,7 +9,7 @@ through Weld.
 The target package families are:
 
 - `core/*` for contracts and reusable platform internals
-- `sites/*` for pluggable site adapters such as Jido Hive
+- `sites/*` for built-in site adapters
 - `apps/*` for runnable applications such as the TUI shell, CLI, and daemon
 
 This split keeps the dependency graph honest:
@@ -41,9 +41,12 @@ The intended dependency graph is:
 
 1. root workspace orchestrates only
 2. `core/*` depends only on other `core/*` packages and small external libs
-3. `sites/*` depends on `core/*` and site-specific client libraries
+3. `sites/*` depends on `core/*` and any built-in runtime helpers they need
 4. `apps/*` depends on `core/*` and `sites/*`
 
 Reverse edges are a design failure. If a site package needs shell-only state, or
 the shell needs to invent behavior that does not exist beneath it, the seam is
 wrong.
+
+External product integrations should live outside this repo and consume the
+published Switchyard seams instead of being baked into the workspace itself.

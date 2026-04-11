@@ -13,10 +13,9 @@ defmodule Switchyard.LogRuntime.MixProject do
       name: "Switchyard Log Runtime",
       description: "Bounded log buffering helpers for Switchyard runtime events",
       version: "0.1.0",
-      elixir: "~> 1.18",
+      elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      preferred_cli_env: preferred_cli_env(),
       dialyzer: [plt_add_apps: [:mix], plt_local_path: "priv/plts"],
       docs: [
         main: "readme",
@@ -31,6 +30,10 @@ defmodule Switchyard.LogRuntime.MixProject do
     [
       extra_applications: [:logger]
     ]
+  end
+
+  def cli do
+    [preferred_envs: preferred_cli_env()]
   end
 
   defp deps do

@@ -29,7 +29,7 @@ Reference implementation patterns:
 2. The daemon owns durable local operational state.
 3. The shell owns terminal UX only.
 4. Sites own domain mapping and actions.
-5. Jido Hive is one site inside the platform.
+5. Product-specific integrations must remain outside Switchyard core.
 
 ## Live Checklist
 
@@ -56,7 +56,7 @@ Reference implementation patterns:
 - [x] Implement platform registry and local site mapping with tests written first.
 - [x] Implement daemon, process, log, job, store, and local transport foundations with tests written first.
 - [x] Implement CLI and TUI host packages with tests written first where practical.
-- [x] Add the Jido Hive site package over a clean seam.
+- [x] Keep the core seams generic enough for external mounted apps and sites.
 
 ### Phase 3: Workspace Quality
 

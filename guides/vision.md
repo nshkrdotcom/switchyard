@@ -8,7 +8,7 @@ The platform should combine:
 - a local daemon that owns jobs, processes, logs, and sessions
 - a generic terminal shell that owns routing, panes, and command UX
 - a typed SDK for pluggable sites and apps
-- domain sites such as Jido Hive built on that SDK
+- external domain sites built on that SDK
 
 The system should let an operator:
 
@@ -26,8 +26,8 @@ That leads to a few hard architectural requirements:
 
 - the shell cannot be the authority for long-lived operational state
 - site packages cannot own generic process and log management
-- a domain integration such as Jido Hive must plug into shared contracts instead
-  of redefining them
+- a domain integration must plug into shared contracts instead of redefining
+  them
 - the same meaningful behavior should be scriptable through a headless surface
   beneath the TUI
 

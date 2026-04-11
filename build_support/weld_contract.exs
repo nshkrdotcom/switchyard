@@ -49,8 +49,7 @@ defmodule Switchyard.Build.WeldContract do
         "core/workbench_job_runtime",
         "core/workbench_store_local",
         "core/workbench_shell_core",
-        "sites/site_local",
-        "sites/site_jido_hive"
+        "sites/site_local"
       ],
       package: [
         name: "switchyard_foundation",

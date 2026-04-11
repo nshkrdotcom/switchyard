@@ -15,11 +15,10 @@ defmodule Switchyard.Workspace.MixProject do
     [
       app: :switchyard_workspace,
       version: "0.1.0",
-      elixir: "~> 1.18",
+      elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
-      preferred_cli_env: preferred_cli_env(),
       blitz_workspace: blitz_workspace(),
       dialyzer: dialyzer(),
       docs: docs(),
@@ -32,6 +31,10 @@ defmodule Switchyard.Workspace.MixProject do
     [
       extra_applications: [:logger]
     ]
+  end
+
+  def cli do
+    [preferred_envs: preferred_cli_env()]
   end
 
   def blitz_workspace_env(%{root: root}) do

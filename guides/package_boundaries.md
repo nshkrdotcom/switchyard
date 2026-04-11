@@ -83,11 +83,6 @@ This package must stay presentation-agnostic.
 The built-in local operations site. It maps daemon-owned process and job state
 into generic resources, details, and actions.
 
-### `sites/site_jido_hive`
-
-The Jido Hive site adapter. It maps room and publication workflow truth into
-Switchyard contracts without turning Jido Hive into the platform center.
-
 ## Application Packages
 
 ### `apps/terminal_workbench_cli`
@@ -110,4 +105,5 @@ The runnable daemon application that wires together the configured site modules.
 2. Site packages do not depend on apps.
 3. The TUI does not own durable business truth.
 4. If behavior cannot be exercised headlessly, the seam is still wrong.
-5. Jido Hive remains one site inside Switchyard, not the architectural center.
+5. Product-specific integrations belong outside Switchyard core unless they are
+   truly generic platform capabilities.
