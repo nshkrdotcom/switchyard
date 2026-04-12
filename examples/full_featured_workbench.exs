@@ -1348,40 +1348,50 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
 
     ref = Process.monitor(pid)
 
-    Process.sleep(450)
-
-    initial_snapshot = Runtime.snapshot(pid)
+    initial_snapshot =
+      wait_for_snapshot!(pid, "local smoke startup", fn snapshot ->
+        not snapshot.polling_enabled? and
+          snapshot.render_count >= 1 and
+          snapshot.subscription_count >= 3 and
+          snapshot.active_async_commands == 0 and
+          snapshot_has_message?(snapshot, &match?({:dashboard_loaded, _}, &1)) and
+          snapshot_has_message?(snapshot, &match?({:snapshot_summary_ready, _}, &1)) and
+          snapshot_has_message?(snapshot, &match?({:runtime_snapshot_ready, _}, &1))
+      end)
 
     if initial_snapshot.polling_enabled? do
       raise "smoke mode should be headless under test_mode"
     end
 
     inject_key(pid, "r")
-    Process.sleep(220)
     inject_key(pid, "d")
-    Process.sleep(220)
     inject_key(pid, "right")
-    Process.sleep(120)
     inject_key(pid, "down")
-    Process.sleep(120)
     inject_key(pid, "right")
-    Process.sleep(120)
     inject_key(pid, "a")
-    Process.sleep(180)
     inject_key(pid, "o")
-    Process.sleep(120)
     inject_key(pid, "down")
-    Process.sleep(120)
     inject_key(pid, "s")
-    Process.sleep(120)
     inject_key(pid, "x")
-    Process.sleep(500)
 
-    pre_resize_snapshot = Runtime.snapshot(pid)
+    pre_resize_snapshot =
+      wait_for_snapshot!(pid, "local smoke actions", fn snapshot ->
+        snapshot.active_async_commands == 0 and
+          snapshot.render_count > initial_snapshot.render_count and
+          snapshot_has_message?(snapshot, &match?({:deploy_started, _}, &1)) and
+          snapshot_has_message?(snapshot, &match?({:incident_acknowledged, _}, &1)) and
+          snapshot_has_message?(snapshot, &match?({:runtime_snapshot_ready, _}, &1)) and
+          snapshot_has_message?(snapshot, &match?({:diagnostic_probe_finished, {:error, _}}, &1)) and
+          snapshot_has_event?(snapshot, &match?(%Event.Key{code: "x"}, &1))
+      end)
+
     inject_resize(pid, 120, 36)
-    Process.sleep(160)
 
-    snapshot = Runtime.snapshot(pid)
+    snapshot =
+      wait_for_snapshot!(pid, "local smoke resize", fn snapshot ->
+        snapshot.render_count > pre_resize_snapshot.render_count and
+          snapshot_has_event?(snapshot, &match?(%Event.Resize{width: 120, height: 36}, &1))
+      end)
 
     cond do
       snapshot.render_count < 8 ->
@@ -1452,16 +1462,32 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
 
       expect_draw!("initial distributed draw")
       :ok = Runtime.enable_trace(pid)
-      Process.sleep(450)
+
+      startup_snapshot =
+        wait_for_snapshot!(pid, "distributed smoke startup", fn snapshot ->
+          snapshot.transport == :distributed_server and
+            snapshot.render_count >= 1 and
+            snapshot.trace_enabled?
+        end)
 
       send(pid, {:ex_ratatui_event, %Event.Key{code: "o", modifiers: [], kind: "press"}})
-      Process.sleep(150)
-      send(pid, {:ex_ratatui_event, %Event.Key{code: "x", modifiers: [], kind: "press"}})
-      Process.sleep(450)
-      send(pid, {:ex_ratatui_resize, 120, 36})
-      Process.sleep(150)
+      send(pid, {:ex_ratatui_event, %Event.Key{code: "right", modifiers: [], kind: "press"}})
 
-      snapshot = Runtime.snapshot(pid)
+      pre_resize_snapshot =
+        wait_for_snapshot!(pid, "distributed smoke actions", fn snapshot ->
+          snapshot.active_async_commands == 0 and
+            snapshot.render_count >= startup_snapshot.render_count + 2 and
+            snapshot_has_event?(snapshot, &match?(%Event.Key{code: "o"}, &1)) and
+            snapshot_has_event?(snapshot, &match?(%Event.Key{code: "right"}, &1))
+        end)
+
+      send(pid, {:ex_ratatui_resize, 120, 36})
+
+      snapshot =
+        wait_for_snapshot!(pid, "distributed smoke resize", fn snapshot ->
+          snapshot.dimensions == {120, 36} and
+            snapshot.render_count > pre_resize_snapshot.render_count
+        end)
 
       cond do
         snapshot.transport != :distributed_server ->
@@ -1624,6 +1650,57 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
     after
       2_000 -> raise "#{label} never arrived"
     end
+  end
+
+  defp wait_for_snapshot!(pid, label, predicate, timeout_ms \\ 3_000) do
+    deadline = System.monotonic_time(:millisecond) + timeout_ms
+    do_wait_for_snapshot(pid, label, predicate, deadline)
+  end
+
+  defp do_wait_for_snapshot(pid, label, predicate, deadline) do
+    snapshot = Runtime.snapshot(pid)
+
+    cond do
+      predicate.(snapshot) ->
+        snapshot
+
+      System.monotonic_time(:millisecond) >= deadline ->
+        raise "#{label} timed out waiting for runtime condition. Last snapshot: #{inspect(snapshot_brief(snapshot))}"
+
+      true ->
+        receive do
+          {:ex_ratatui_draw, _widgets} -> do_wait_for_snapshot(pid, label, predicate, deadline)
+        after
+          10 -> do_wait_for_snapshot(pid, label, predicate, deadline)
+        end
+    end
+  end
+
+  defp snapshot_has_message?(snapshot, matcher) when is_function(matcher, 1) do
+    Enum.any?(snapshot.trace_events, fn
+      %{kind: :message, details: %{payload: payload}} -> matcher.(payload)
+      _other -> false
+    end)
+  end
+
+  defp snapshot_has_event?(snapshot, matcher) when is_function(matcher, 1) do
+    Enum.any?(snapshot.trace_events, fn
+      %{kind: :message, details: %{source: :event, payload: payload}} -> matcher.(payload)
+      _other -> false
+    end)
+  end
+
+  defp snapshot_brief(snapshot) do
+    %{
+      transport: snapshot.transport,
+      dimensions: snapshot.dimensions,
+      polling_enabled?: snapshot.polling_enabled?,
+      render_count: snapshot.render_count,
+      subscription_count: snapshot.subscription_count,
+      active_async_commands: snapshot.active_async_commands,
+      trace_enabled?: snapshot.trace_enabled?,
+      recent_trace_kinds: Enum.map(snapshot.trace_events, & &1.kind) |> Enum.take(-8)
+    }
   end
 end
 
