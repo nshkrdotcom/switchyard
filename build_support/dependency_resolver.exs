@@ -63,8 +63,8 @@ defmodule Switchyard.Build.DependencyResolver do
   def weld(opts \\ []) do
     resolve_external(
       :weld,
-      local_root_path("WELD_PATH", "../weld"),
-      [github: "nshkrdotcom/weld", ref: "bd16ec229dde2ba59c368cce93aa34079afc5fcc"],
+      local_root_path("WELD_PATH", nil),
+      "~> 0.4.1",
       opts
     )
   end
@@ -113,9 +113,15 @@ defmodule Switchyard.Build.DependencyResolver do
   defp local_root_path(env_var, default_relative_path) do
     case System.get_env(env_var) do
       nil ->
-        default_relative_path
-        |> Path.expand(@repo_root)
-        |> existing_path()
+        case default_relative_path do
+          nil ->
+            nil
+
+          path ->
+            path
+            |> Path.expand(@repo_root)
+            |> existing_path()
+        end
 
       value when value in ["", "0", "false", "disabled"] ->
         nil
