@@ -106,6 +106,8 @@ defmodule Workbench.ComponentServer do
   def handle_cast({:update, msg, ctx}, %__MODULE__{} = server) do
     case server.module.update(msg, server.state, server.props, ctx) do
       {:ok, state, _cmds} -> {:noreply, %{server | state: state, ctx: ctx}}
+      {:stop, state} -> {:stop, :normal, %{server | state: state, ctx: ctx}}
+      {:stop, state, _cmds} -> {:stop, :normal, %{server | state: state, ctx: ctx}}
       :unhandled -> {:noreply, %{server | ctx: ctx}}
     end
   end
@@ -115,9 +117,15 @@ defmodule Workbench.ComponentServer do
 
   @impl true
   def handle_info(msg, %__MODULE__{} = server) do
-    case server.module.handle_info(msg, server.state, server.props, server.ctx) do
-      {:ok, state, _cmds} -> {:noreply, %{server | state: state}}
-      :unhandled -> {:noreply, server}
+    if function_exported?(server.module, :handle_info, 4) do
+      case server.module.handle_info(msg, server.state, server.props, server.ctx) do
+        {:ok, state, _cmds} -> {:noreply, %{server | state: state}}
+        {:stop, state} -> {:stop, :normal, %{server | state: state}}
+        {:stop, state, _cmds} -> {:stop, :normal, %{server | state: state}}
+        :unhandled -> {:noreply, server}
+      end
+    else
+      {:noreply, server}
     end
   end
 end

@@ -14,6 +14,7 @@ Workbench node IR from `workbench_node_ir`.
 The package currently includes constructors for:
 
 - pane, list, detail, status bar, help, and modal
+- variable-height widget list for row-based scrolling surfaces
 - log stream, table, tree, tabs, paginator, and viewport
 - text input, text area, form, and field group
 - spinner, timer, and progress bar
@@ -22,6 +23,9 @@ The package currently includes constructors for:
 The renderer lowering lives in `workbench_tui_framework`; this package only
 defines the backend-neutral widget nodes and should not depend on the renderer
 package just to compile.
+
+`Workbench.Widgets.WidgetList` is the current escape hatch for examples and app
+surfaces that need per-row widget heights while staying backend-neutral.
 
 ## Package Checks
 

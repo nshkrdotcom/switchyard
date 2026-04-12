@@ -28,6 +28,36 @@ defmodule WorkbenchTuiFrameworkTest do
     def render(_state, _props, _ctx), do: Node.text(:runtime, "runtime")
   end
 
+  defmodule SupervisedStopComponent do
+    @behaviour Workbench.Component
+
+    alias Workbench.Node
+
+    @impl true
+    def init(_props, _ctx), do: {:ok, %{phase: :boot}, []}
+
+    @impl true
+    def update(:advance, state, _props, _ctx) do
+      {:ok, %{state | phase: :advanced}, render?: false}
+    end
+
+    def update(:stop, state, _props, _ctx) do
+      {:stop, %{state | phase: :stopping}, trace?: false}
+    end
+
+    def update(_msg, _state, _props, _ctx), do: :unhandled
+
+    @impl true
+    def handle_info(:stop, state, _props, _ctx) do
+      {:stop, %{state | phase: :info_stopping}, render?: false}
+    end
+
+    def handle_info(_msg, _state, _props, _ctx), do: :unhandled
+
+    @impl true
+    def render(_state, _props, _ctx), do: Node.text(:supervised, "supervised")
+  end
+
   test "matches key events against structured bindings" do
     bindings = [
       Keymap.binding(
@@ -98,5 +128,40 @@ defmodule WorkbenchTuiFrameworkTest do
 
     assert widget.scroll_offset == 2
     assert [{%Paragraph{}, 4}, {%Paragraph{text: "gamma"}, 1}] = widget.items
+  end
+
+  test "supervised component server ignores missing handle_info callbacks" do
+    ctx = %Context{}
+    {:ok, pid} = Workbench.ComponentServer.start_link(module: RuntimeOptsComponent, ctx: ctx)
+
+    send(pid, :noop)
+    Process.sleep(10)
+
+    assert Process.alive?(pid)
+
+    assert %Workbench.ComponentServer{state: %{phase: :boot}} =
+             Workbench.ComponentServer.snapshot(pid)
+  end
+
+  test "supervised component server handles runtime opts and stop tuples" do
+    ctx = %Context{}
+    {:ok, pid} = Workbench.ComponentServer.start_link(module: SupervisedStopComponent, ctx: ctx)
+
+    Workbench.ComponentServer.update(pid, :advance, ctx)
+    Process.sleep(10)
+
+    assert %Workbench.ComponentServer{state: %{phase: :advanced}} =
+             Workbench.ComponentServer.snapshot(pid)
+
+    ref = Process.monitor(pid)
+    Workbench.ComponentServer.update(pid, :stop, ctx)
+
+    assert_receive {:DOWN, ^ref, :process, ^pid, :normal}
+
+    {:ok, pid} = Workbench.ComponentServer.start_link(module: SupervisedStopComponent, ctx: ctx)
+    ref = Process.monitor(pid)
+    send(pid, :stop)
+
+    assert_receive {:DOWN, ^ref, :process, ^pid, :normal}
   end
 end

@@ -19,6 +19,8 @@ on that package instead of owning `Workbench.Node` directly.
 ## Key Modules
 
 - `Workbench.Component`
+- `Workbench.ComponentServer`
+- `Workbench.ComponentSupervisor`
 - `Workbench.Context`
 - `Workbench.RenderTree`
 - `Workbench.FocusTree`
@@ -28,6 +30,17 @@ on that package instead of owning `Workbench.Node` directly.
 - `Workbench.EffectRunner`
 - `Workbench.Runtime`
 - `Workbench.Renderer.ExRatatui`
+
+## Runtime Contract
+
+- `Workbench.Component` callbacks can return a single command, a list of
+  commands, or runtime opts with `commands`, `render?`, and `trace?`.
+- `Workbench.ComponentServer` mirrors the same update and stop tuple contract
+  for supervised components and safely ignores optional `handle_info/4` when a
+  component does not implement it.
+- `Workbench.Renderer.ExRatatui` lowers `Workbench.Widgets.WidgetList` into
+  `ExRatatui.Widgets.WidgetList`, so row-based variable-height scrolling can be
+  exercised through the backend-neutral node layer.
 
 ## Package Checks
 
