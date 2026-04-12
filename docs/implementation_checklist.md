@@ -18,16 +18,17 @@ Read these before making structural changes:
 8. `build_support/workspace_contract.exs`
 9. `build_support/dependency_resolver.exs`
 10. `build_support/weld_contract.exs`
-11. `core/workbench_tui_framework/README.md`
-12. `core/workbench_widgets/README.md`
-13. `core/workbench_devtools/README.md`
-14. `apps/terminal_workbench_tui/README.md`
-15. `apps/terminal_workbench_tui/lib/switchyard/tui/root.ex`
-16. `apps/terminal_workbench_tui/lib/switchyard/tui/state.ex`
-17. `core/workbench_tui_framework/lib/workbench/runtime.ex`
-18. `core/workbench_tui_framework/lib/workbench/effects.ex`
-19. `../ex_ratatui/lib/ex_ratatui/command.ex`
-20. `../ex_ratatui/lib/ex_ratatui/subscription.ex`
+11. `core/workbench_node_ir/README.md`
+12. `core/workbench_tui_framework/README.md`
+13. `core/workbench_widgets/README.md`
+14. `core/workbench_devtools/README.md`
+15. `apps/terminal_workbench_tui/README.md`
+16. `apps/terminal_workbench_tui/lib/switchyard/tui/root.ex`
+17. `apps/terminal_workbench_tui/lib/switchyard/tui/state.ex`
+18. `core/workbench_tui_framework/lib/workbench/runtime.ex`
+19. `core/workbench_tui_framework/lib/workbench/effects.ex`
+20. `../ex_ratatui/lib/ex_ratatui/command.ex`
+21. `../ex_ratatui/lib/ex_ratatui/subscription.ex`
 
 ## Invariants
 
@@ -50,6 +51,7 @@ Read these before making structural changes:
 ### Phase 1: Framework Packages
 
 - [x] Add `core/workbench_tui_framework`.
+- [x] Add `core/workbench_node_ir`.
 - [x] Add `core/workbench_widgets`.
 - [x] Add `core/workbench_devtools`.
 - [x] Update dependency resolution and Weld roots for the new packages.

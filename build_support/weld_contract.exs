@@ -19,7 +19,7 @@ defmodule Switchyard.Build.WeldContract do
     ex_ratatui: [
       opts: [
         github: "nshkrdotcom/ex_ratatui",
-        ref: "d20dd06ded8be40fa8f6b351fbc98e8ac3e9a6e2"
+        ref: "855b77148cfdb7c1e3c1e625575f0d2e83e115f8"
       ]
     ]
   ]

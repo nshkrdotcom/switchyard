@@ -25,6 +25,11 @@ defmodule Workbench.Widgets.List do
   def new(opts), do: Workbench.Widgets.widget(__MODULE__, opts)
 end
 
+defmodule Workbench.Widgets.WidgetList do
+  @moduledoc "Variable-height widget list."
+  def new(opts), do: Workbench.Widgets.widget(__MODULE__, opts)
+end
+
 defmodule Workbench.Widgets.Detail do
   @moduledoc "Detail pane widget."
   def new(opts), do: Workbench.Widgets.widget(__MODULE__, opts)

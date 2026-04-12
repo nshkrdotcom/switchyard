@@ -35,6 +35,7 @@ defmodule Workbench.Runtime do
 
   alias Workbench.{
     ActionRegistry,
+    Cmd,
     Context,
     EffectRunner,
     FocusTree,
@@ -65,9 +66,9 @@ defmodule Workbench.Runtime do
     ctx = context_for(state, {0, 0})
 
     case root_module.init(props, ctx) do
-      {:ok, root_state, cmds} ->
+      {:ok, root_state, runtime_opts} ->
         runtime_state = %{state | root_state: root_state}
-        {:ok, runtime_state, commands: EffectRunner.run(cmds, ctx)}
+        {:ok, runtime_state, runtime_opts |> normalize_runtime_opts(ctx) |> encode_runtime_opts()}
 
       {:error, reason} ->
         {:error, reason}
@@ -75,7 +76,9 @@ defmodule Workbench.Runtime do
   end
 
   @spec update(term(), Runtime.State.t()) ::
-          {:noreply, Runtime.State.t(), keyword()} | {:stop, Runtime.State.t()}
+          {:noreply, Runtime.State.t(), keyword()}
+          | {:stop, Runtime.State.t()}
+          | {:stop, Runtime.State.t(), keyword()}
   def update({:event, %Event.Resize{width: width, height: height}}, %Runtime.State{} = state) do
     {:noreply, %{state | viewport: {width, height}}}
   end
@@ -120,8 +123,16 @@ defmodule Workbench.Runtime do
 
     if function_exported?(state.root_module, :handle_info, 4) do
       case state.root_module.handle_info(msg, state.root_state, state.root_props, ctx) do
-        {:ok, root_state, cmds} ->
-          {:noreply, %{state | root_state: root_state}, commands: EffectRunner.run(cmds, ctx)}
+        {:ok, root_state, runtime_opts} ->
+          {:noreply, %{state | root_state: root_state},
+           runtime_opts |> normalize_runtime_opts(ctx) |> encode_runtime_opts()}
+
+        {:stop, root_state} ->
+          {:stop, %{state | root_state: root_state}}
+
+        {:stop, root_state, runtime_opts} ->
+          {:stop, %{state | root_state: root_state},
+           runtime_opts |> normalize_runtime_opts(ctx) |> encode_runtime_opts()}
 
         :unhandled ->
           {:noreply, state}
@@ -178,14 +189,19 @@ defmodule Workbench.Runtime do
 
   defp dispatch_update(msg, %Runtime.State{} = state, %Context{} = ctx) do
     case state.root_module.update(msg, state.root_state, state.root_props, ctx) do
-      {:ok, root_state, cmds} ->
-        {:noreply, %{state | root_state: root_state}, commands: EffectRunner.run(cmds, ctx)}
+      {:ok, root_state, runtime_opts} ->
+        {:noreply, %{state | root_state: root_state},
+         runtime_opts |> normalize_runtime_opts(ctx) |> encode_runtime_opts()}
 
       :unhandled ->
         {:noreply, state}
 
       {:stop, root_state} ->
         {:stop, %{state | root_state: root_state}}
+
+      {:stop, root_state, runtime_opts} ->
+        {:stop, %{state | root_state: root_state},
+         runtime_opts |> normalize_runtime_opts(ctx) |> encode_runtime_opts()}
     end
   end
 
@@ -227,5 +243,49 @@ defmodule Workbench.Runtime do
       request_handler: state.request_handler,
       app_env: state.app_env
     }
+  end
+
+  defp default_runtime_opts do
+    %{commands: [], render?: true, trace?: nil}
+  end
+
+  defp normalize_runtime_opts(nil, _ctx), do: default_runtime_opts()
+
+  defp normalize_runtime_opts(%Cmd{} = command, %Context{} = ctx) do
+    %{default_runtime_opts() | commands: EffectRunner.run(command, ctx)}
+  end
+
+  defp normalize_runtime_opts(runtime_opts, %Context{} = ctx) when is_list(runtime_opts) do
+    if Keyword.keyword?(runtime_opts) and
+         Enum.any?(runtime_opts, fn {key, _value} -> key in [:commands, :render?, :trace?] end) do
+      runtime_opts
+      |> Map.new()
+      |> normalize_runtime_opts(ctx)
+    else
+      %{default_runtime_opts() | commands: EffectRunner.run(runtime_opts, ctx)}
+    end
+  end
+
+  defp normalize_runtime_opts(runtime_opts, %Context{} = ctx) when is_map(runtime_opts) do
+    %{
+      commands:
+        runtime_opts
+        |> Map.get(:commands, Map.get(runtime_opts, "commands"))
+        |> EffectRunner.run(ctx),
+      render?: Map.get(runtime_opts, :render?, Map.get(runtime_opts, "render?", true)),
+      trace?: Map.get(runtime_opts, :trace?, Map.get(runtime_opts, "trace?"))
+    }
+  end
+
+  defp normalize_runtime_opts(other, _ctx) do
+    raise ArgumentError, "invalid Workbench runtime opts: #{inspect(other)}"
+  end
+
+  defp encode_runtime_opts(runtime_opts) do
+    [
+      commands: runtime_opts.commands,
+      render?: runtime_opts.render?,
+      trace?: runtime_opts.trace?
+    ]
   end
 end

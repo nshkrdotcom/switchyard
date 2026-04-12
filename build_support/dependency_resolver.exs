@@ -30,6 +30,9 @@ defmodule Switchyard.Build.DependencyResolver do
   def switchyard_shell(opts \\ []),
     do: resolve_internal(:switchyard_shell, "core/workbench_shell_core", opts)
 
+  def switchyard_node_ir(opts \\ []),
+    do: resolve_internal(:workbench_node_ir, "core/workbench_node_ir", opts)
+
   def switchyard_tui_framework(opts \\ []),
     do: resolve_internal(:workbench_tui_framework, "core/workbench_tui_framework", opts)
 
@@ -75,7 +78,7 @@ defmodule Switchyard.Build.DependencyResolver do
       local_root_path("EX_RATATUI_PATH", "../ex_ratatui"),
       [
         github: "nshkrdotcom/ex_ratatui",
-        ref: "d20dd06ded8be40fa8f6b351fbc98e8ac3e9a6e2"
+        ref: "855b77148cfdb7c1e3c1e625575f0d2e83e115f8"
       ],
       opts
     )

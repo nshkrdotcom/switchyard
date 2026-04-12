@@ -3,7 +3,30 @@ defmodule WorkbenchTuiFrameworkTest do
 
   alias ExRatatui.Event
   alias ExRatatui.Layout.Rect
+  alias ExRatatui.Widgets.{Paragraph, WidgetList}
   alias Workbench.{Cmd, Context, EffectRunner, Keymap, Node, RenderTree}
+  alias Workbench.Renderer.ExRatatui, as: ExRatatuiRenderer
+
+  defmodule RuntimeOptsComponent do
+    @behaviour Workbench.Component
+
+    alias Workbench.{Cmd, Node}
+
+    @impl true
+    def init(_props, _ctx) do
+      {:ok, %{phase: :boot}, commands: Cmd.message(:boot), render?: false, trace?: true}
+    end
+
+    @impl true
+    def update(:advance, state, _props, _ctx) do
+      {:ok, %{state | phase: :advanced}, commands: [], render?: false, trace?: false}
+    end
+
+    def update(_msg, _state, _props, _ctx), do: :unhandled
+
+    @impl true
+    def render(_state, _props, _ctx), do: Node.text(:runtime, "runtime")
+  end
 
   test "matches key events against structured bindings" do
     bindings = [
@@ -37,5 +60,43 @@ defmodule WorkbenchTuiFrameworkTest do
     commands = EffectRunner.run([Cmd.request(:ping, [], &{:handled, &1})], ctx)
 
     assert [%ExRatatui.Command{kind: :async}] = commands
+  end
+
+  test "passes runtime opts through init and update" do
+    assert {:ok, %Workbench.Runtime.State{} = state, init_opts} =
+             Workbench.Runtime.init(RuntimeOptsComponent, [])
+
+    assert init_opts[:render?] == false
+    assert init_opts[:trace?] == true
+    assert [%ExRatatui.Command{kind: :message}] = init_opts[:commands]
+
+    assert {:noreply, %Workbench.Runtime.State{} = next_state, update_opts} =
+             Workbench.Runtime.update({:info, {:workbench_root, :advance}}, state)
+
+    assert next_state.root_state.phase == :advanced
+    assert update_opts[:render?] == false
+    assert update_opts[:trace?] == false
+    assert update_opts[:commands] == []
+  end
+
+  test "renders workbench widget lists as ex_ratatui widget lists" do
+    node =
+      Node.widget(:trace, Workbench.Widgets.WidgetList, %{
+        title: "Trace",
+        scroll_offset: 2,
+        items: [
+          {Node.widget(:one, Workbench.Widgets.Pane, %{title: "One", lines: ["alpha", "beta"]}),
+           4},
+          {Node.text(:two, "gamma"), 1}
+        ]
+      })
+
+    tree = RenderTree.resolve(node, %Rect{x: 0, y: 0, width: 80, height: 20})
+
+    assert [{%WidgetList{} = widget, %Rect{width: 80, height: 20}}] =
+             ExRatatuiRenderer.render(tree, [])
+
+    assert widget.scroll_offset == 2
+    assert [{%Paragraph{}, 4}, {%Paragraph{text: "gamma"}, 1}] = widget.items
   end
 end

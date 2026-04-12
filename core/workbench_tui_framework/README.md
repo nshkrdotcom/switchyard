@@ -13,11 +13,13 @@ the Switchyard product app.
 
 This package must stay product-agnostic.
 
+The backend-neutral node IR lives in `workbench_node_ir`; this package depends
+on that package instead of owning `Workbench.Node` directly.
+
 ## Key Modules
 
 - `Workbench.Component`
 - `Workbench.Context`
-- `Workbench.Node`
 - `Workbench.RenderTree`
 - `Workbench.FocusTree`
 - `Workbench.RegionMap`

@@ -11,4 +11,16 @@ defmodule WorkbenchWidgetsTest do
     assert node.module == Workbench.Widgets.Pane
     assert node.props.title == "Pane"
   end
+
+  test "widget list constructor keeps variable-height item props intact" do
+    item = Workbench.Node.text(:item, "trace card")
+
+    node =
+      Widgets.WidgetList.new(id: :trace, title: "Trace", items: [{item, 3}], scroll_offset: 2)
+
+    assert node.module == Workbench.Widgets.WidgetList
+    assert node.props.title == "Trace"
+    assert node.props.scroll_offset == 2
+    assert node.props.items == [{item, 3}]
+  end
 end

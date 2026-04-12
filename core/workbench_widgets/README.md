@@ -1,7 +1,7 @@
 # Workbench Widgets
 
 `workbench_widgets` provides backend-neutral widget constructors built on the
-Workbench node IR.
+Workbench node IR from `workbench_node_ir`.
 
 ## Responsibilities
 
@@ -20,7 +20,8 @@ The package currently includes constructors for:
 - command palette and file picker
 
 The renderer lowering lives in `workbench_tui_framework`; this package only
-defines the backend-neutral widget nodes.
+defines the backend-neutral widget nodes and should not depend on the renderer
+package just to compile.
 
 ## Package Checks
 

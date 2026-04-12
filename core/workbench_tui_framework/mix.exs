@@ -43,6 +43,7 @@ defmodule WorkbenchTuiFramework.MixProject do
 
   defp deps do
     [
+      DependencyResolver.switchyard_node_ir(),
       DependencyResolver.ex_ratatui(),
       DependencyResolver.nimble_options(),
       {:telemetry, "~> 1.2"},

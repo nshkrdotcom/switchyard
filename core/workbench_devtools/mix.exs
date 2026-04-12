@@ -9,7 +9,7 @@ end
 defmodule WorkbenchDevtools.MixProject do
   use Mix.Project
 
-  alias Switchyard.Build.{DependencyResolver, PackageDocs}
+  alias Switchyard.Build.PackageDocs
 
   def project do
     [
@@ -43,8 +43,6 @@ defmodule WorkbenchDevtools.MixProject do
 
   defp deps do
     [
-      DependencyResolver.switchyard_tui_framework(),
-      DependencyResolver.switchyard_widgets(),
       {:file_system, "~> 1.1"},
       {:credo, "~> 1.7.18", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4.7", only: [:dev, :test], runtime: false},

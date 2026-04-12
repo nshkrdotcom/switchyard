@@ -1,8 +1,14 @@
 defmodule Workbench.Component do
   @moduledoc "Component behaviour for framework-backed screens and widgets."
 
+  @type callback_opts ::
+          Workbench.Cmd.t()
+          | [Workbench.Cmd.t()]
+          | keyword()
+          | map()
+
   @callback init(props :: map(), ctx :: Workbench.Context.t()) ::
-              {:ok, state :: term(), cmds :: [Workbench.Cmd.t()]}
+              {:ok, state :: term(), opts :: callback_opts()}
 
   @callback update(
               msg :: term(),
@@ -10,7 +16,10 @@ defmodule Workbench.Component do
               props :: map(),
               ctx :: Workbench.Context.t()
             ) ::
-              {:ok, state :: term(), cmds :: [Workbench.Cmd.t()]} | :unhandled
+              {:ok, state :: term(), opts :: callback_opts()}
+              | {:stop, state :: term()}
+              | {:stop, state :: term(), opts :: callback_opts()}
+              | :unhandled
 
   @callback render(state :: term(), props :: map(), ctx :: Workbench.Context.t()) ::
               Workbench.Node.t()
@@ -26,7 +35,10 @@ defmodule Workbench.Component do
               props :: map(),
               ctx :: Workbench.Context.t()
             ) ::
-              {:ok, state :: term(), cmds :: [Workbench.Cmd.t()]} | :unhandled
+              {:ok, state :: term(), opts :: callback_opts()}
+              | {:stop, state :: term()}
+              | {:stop, state :: term(), opts :: callback_opts()}
+              | :unhandled
 
   @callback keymap(state :: term(), props :: map(), ctx :: Workbench.Context.t()) ::
               [Workbench.Keymap.binding()]

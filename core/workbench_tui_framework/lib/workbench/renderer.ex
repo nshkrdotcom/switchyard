@@ -11,8 +11,20 @@ defmodule Workbench.Renderer.ExRatatui do
   @behaviour Workbench.Renderer
 
   alias ExRatatui.Style
-  alias ExRatatui.Widgets.{Block, Gauge, List, Paragraph, Popup, Table, Tabs, Throbber}
-  alias Workbench.RenderTree
+
+  alias ExRatatui.Widgets.{
+    Block,
+    Gauge,
+    List,
+    Paragraph,
+    Popup,
+    Table,
+    Tabs,
+    Throbber,
+    WidgetList
+  }
+
+  alias Workbench.{Node, RenderTree}
 
   @impl true
   def render(%RenderTree{} = tree, _opts \\ []) do
@@ -35,6 +47,7 @@ defmodule Workbench.Renderer.ExRatatui do
   defp widget_for(Workbench.Widgets.StatusBar, props), do: status_widget(props)
   defp widget_for(Workbench.Widgets.Help, props), do: pane_widget(props)
   defp widget_for(Workbench.Widgets.List, props), do: list_widget(props)
+  defp widget_for(Workbench.Widgets.WidgetList, props), do: widget_list_widget(props)
   defp widget_for(Workbench.Widgets.Table, props), do: table_widget(props)
   defp widget_for(Workbench.Widgets.Spinner, props), do: spinner_widget(props)
   defp widget_for(Workbench.Widgets.ProgressBar, props), do: progress_widget(props)
@@ -94,6 +107,30 @@ defmodule Workbench.Renderer.ExRatatui do
     }
   end
 
+  defp widget_list_widget(props) do
+    %WidgetList{
+      items:
+        props
+        |> Map.get(:items, [])
+        |> Elixir.List.wrap()
+        |> Enum.map(&widget_list_item/1),
+      selected: Map.get(props, :selected),
+      scroll_offset: Map.get(props, :scroll_offset, 0),
+      highlight_style: %Style{
+        fg: Map.get(props, :highlight_fg, :yellow),
+        modifiers: Map.get(props, :highlight_modifiers, [:bold])
+      },
+      style: Map.get(props, :style, %Style{fg: :white}),
+      block: %Block{
+        title: Map.get(props, :title, ""),
+        borders: [:all],
+        border_type: :rounded,
+        border_style: %Style{fg: Map.get(props, :border_fg, :yellow)},
+        padding: {1, 1, 0, 0}
+      }
+    }
+  end
+
   defp table_widget(props) do
     %Table{
       rows:
@@ -111,6 +148,22 @@ defmodule Workbench.Renderer.ExRatatui do
         border_style: %Style{fg: Map.get(props, :border_fg, :yellow)}
       }
     }
+  end
+
+  defp widget_list_item({%Node{} = node, height}) when is_integer(height) and height >= 0 do
+    {item_widget(node), height}
+  end
+
+  defp widget_list_item({widget, height}) when is_integer(height) and height >= 0 do
+    {widget, height}
+  end
+
+  defp item_widget(%Node{kind: :text, props: props}) do
+    %Paragraph{text: Map.get(props, :text, ""), wrap: Map.get(props, :wrap, true)}
+  end
+
+  defp item_widget(%Node{module: module, props: props}) do
+    widget_for(module, props)
   end
 
   defp spinner_widget(props) do

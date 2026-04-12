@@ -79,7 +79,7 @@ defmodule Switchyard.TUICLITest do
   end
 
   test "app init can open a custom app component directly" do
-    assert {:ok, %Workbench.Runtime.State{} = state, commands: commands} =
+    assert {:ok, %Workbench.Runtime.State{} = state, runtime_opts} =
              App.init(
                site_modules: [ExampleSite],
                open_app: "example.workspace"
@@ -90,11 +90,14 @@ defmodule Switchyard.TUICLITest do
     assert root_state.shell.route == :app
     assert root_state.shell.selected_site_id == "example"
     assert root_state.shell.selected_app_id == "example.workspace"
-    assert [%Command{kind: :async}] = commands
+    assert [%Command{kind: :async}] = runtime_opts[:commands]
+    assert runtime_opts[:render?] == true
+    assert runtime_opts[:trace?] == nil
   end
 
   test "app update stops cleanly on quit messages" do
-    assert {:ok, %Workbench.Runtime.State{} = state, commands: []} = App.init([])
+    assert {:ok, %Workbench.Runtime.State{} = state, runtime_opts} = App.init([])
+    assert runtime_opts[:commands] == []
     assert {:stop, ^state} = App.update({:info, :quit}, state)
   end
 end

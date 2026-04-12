@@ -58,7 +58,7 @@ end
 
 defmodule Workbench.Devtools.RenderStats do
   @moduledoc false
-  def from_tree(%Workbench.RenderTree{flat: flat}), do: %{entry_count: length(flat)}
+  def from_tree(%{flat: flat}) when is_list(flat), do: %{entry_count: length(flat)}
   def from_tree(_other), do: %{entry_count: 0}
 end
 

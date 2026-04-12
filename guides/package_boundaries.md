@@ -76,6 +76,14 @@ Local JSON snapshot persistence.
 Pure shell state and reducers for routing, focus, drawers, and notifications.
 This package must stay presentation-agnostic.
 
+### `core/workbench_node_ir`
+
+The backend-neutral Workbench node vocabulary. This package owns:
+
+- declarative node and layout structs
+- the stable IR that reusable widget constructors target
+- renderer-agnostic layout constraints and node metadata
+
 ### `core/workbench_tui_framework`
 
 The greenfield BEAM-native TUI runtime. This package owns:
@@ -86,18 +94,23 @@ The greenfield BEAM-native TUI runtime. This package owns:
 - effect and subscription handling
 - the runtime and `ex_ratatui` renderer boundary
 
+It depends on `core/workbench_node_ir` for the node vocabulary instead of
+owning that IR directly.
+
 This package must stay product-agnostic.
 
 ### `core/workbench_widgets`
 
 Backend-neutral widget constructors built on the Workbench node IR. This
 package provides the reusable widget surface used by Switchyard and external
-integrations.
+integrations. It must not depend on the `ex_ratatui`-bearing framework package.
 
 ### `core/workbench_devtools`
 
 Optional inspection and development tooling for the Workbench runtime, including
 overlay, tree, focus, region, and hot-reload oriented surfaces.
+This package should inspect runtime data as data, not by taking a compile-time
+dependency on the renderer-bearing framework package unless it truly needs it.
 
 ## Site Packages
 

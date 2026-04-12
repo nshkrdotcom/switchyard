@@ -77,6 +77,7 @@ Reusable platform internals:
 - `workbench_job_runtime`
 - `workbench_store_local`
 - `workbench_shell_core`
+- `workbench_node_ir`
 - `workbench_tui_framework`
 - `workbench_widgets`
 - `workbench_devtools`
