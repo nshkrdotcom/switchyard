@@ -64,7 +64,7 @@ defmodule Switchyard.Build.DependencyResolver do
     resolve_external(
       :weld,
       local_root_path("WELD_PATH", nil),
-      "~> 0.4.1",
+      "~> 0.5.0",
       opts
     )
   end

@@ -53,7 +53,6 @@ defmodule Switchyard.Workspace.MixProject do
     [
       DependencyResolver.blitz(runtime: false),
       DependencyResolver.weld(runtime: false),
-      {:libgraph, "== 0.16.1-mg.2", hex: :multigraph, app: false, override: true, runtime: false},
       {:credo, "~> 1.7.11", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.40.1", only: :dev, runtime: false}
