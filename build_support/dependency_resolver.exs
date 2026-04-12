@@ -101,12 +101,27 @@ defmodule Switchyard.Build.DependencyResolver do
     end
   end
 
-  defp resolve_external(app, path, requirement, opts) do
+  defp resolve_external(app, path, requirement_or_opts, opts) do
     case existing_path(path) do
-      nil -> {app, requirement, opts}
-      resolved_path -> {app, Keyword.merge([path: resolved_path], opts)}
+      nil ->
+        build_external_dependency(app, requirement_or_opts, opts)
+
+      resolved_path ->
+        {app, Keyword.merge([path: resolved_path], opts)}
     end
   end
+
+  defp build_external_dependency(app, requirement_or_opts, opts)
+       when is_list(requirement_or_opts) do
+    if Keyword.keyword?(requirement_or_opts) do
+      {app, Keyword.merge(requirement_or_opts, opts)}
+    else
+      {app, requirement_or_opts, opts}
+    end
+  end
+
+  defp build_external_dependency(app, requirement_or_opts, opts),
+    do: {app, requirement_or_opts, opts}
 
   defp internal_workspace_path(subdir) do
     Path.join(@repo_root, subdir)
