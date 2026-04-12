@@ -8,8 +8,9 @@
 # Switchyard
 
 Switchyard is a terminal-native operator workbench for multi-site terminal
-applications. It is designed as a non-umbrella Elixir monorepo with a local
-control daemon, a generic terminal shell, and pluggable site packages.
+applications. It is built as a non-umbrella Elixir monorepo with a local
+control daemon, a pure shell core, a reusable BEAM-native TUI framework, and
+pluggable site packages.
 
 The project goal is straightforward:
 
@@ -30,9 +31,10 @@ The current foundation establishes:
 - branded documentation and implementation tracking
 - typed contracts for sites, apps, resources, actions, jobs, and logs
 - a local daemon seam for process, job, log, and snapshot ownership
-- initial CLI, TUI, and site packages proving the non-umbrella split
-- a generic mounted-app seam so external repos can host domain UIs without
-  changing Switchyard core
+- a reusable Workbench runtime, widget, and devtools layer under `core/*`
+- a thin Switchyard product TUI over that framework
+- a framework-native component seam so external repos can contribute real TUI
+  components without changing Switchyard core
 
 ## Start Here
 
@@ -75,6 +77,9 @@ Reusable platform internals:
 - `workbench_job_runtime`
 - `workbench_store_local`
 - `workbench_shell_core`
+- `workbench_tui_framework`
+- `workbench_widgets`
+- `workbench_devtools`
 
 ### `sites/*`
 
@@ -94,6 +99,7 @@ Runnable entrypoints:
 
 - the daemon owns long-lived local operational state
 - the shell owns navigation and presentation
+- the Workbench runtime owns terminal rendering, actions, focus, and effects
 - site packages own domain mapping and actions
 - meaningful operator behavior must exist headlessly beneath the TUI
 - external product integrations must remain outside Switchyard core

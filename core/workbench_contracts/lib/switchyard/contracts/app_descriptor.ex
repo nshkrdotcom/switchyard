@@ -9,7 +9,8 @@ defmodule Switchyard.Contracts.AppDescriptor do
             title: nil,
             provider: nil,
             resource_kinds: [],
-            route_kind: :list
+            route_kind: :list,
+            tui_component: nil
 
   @type t :: %__MODULE__{
           id: String.t(),
@@ -17,7 +18,8 @@ defmodule Switchyard.Contracts.AppDescriptor do
           title: String.t(),
           provider: module(),
           resource_kinds: [atom()],
-          route_kind: atom()
+          route_kind: atom(),
+          tui_component: module() | nil
         }
 
   @spec new!(map()) :: t()

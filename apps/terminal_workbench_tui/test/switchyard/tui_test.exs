@@ -3,8 +3,7 @@ defmodule Switchyard.TUITest do
 
   alias Switchyard.Contracts.{AppDescriptor, Resource, ResourceDetail, SiteDescriptor}
   alias Switchyard.TUI
-  alias Switchyard.TUI.HomeScreen
-  alias Switchyard.TUI.Model
+  alias Switchyard.TUI.State
 
   defmodule ExampleSite do
     @behaviour Switchyard.Contracts.SiteProvider
@@ -70,28 +69,6 @@ defmodule Switchyard.TUITest do
     end
   end
 
-  test "builds a home screen view model" do
-    model =
-      HomeScreen.view_model(
-        %{processes: [%{id: "proc-1"}], jobs: [%{id: "job-1"}, %{id: "job-2"}]},
-        [%{title: "Local"}, %{title: "Example"}]
-      )
-
-    assert model.title == "Switchyard"
-    assert model.sites == ["Local", "Example"]
-    assert model.process_count == 1
-    assert model.job_count == 2
-  end
-
-  test "builds a draw spec from the home screen model" do
-    spec =
-      %{title: "Switchyard", tagline: "ops", sites: ["Local"], process_count: 1, job_count: 0}
-      |> HomeScreen.draw_spec()
-
-    assert spec.screen == :home
-    assert Enum.any?(spec.widgets, &(&1.type == :list and &1.title == "Sites"))
-  end
-
   test "exposes the initial shell state" do
     assert %{route: :home} = TUI.initial_shell_state()
   end
@@ -100,20 +77,20 @@ defmodule Switchyard.TUITest do
     apps = ExampleSite.apps()
 
     state =
-      Model.new(
+      State.new(
         sites: [%{id: "local", title: "Local"}, %{id: "example", title: "Example"}],
         apps: apps,
         snapshot: %{processes: [], jobs: []},
         home_cursor: 1,
         shell: %{
-          Model.new().shell
+          State.new().shell
           | selected_site_id: "example",
             selected_app_id: "example.notes"
         }
       )
 
-    assert Model.selected_home_site(state).id == "example"
-    assert Model.selected_site_app(state).id == "example.notes"
-    assert [%{id: "note-1"}] = Model.resources_for_selected_app(state)
+    assert State.selected_home_site(state).id == "example"
+    assert State.selected_site_app(state).id == "example.notes"
+    assert [%{id: "note-1"}] = State.resources_for_selected_app(state)
   end
 end

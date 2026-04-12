@@ -76,6 +76,29 @@ Local JSON snapshot persistence.
 Pure shell state and reducers for routing, focus, drawers, and notifications.
 This package must stay presentation-agnostic.
 
+### `core/workbench_tui_framework`
+
+The greenfield BEAM-native TUI runtime. This package owns:
+
+- the component behaviour
+- render tree and runtime index structures
+- keymap, action, focus, mouse, and transcript primitives
+- effect and subscription handling
+- the runtime and `ex_ratatui` renderer boundary
+
+This package must stay product-agnostic.
+
+### `core/workbench_widgets`
+
+Backend-neutral widget constructors built on the Workbench node IR. This
+package provides the reusable widget surface used by Switchyard and external
+integrations.
+
+### `core/workbench_devtools`
+
+Optional inspection and development tooling for the Workbench runtime, including
+overlay, tree, focus, region, and hot-reload oriented surfaces.
+
 ## Site Packages
 
 ### `sites/site_local`
@@ -92,8 +115,14 @@ that meaningful behavior exists beneath the TUI.
 
 ### `apps/terminal_workbench_tui`
 
-The terminal host application. It owns screen composition and rendering over
-`ex_ratatui`, not business truth.
+The Switchyard product TUI. It should stay thin:
+
+- product-specific root components
+- package-local startup and CLI wiring
+- composition of site catalog data into Switchyard views
+
+Generic rendering, effects, focus, and widget behavior belong in the Workbench
+packages, not here.
 
 ### `apps/terminal_workbenchd`
 
@@ -107,3 +136,7 @@ The runnable daemon application that wires together the configured site modules.
 4. If behavior cannot be exercised headlessly, the seam is still wrong.
 5. Product-specific integrations belong outside Switchyard core unless they are
    truly generic platform capabilities.
+6. Framework runtime and widgets belong in reusable core packages, not in the
+   product TUI app.
+7. External integrations should plug in through `AppDescriptor.tui_component`
+   or other generic framework seams, not through compatibility layers.

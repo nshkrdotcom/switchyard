@@ -1,10 +1,10 @@
-defmodule Switchyard.TUI.ControllerTest do
+defmodule Switchyard.TUI.RootTest do
   use ExUnit.Case, async: true
 
-  alias ExRatatui.Command
-  alias ExRatatui.Event
   alias Switchyard.Contracts.{AppDescriptor, Resource, ResourceDetail, SiteDescriptor}
-  alias Switchyard.TUI.{Controller, Model, Mount}
+  alias Switchyard.TUI.{Root, State}
+  alias Workbench.{Cmd, Context}
+  alias Workbench.Widgets.Pane
 
   defmodule ExampleSite do
     @behaviour Switchyard.Contracts.SiteProvider
@@ -70,65 +70,51 @@ defmodule Switchyard.TUI.ControllerTest do
     end
   end
 
-  defmodule ExampleMount do
-    @behaviour Mount
+  defmodule ExampleComponent do
+    @behaviour Workbench.Component
 
     @impl true
-    def id, do: "example.mounted"
-
-    @impl true
-    def init(_opts), do: %{opened?: false, messages: []}
-
-    @impl true
-    def open(model, state) do
-      next_state = %{state | opened?: true}
-
+    def init(_props, _ctx) do
       command =
-        Command.async(
+        Workbench.Cmd.async(
           fn -> :mounted_loaded end,
           fn :mounted_loaded -> {:mount_ready, "mounted"} end
         )
 
-      {Model.set_status(model, "Opening mounted workspace...", :info), next_state, [command]}
+      {:ok, %{opened?: true, messages: []}, [command]}
     end
 
     @impl true
-    def event_to_msg(%Event.Key{code: "x", modifiers: []}, _model, _state),
-      do: {:msg, :mount_ping}
-
-    def event_to_msg(%Event.Key{}, _model, _state), do: :ignore
-
-    @impl true
-    def update(:mount_ping, model, state) do
-      {Model.set_status(model, "Mounted ping received.", :info),
-       %{state | messages: [:mount_ping | state.messages]}, []}
+    def update({:key, %ExRatatui.Event.Key{code: "x", modifiers: []}}, state, _props, _ctx) do
+      {:ok, %{state | messages: [:mount_ping | state.messages]}, []}
     end
 
-    def update({:mount_ready, "mounted"}, model, state) do
-      {Model.set_status(model, "Mounted workspace ready.", :info), state, []}
-    end
-
-    def update(_msg, _model, _state), do: :unhandled
+    def update(_msg, _state, _props, _ctx), do: :unhandled
 
     @impl true
-    def render(_model, _frame, _state), do: []
+    def render(_state, _props, _ctx),
+      do: Pane.new(id: :mounted, title: "Mounted", lines: ["ready"])
+
+    @impl true
+    def handle_info({:mount_ready, "mounted"}, state, _props, _ctx), do: {:ok, state, []}
+
+    def handle_info(_msg, _state, _props, _ctx), do: :unhandled
   end
 
   defp base_state do
-    Model.new(
+    State.new(
       sites: [
         %{id: "local", title: "Local"},
         %{id: "example", title: "Example"}
       ],
       apps: ExampleSite.apps(),
-      mount_modules: %{ExampleMount.id() => ExampleMount},
-      mount_states: %{ExampleMount.id() => ExampleMount.init([])},
       home_cursor: 1
     )
   end
 
   test "enter on the home screen opens the selected site's app list" do
-    {next_state, commands} = Controller.update(:enter, base_state())
+    assert {:ok, next_state, commands} =
+             Root.update(:enter, base_state(), %{}, %Context{app_env: %{}})
 
     assert commands == []
     assert next_state.shell.route == :site_apps
@@ -137,33 +123,62 @@ defmodule Switchyard.TUI.ControllerTest do
   end
 
   test "quit requests a reducer stop instead of an unsupported command" do
-    assert {:stop, %Model{}} = Controller.update(:quit, base_state())
+    assert {:stop, %State{}} = Root.update(:quit, base_state(), %{}, %Context{app_env: %{}})
   end
 
-  test "enter on a mounted app opens the generic app route and runs mount open" do
+  test "enter on a custom component app opens the app route and initializes component state" do
     state =
       base_state()
+      |> Map.put(:apps, [
+        AppDescriptor.new!(%{
+          id: "example.mounted",
+          site_id: "example",
+          title: "Mounted Workspace",
+          provider: ExampleSite,
+          resource_kinds: [:workspace],
+          route_kind: :workspace,
+          tui_component: ExampleComponent
+        })
+      ])
       |> Map.put(:shell, %{base_state().shell | route: :site_apps, selected_site_id: "example"})
 
-    {next_state, commands} = Controller.update(:enter, state)
+    assert {:ok, next_state, commands} =
+             Root.update(:enter, state, %{}, %Context{app_env: %{}})
 
     assert next_state.shell.route == :app
     assert next_state.shell.selected_app_id == "example.mounted"
-    assert next_state.status_line == "Opening mounted workspace..."
-    assert next_state.mount_states["example.mounted"].opened?
-    assert [%Command{kind: :async}] = Command.normalize(commands)
+    assert next_state.status_line == "Opened example.mounted."
+    assert next_state.app_component_states["example.mounted"].opened?
+    assert [%Cmd{kind: :async}] = Cmd.normalize(commands)
   end
 
-  test "mounted app messages are delegated to the active mount module" do
+  test "custom app key events are delegated to the active component" do
     state =
       base_state()
+      |> Map.put(:apps, [
+        AppDescriptor.new!(%{
+          id: "example.mounted",
+          site_id: "example",
+          title: "Mounted Workspace",
+          provider: ExampleSite,
+          resource_kinds: [:workspace],
+          route_kind: :workspace,
+          tui_component: ExampleComponent
+        })
+      ])
       |> Map.put(:shell, %{base_state().shell | route: :app, selected_app_id: "example.mounted"})
+      |> State.put_app_component_state("example.mounted", %{opened?: true, messages: []})
 
-    {next_state, commands} = Controller.update(:mount_ping, state)
+    assert {:ok, next_state, commands} =
+             Root.update(
+               {:key, %ExRatatui.Event.Key{code: "x", modifiers: []}},
+               state,
+               %{},
+               %Context{app_env: %{}}
+             )
 
     assert commands == []
-    assert next_state.status_line == "Mounted ping received."
-    assert next_state.mount_states["example.mounted"].messages == [:mount_ping]
+    assert next_state.app_component_states["example.mounted"].messages == [:mount_ping]
   end
 
   test "generic apps use host resource navigation" do
@@ -172,18 +187,10 @@ defmodule Switchyard.TUI.ControllerTest do
       |> Map.put(:shell, %{base_state().shell | route: :app, selected_app_id: "example.resources"})
       |> Map.put(:resource_cursor, 0)
 
-    {next_state, commands} = Controller.update(:select_next, state)
+    assert {:ok, next_state, commands} =
+             Root.update(:select_next, state, %{}, %Context{app_env: %{}})
 
     assert commands == []
     assert next_state.resource_cursor == 0
-  end
-
-  test "event_to_msg delegates to the active mount before using the default keymap" do
-    state =
-      base_state()
-      |> Map.put(:shell, %{base_state().shell | route: :app, selected_app_id: "example.mounted"})
-
-    assert {:msg, :mount_ping} =
-             Controller.event_to_msg(%Event.Key{code: "x", modifiers: []}, state)
   end
 end

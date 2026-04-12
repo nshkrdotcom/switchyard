@@ -29,11 +29,13 @@ defmodule Switchyard.ContractsTest do
         site_id: site.id,
         title: "Processes",
         provider: __MODULE__,
-        resource_kinds: [:process]
+        resource_kinds: [:process],
+        tui_component: Workbench.Widgets.Pane
       })
 
     assert site.id == "local"
     assert app.resource_kinds == [:process]
+    assert app.tui_component == Workbench.Widgets.Pane
   end
 
   test "builds resource, detail, action, and action result contracts" do

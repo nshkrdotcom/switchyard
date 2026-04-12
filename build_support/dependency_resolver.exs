@@ -30,6 +30,15 @@ defmodule Switchyard.Build.DependencyResolver do
   def switchyard_shell(opts \\ []),
     do: resolve_internal(:switchyard_shell, "core/workbench_shell_core", opts)
 
+  def switchyard_tui_framework(opts \\ []),
+    do: resolve_internal(:workbench_tui_framework, "core/workbench_tui_framework", opts)
+
+  def switchyard_widgets(opts \\ []),
+    do: resolve_internal(:workbench_widgets, "core/workbench_widgets", opts)
+
+  def switchyard_devtools(opts \\ []),
+    do: resolve_internal(:workbench_devtools, "core/workbench_devtools", opts)
+
   def switchyard_site_local(opts \\ []),
     do: resolve_internal(:switchyard_site_local, "sites/site_local", opts)
 
@@ -55,7 +64,7 @@ defmodule Switchyard.Build.DependencyResolver do
     resolve_external(
       :weld,
       local_root_path("WELD_PATH", "../weld"),
-      "~> 0.4.0",
+      [github: "nshkrdotcom/weld", ref: "bd16ec229dde2ba59c368cce93aa34079afc5fcc"],
       opts
     )
   end
@@ -64,7 +73,10 @@ defmodule Switchyard.Build.DependencyResolver do
     resolve_external(
       :ex_ratatui,
       local_root_path("EX_RATATUI_PATH", "../ex_ratatui"),
-      [github: "nshkrdotcom/ex_ratatui", branch: "main"],
+      [
+        github: "nshkrdotcom/ex_ratatui",
+        ref: "d20dd06ded8be40fa8f6b351fbc98e8ac3e9a6e2"
+      ],
       opts
     )
   end

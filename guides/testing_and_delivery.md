@@ -17,7 +17,9 @@ The monorepo foundation in this repository follows that rule:
 - process, log, job, store, and transport seams each have focused tests
 - the daemon is proven through local integration tests
 - site adapters are proven by resource/detail mapping tests
-- CLI and TUI hosts are covered at the first meaningful seam
+- the Workbench runtime is proven through layout, keymap, and command tests
+- the product TUI and external integration seams are covered at the first
+  meaningful component boundary
 
 ## Workspace Quality Gates
 
@@ -30,9 +32,27 @@ The root workspace is authoritative for delivery quality:
 - `mix mr.credo --strict`
 - `mix mr.dialyzer`
 - `mix mr.docs --warnings-as-errors`
+- `mix weld.verify`
 - `mix ci`
 
-`mix ci` is the final green gate for this repository.
+`mix ci` is the final green gate for this repository. `mix weld.verify` is the
+projection gate for the internal `switchyard_foundation` monolith.
+
+## Internal Monolith Packaging
+
+The welded monolith intentionally opts out of `hex.build` through
+`verify: [hex_build: false]`.
+
+That is not a workaround. It is the explicit packaging contract for the current
+architecture:
+
+- the Workbench runtime depends on the reducer-runtime API in the forked
+  `ex_ratatui` repository
+- that dependency is pinned by git commit
+- Hex packages cannot include git-backed dependencies
+- the monolith is therefore verified as an internal artifact through
+  dependency resolution, compile, tests, and docs, while Hex-only packaging is
+  skipped explicitly in Weld
 
 ## Recontextualization
 

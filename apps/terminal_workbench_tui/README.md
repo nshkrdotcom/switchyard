@@ -1,15 +1,29 @@
 # Switchyard TUI
 
-`switchyard_tui` is the terminal host application for Switchyard. It turns the
-generic shell, daemon snapshot, and registered site apps into an operator-facing
-terminal experience.
+`switchyard_tui` is the Switchyard product TUI application. It is intentionally
+thin and runs on top of the reusable Workbench runtime.
 
 ## Responsibilities
 
-- start the terminal-facing application
-- own generic shell layout and focus state
-- render terminal view data over `ex_ratatui`
-- host mounted site-specific workspaces without taking on their domain truth
+- start the terminal-facing product application
+- boot the Switchyard root component
+- compose site catalog data into Switchyard-specific views
+- keep product workflow state out of the generic framework packages
+
+It must not re-own generic rendering, effect, focus, mouse, or widget
+infrastructure.
+
+## Current Shape
+
+The primary pieces are:
+
+- a thin `ExRatatui.App` bridge
+- a product root component
+- a product-local UI state module
+- CLI and escript startup wiring
+
+Custom integrations plug in through `Switchyard.Contracts.AppDescriptor` using
+`tui_component`, not through a compatibility mount seam.
 
 ## Quick Start
 
@@ -27,7 +41,7 @@ The current startup path opens the generic home screen. From there you can:
 - inspect registered sites
 - open a site app
 - use list/detail views for generic resource-backed apps
-- host custom mounted apps through the `Switchyard.TUI.Mount` seam
+- hand off to framework-native app components for richer product-specific flows
 
 ## Developer Workflow
 
@@ -53,7 +67,7 @@ mix ci
 
 - [test/switchyard/tui_cli_test.exs](test/switchyard/tui_cli_test.exs) exercises the escript CLI surface.
 - [test/switchyard/tui_test.exs](test/switchyard/tui_test.exs) covers the public `Switchyard.TUI` startup seam.
-- [test/switchyard/tui/controller_test.exs](test/switchyard/tui/controller_test.exs) is the best entry point for understanding key handling and mounted app flow.
+- [test/switchyard/tui/controller_test.exs](test/switchyard/tui/controller_test.exs) is the best entry point for understanding root-component routing and custom app component flow.
 
 ## Related Reading
 

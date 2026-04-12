@@ -6,8 +6,7 @@ defmodule Switchyard.TUICLITest do
   alias Switchyard.TUI.App
   alias Switchyard.TUI.CLI
   alias Switchyard.TUI.EscriptBootstrap
-  alias Switchyard.TUI.Model
-  alias Switchyard.TUI.Mount
+  alias Workbench.Widgets.Pane
 
   defmodule ExampleSite do
     @behaviour Switchyard.Contracts.SiteProvider
@@ -31,7 +30,8 @@ defmodule Switchyard.TUICLITest do
           title: "Workspace",
           provider: __MODULE__,
           resource_kinds: [:workspace],
-          route_kind: :workspace
+          route_kind: :workspace,
+          tui_component: Switchyard.TUICLITest.ExampleComponent
         })
       ]
     end
@@ -46,35 +46,26 @@ defmodule Switchyard.TUICLITest do
     def detail(_resource, _snapshot), do: raise("not used")
   end
 
-  defmodule ExampleMount do
-    @behaviour Mount
+  defmodule ExampleComponent do
+    @behaviour Workbench.Component
 
     @impl true
-    def id, do: "example.workspace"
-
-    @impl true
-    def init(_opts), do: %{opened?: false}
-
-    @impl true
-    def open(model, state) do
+    def init(_props, _ctx) do
       command =
-        Command.async(
+        Workbench.Cmd.async(
           fn -> :opened end,
           fn :opened -> {:mounted_ready, true} end
         )
 
-      {Model.set_status(model, "Opening workspace...", :info), %{state | opened?: true},
-       [command]}
+      {:ok, %{opened?: true}, [command]}
     end
 
     @impl true
-    def event_to_msg(_event, _model, _state), do: :ignore
+    def update(_msg, _state, _props, _ctx), do: :unhandled
 
     @impl true
-    def update(_msg, _model, _state), do: :unhandled
-
-    @impl true
-    def render(_model, _frame, _state), do: []
+    def render(_state, _props, _ctx),
+      do: Pane.new(id: :workspace, title: "Workspace", lines: ["ready"])
   end
 
   test "parse_run_opts resolves debug logging and ignores unrelated args" do
@@ -87,23 +78,23 @@ defmodule Switchyard.TUICLITest do
     assert :ok = EscriptBootstrap.start_tui_dependencies()
   end
 
-  test "app init can open an external mounted app directly" do
-    assert {:ok, %Model{} = state, commands: commands} =
+  test "app init can open a custom app component directly" do
+    assert {:ok, %Workbench.Runtime.State{} = state, commands: commands} =
              App.init(
                site_modules: [ExampleSite],
-               mount_modules: [ExampleMount],
                open_app: "example.workspace"
              )
 
-    assert state.shell.route == :app
-    assert state.shell.selected_site_id == "example"
-    assert state.shell.selected_app_id == "example.workspace"
-    assert state.mount_states["example.workspace"].opened?
-    assert [%Command{kind: :async}] = Command.normalize(commands)
+    root_state = state.root_state
+
+    assert root_state.shell.route == :app
+    assert root_state.shell.selected_site_id == "example"
+    assert root_state.shell.selected_app_id == "example.workspace"
+    assert [%Command{kind: :async}] = commands
   end
 
   test "app update stops cleanly on quit messages" do
-    assert {:ok, %Model{} = state} = App.init([])
+    assert {:ok, %Workbench.Runtime.State{} = state, commands: []} = App.init([])
     assert {:stop, ^state} = App.update({:info, :quit}, state)
   end
 end

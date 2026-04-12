@@ -15,7 +15,13 @@ defmodule Switchyard.Build.WeldContract do
 
   @dependencies [
     blitz: [requirement: "~> 0.2.0"],
-    weld: [requirement: "~> 0.4.0"]
+    weld: [requirement: "~> 0.4.0"],
+    ex_ratatui: [
+      opts: [
+        github: "nshkrdotcom/ex_ratatui",
+        ref: "d20dd06ded8be40fa8f6b351fbc98e8ac3e9a6e2"
+      ]
+    ]
   ]
 
   def manifest do
@@ -49,6 +55,9 @@ defmodule Switchyard.Build.WeldContract do
         "core/workbench_job_runtime",
         "core/workbench_store_local",
         "core/workbench_shell_core",
+        "core/workbench_tui_framework",
+        "core/workbench_widgets",
+        "core/workbench_devtools",
         "sites/site_local"
       ],
       package: [
@@ -63,6 +72,9 @@ defmodule Switchyard.Build.WeldContract do
           "GitHub" => "https://github.com/nshkrdotcom/switchyard",
           "Guides" => "https://hexdocs.pm/switchyard_workspace/workspace_readme.html"
         }
+      ],
+      verify: [
+        hex_build: false
       ],
       output: [
         docs: @artifact_docs,
