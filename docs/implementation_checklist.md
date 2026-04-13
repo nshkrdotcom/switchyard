@@ -125,9 +125,9 @@ Current internal artifact operations therefore run through:
 2. `mix release.track`
 3. `mix release.archive`
 
-Use `WELD_PATH=../weld` for local Weld implementation/debugging, and
-`WELD_GIT_REF` plus optional `WELD_GIT_URL` when you need a pinned unreleased
-Weld commit without a local checkout.
+Keep the committed workspace dependency on the released Hex Weld line. If a
+coordinated prerelease Weld validation run is needed, do it through a normal
+prerelease version bump rather than through committed path or git overrides.
 
 ## Recontextualization Instructions
 

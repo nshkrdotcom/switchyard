@@ -20,11 +20,14 @@ defmodule Switchyard.ReleaseDocsTest do
       assert doc =~ "mix release.archive",
              "#{path} must describe bundle archival explicitly"
 
-      assert doc =~ "WELD_PATH=../weld",
-             "#{path} must describe local sibling-weld development explicitly"
+      assert doc =~ "projection/switchyard_foundation",
+             "#{path} must describe the projection branch explicitly"
 
-      assert doc =~ "WELD_GIT_REF",
-             "#{path} must describe pinned unreleased weld usage explicitly"
+      refute doc =~ "WELD_PATH",
+             "#{path} must not describe committed Weld path overrides anymore"
+
+      refute doc =~ "WELD_GIT_REF",
+             "#{path} must not describe committed Weld git-ref overrides anymore"
     end)
   end
 

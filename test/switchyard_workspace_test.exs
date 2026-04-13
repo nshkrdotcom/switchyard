@@ -26,4 +26,8 @@ defmodule Switchyard.WorkspaceTest do
     assert Keyword.fetch!(aliases, :"release.track") == ["weld.release.track"]
     assert Keyword.fetch!(aliases, :"release.archive") == ["weld.release.archive"]
   end
+
+  test "uses the released Weld 0.7.0 line directly" do
+    assert {:weld, "~> 0.7.0", runtime: false} in MixProject.project()[:deps]
+  end
 end

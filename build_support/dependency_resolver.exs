@@ -2,8 +2,6 @@ defmodule Switchyard.Build.DependencyResolver do
   @moduledoc false
 
   @repo_root Path.expand("..", __DIR__)
-  @weld_git_url "https://github.com/nshkrdotcom/weld.git"
-
   def switchyard_contracts(opts \\ []),
     do: resolve_internal(:switchyard_contracts, "core/workbench_contracts", opts)
 
@@ -64,23 +62,6 @@ defmodule Switchyard.Build.DependencyResolver do
     )
   end
 
-  def weld(opts \\ []) do
-    case local_root_path("WELD_PATH", nil) do
-      nil ->
-        resolve_git_or_hex(
-          :weld,
-          "~> 0.6.0",
-          "WELD_GIT_REF",
-          "WELD_GIT_URL",
-          @weld_git_url,
-          opts
-        )
-
-      path ->
-        {:weld, Keyword.merge([path: path], opts)}
-    end
-  end
-
   def ex_ratatui(opts \\ []), do: {:ex_ratatui, "~> 0.7.0", opts}
 
   def jason(opts \\ []) do
@@ -107,13 +88,6 @@ defmodule Switchyard.Build.DependencyResolver do
 
       resolved_path ->
         {app, Keyword.merge([path: resolved_path], opts)}
-    end
-  end
-
-  defp resolve_git_or_hex(app, requirement, ref_env_var, url_env_var, default_git_url, opts) do
-    case git_ref_override(ref_env_var, url_env_var, default_git_url) do
-      nil -> {app, requirement, opts}
-      git_opts -> {app, Keyword.merge(git_opts, opts)}
     end
   end
 
@@ -168,27 +142,4 @@ defmodule Switchyard.Build.DependencyResolver do
       nil
     end
   end
-
-  defp git_ref_override(ref_env_var, url_env_var, default_git_url) do
-    case disabled_env(System.get_env(ref_env_var)) do
-      nil ->
-        nil
-
-      ref ->
-        [git: git_url_override(url_env_var, default_git_url), ref: ref]
-    end
-  end
-
-  defp git_url_override(env_var, default_git_url) do
-    env_var
-    |> System.get_env()
-    |> disabled_env()
-    |> case do
-      nil -> default_git_url
-      value -> value
-    end
-  end
-
-  defp disabled_env(value) when value in [nil, "", "0", "false", "disabled"], do: nil
-  defp disabled_env(value), do: value
 end

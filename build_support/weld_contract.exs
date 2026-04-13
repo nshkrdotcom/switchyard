@@ -17,7 +17,7 @@ defmodule Switchyard.Build.WeldContract do
 
   @dependencies [
     blitz: [requirement: "~> 0.2.0"],
-    weld: [requirement: "~> 0.6.0"],
+    weld: [requirement: "~> 0.7.0"],
     ex_ratatui: [requirement: "~> 0.7.0"]
   ]
 
@@ -73,6 +73,10 @@ defmodule Switchyard.Build.WeldContract do
       output: [
         docs: @artifact_docs,
         assets: ["assets/switchyard.svg", "CHANGELOG.md", "LICENSE"]
+      ],
+      verify: [
+        hex_build: false,
+        hex_publish: false
       ]
     ]
   end
