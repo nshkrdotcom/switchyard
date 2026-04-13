@@ -71,13 +71,26 @@ defmodule Workbench.ComponentServer do
 
   use GenServer
 
-  defstruct module: nil, props: %{}, ctx: nil, state: nil
+  alias Workbench.Cmd
+
+  @type runtime_opts :: %{
+          commands: [Cmd.t()],
+          render?: boolean(),
+          trace?: term()
+        }
+
+  defstruct module: nil,
+            props: %{},
+            ctx: nil,
+            state: nil,
+            runtime_opts: %{commands: [], render?: true, trace?: nil}
 
   @type t :: %__MODULE__{
           module: module(),
           props: map(),
           ctx: Workbench.Context.t(),
-          state: term()
+          state: term(),
+          runtime_opts: runtime_opts()
         }
 
   @spec start_link(keyword()) :: GenServer.on_start()
@@ -85,9 +98,13 @@ defmodule Workbench.ComponentServer do
     GenServer.start_link(__MODULE__, opts, Keyword.take(opts, [:name]))
   end
 
-  @spec update(pid(), term(), Workbench.Context.t()) :: :ok
+  @spec update(pid(), term(), Workbench.Context.t()) ::
+          {:ok, t(), runtime_opts()}
+          | {:stop, t()}
+          | {:stop, t(), runtime_opts()}
+          | :unhandled
   def update(pid, msg, %Workbench.Context{} = ctx) do
-    GenServer.cast(pid, {:update, msg, ctx})
+    GenServer.call(pid, {:update, msg, ctx})
   end
 
   @spec snapshot(pid()) :: t()
@@ -98,17 +115,47 @@ defmodule Workbench.ComponentServer do
     module = Keyword.fetch!(opts, :module)
     props = Keyword.get(opts, :props, %{})
     ctx = Keyword.fetch!(opts, :ctx)
-    {:ok, state, _cmds} = module.init(props, ctx)
-    {:ok, %__MODULE__{module: module, props: props, ctx: ctx, state: state}}
+    {:ok, state, runtime_opts} = module.init(props, ctx)
+
+    {:ok,
+     %__MODULE__{
+       module: module,
+       props: props,
+       ctx: ctx,
+       state: state,
+       runtime_opts: normalize_runtime_opts(runtime_opts)
+     }}
   end
 
   @impl true
-  def handle_cast({:update, msg, ctx}, %__MODULE__{} = server) do
+  def handle_call({:update, msg, ctx}, _from, %__MODULE__{} = server) do
     case server.module.update(msg, server.state, server.props, ctx) do
-      {:ok, state, _cmds} -> {:noreply, %{server | state: state, ctx: ctx}}
-      {:stop, state} -> {:stop, :normal, %{server | state: state, ctx: ctx}}
-      {:stop, state, _cmds} -> {:stop, :normal, %{server | state: state, ctx: ctx}}
-      :unhandled -> {:noreply, %{server | ctx: ctx}}
+      {:ok, state, runtime_opts} ->
+        next_server = %{
+          server
+          | state: state,
+            ctx: ctx,
+            runtime_opts: normalize_runtime_opts(runtime_opts)
+        }
+
+        {:reply, {:ok, next_server, next_server.runtime_opts}, next_server}
+
+      {:stop, state} ->
+        next_server = %{server | state: state, ctx: ctx, runtime_opts: default_runtime_opts()}
+        {:stop, :normal, {:stop, next_server}, next_server}
+
+      {:stop, state, runtime_opts} ->
+        next_server = %{
+          server
+          | state: state,
+            ctx: ctx,
+            runtime_opts: normalize_runtime_opts(runtime_opts)
+        }
+
+        {:stop, :normal, {:stop, next_server, next_server.runtime_opts}, next_server}
+
+      :unhandled ->
+        {:reply, :unhandled, %{server | ctx: ctx}}
     end
   end
 
@@ -119,14 +166,56 @@ defmodule Workbench.ComponentServer do
   def handle_info(msg, %__MODULE__{} = server) do
     if function_exported?(server.module, :handle_info, 4) do
       case server.module.handle_info(msg, server.state, server.props, server.ctx) do
-        {:ok, state, _cmds} -> {:noreply, %{server | state: state}}
-        {:stop, state} -> {:stop, :normal, %{server | state: state}}
-        {:stop, state, _cmds} -> {:stop, :normal, %{server | state: state}}
-        :unhandled -> {:noreply, server}
+        {:ok, state, runtime_opts} ->
+          {:noreply, %{server | state: state, runtime_opts: normalize_runtime_opts(runtime_opts)}}
+
+        {:stop, state} ->
+          {:stop, :normal, %{server | state: state, runtime_opts: default_runtime_opts()}}
+
+        {:stop, state, runtime_opts} ->
+          {:stop, :normal,
+           %{server | state: state, runtime_opts: normalize_runtime_opts(runtime_opts)}}
+
+        :unhandled ->
+          {:noreply, server}
       end
     else
       {:noreply, server}
     end
+  end
+
+  defp default_runtime_opts do
+    %{commands: [], render?: true, trace?: nil}
+  end
+
+  defp normalize_runtime_opts(nil), do: default_runtime_opts()
+
+  defp normalize_runtime_opts(%Cmd{} = command) do
+    %{default_runtime_opts() | commands: Cmd.normalize(command)}
+  end
+
+  defp normalize_runtime_opts(runtime_opts) when is_list(runtime_opts) do
+    if Keyword.keyword?(runtime_opts) and
+         Enum.any?(runtime_opts, fn {key, _value} -> key in [:commands, :render?, :trace?] end) do
+      %{
+        commands: runtime_opts |> Keyword.get(:commands, []) |> Cmd.normalize(),
+        render?: Keyword.get(runtime_opts, :render?, true),
+        trace?: Keyword.get(runtime_opts, :trace?)
+      }
+    else
+      %{default_runtime_opts() | commands: Cmd.normalize(runtime_opts)}
+    end
+  end
+
+  defp normalize_runtime_opts(%{} = runtime_opts) do
+    %{
+      commands:
+        runtime_opts
+        |> Map.get(:commands, Map.get(runtime_opts, "commands", []))
+        |> Cmd.normalize(),
+      render?: Map.get(runtime_opts, :render?, Map.get(runtime_opts, "render?", true)),
+      trace?: Map.get(runtime_opts, :trace?, Map.get(runtime_opts, "trace?"))
+    }
   end
 end
 

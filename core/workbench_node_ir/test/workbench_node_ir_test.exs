@@ -21,4 +21,17 @@ defmodule WorkbenchNodeIrTest do
     assert node.props == %{meta: [focusable: true], title: "Pane"}
     assert node.meta == %{focusable: true}
   end
+
+  test "component nodes preserve mount metadata separately from props" do
+    node =
+      Node.component(:mounted, Workbench.TestComponent, %{title: "Mounted"},
+        mode: :supervised,
+        meta: [focusable: true, restart: :transient]
+      )
+
+    assert node.kind == :component
+    assert node.module == Workbench.TestComponent
+    assert node.props == %{title: "Mounted"}
+    assert node.meta == %{component_mode: :supervised, focusable: true, restart: :transient}
+  end
 end

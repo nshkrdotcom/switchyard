@@ -33,6 +33,8 @@ defmodule Workbench.Renderer.ExRatatui do
     |> Enum.flat_map(&to_widget_tuple/1)
   end
 
+  defp to_widget_tuple(%{node: %{kind: :component}}), do: []
+
   defp to_widget_tuple(%{node: %{kind: :text, props: props}, area: area}) do
     [{%Paragraph{text: Map.get(props, :text, ""), wrap: Map.get(props, :wrap, true)}, area}]
   end

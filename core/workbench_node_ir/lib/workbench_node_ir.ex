@@ -37,7 +37,7 @@ defmodule Workbench.Node do
             children: [],
             meta: %{}
 
-  @type kind :: :layout | :text | :widget | :chrome | :portal | :leaf
+  @type kind :: :layout | :text | :widget | :component | :chrome | :portal | :leaf
   @type t :: %__MODULE__{
           id: term(),
           kind: kind(),
@@ -99,6 +99,28 @@ defmodule Workbench.Node do
     }
   end
 
+  @spec component(term(), module(), map() | keyword(), keyword()) :: t()
+  def component(id, component_module, props \\ %{}, opts \\ []) when is_atom(component_module) do
+    normalized_props = normalize_props(props)
+
+    component_meta =
+      opts
+      |> Keyword.get(:meta, [])
+      |> normalize_props()
+      |> maybe_put(:component_mode, Keyword.get(opts, :mode))
+
+    %__MODULE__{
+      id: id,
+      kind: :component,
+      module: component_module,
+      props: normalized_props,
+      meta: component_meta
+    }
+  end
+
   defp normalize_props(props) when is_map(props), do: props
   defp normalize_props(props) when is_list(props), do: Map.new(props)
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 end

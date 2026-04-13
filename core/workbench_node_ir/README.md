@@ -7,6 +7,7 @@ by the Workbench framework and widget packages.
 
 - define the declarative Workbench node tree
 - carry layout intent without depending on a specific renderer package
+- carry component mount descriptors without depending on runtime ownership
 - provide the stable IR that reusable widgets build on
 
 This package is intentionally narrow. Runtime, effects, and renderer lowering

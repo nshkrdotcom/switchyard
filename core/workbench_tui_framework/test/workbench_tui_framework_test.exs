@@ -58,6 +58,28 @@ defmodule WorkbenchTuiFrameworkTest do
     def render(_state, _props, _ctx), do: Node.text(:supervised, "supervised")
   end
 
+  defmodule InfoRuntimeOptsComponent do
+    @behaviour Workbench.Component
+
+    alias Workbench.Node
+
+    @impl true
+    def init(_props, _ctx), do: {:ok, %{events: []}, []}
+
+    @impl true
+    def update(_msg, _state, _props, _ctx), do: :unhandled
+
+    @impl true
+    def handle_info(:tick, state, _props, _ctx) do
+      {:ok, %{state | events: [:tick | state.events]}, render?: false, trace?: true}
+    end
+
+    def handle_info(_msg, _state, _props, _ctx), do: :unhandled
+
+    @impl true
+    def render(_state, _props, _ctx), do: Node.text(:info, "info")
+  end
+
   test "matches key events against structured bindings" do
     bindings = [
       Keymap.binding(
@@ -130,6 +152,14 @@ defmodule WorkbenchTuiFrameworkTest do
     assert [{%Paragraph{}, 4}, {%Paragraph{text: "gamma"}, 1}] = widget.items
   end
 
+  test "does not render unresolved component mount nodes directly" do
+    node = Node.component(:mounted, RuntimeOptsComponent, %{})
+
+    tree = RenderTree.resolve(node, %Rect{x: 0, y: 0, width: 80, height: 20})
+
+    assert ExRatatuiRenderer.render(tree, []) == []
+  end
+
   test "supervised component server ignores missing handle_info callbacks" do
     ctx = %Context{}
     {:ok, pid} = Workbench.ComponentServer.start_link(module: RuntimeOptsComponent, ctx: ctx)
@@ -139,22 +169,60 @@ defmodule WorkbenchTuiFrameworkTest do
 
     assert Process.alive?(pid)
 
-    assert %Workbench.ComponentServer{state: %{phase: :boot}} =
+    assert %Workbench.ComponentServer{
+             state: %{phase: :boot},
+             runtime_opts: %{
+               commands: [%Cmd{kind: :message, payload: :boot}],
+               render?: false,
+               trace?: true
+             }
+           } =
              Workbench.ComponentServer.snapshot(pid)
   end
 
-  test "supervised component server handles runtime opts and stop tuples" do
+  test "supervised component server update returns retained runtime opts" do
+    ctx = %Context{}
+    {:ok, pid} = Workbench.ComponentServer.start_link(module: RuntimeOptsComponent, ctx: ctx)
+
+    assert {:ok,
+            %Workbench.ComponentServer{
+              state: %{phase: :advanced},
+              runtime_opts: %{commands: [], render?: false, trace?: false}
+            }, %{commands: [], render?: false, trace?: false}} =
+             Workbench.ComponentServer.update(pid, :advance, ctx)
+
+    assert %Workbench.ComponentServer{
+             state: %{phase: :advanced},
+             runtime_opts: %{commands: [], render?: false, trace?: false}
+           } = Workbench.ComponentServer.snapshot(pid)
+  end
+
+  test "supervised component server retains runtime opts returned from handle_info" do
+    ctx = %Context{}
+    {:ok, pid} = Workbench.ComponentServer.start_link(module: InfoRuntimeOptsComponent, ctx: ctx)
+
+    send(pid, :tick)
+    Process.sleep(10)
+
+    assert %Workbench.ComponentServer{
+             state: %{events: [:tick]},
+             runtime_opts: %{commands: [], render?: false, trace?: true}
+           } =
+             Workbench.ComponentServer.snapshot(pid)
+  end
+
+  test "supervised component server handles stop tuples and returns final runtime opts" do
     ctx = %Context{}
     {:ok, pid} = Workbench.ComponentServer.start_link(module: SupervisedStopComponent, ctx: ctx)
 
-    Workbench.ComponentServer.update(pid, :advance, ctx)
-    Process.sleep(10)
-
-    assert %Workbench.ComponentServer{state: %{phase: :advanced}} =
-             Workbench.ComponentServer.snapshot(pid)
-
     ref = Process.monitor(pid)
-    Workbench.ComponentServer.update(pid, :stop, ctx)
+
+    assert {:stop,
+            %Workbench.ComponentServer{
+              state: %{phase: :stopping},
+              runtime_opts: %{commands: [], render?: true, trace?: false}
+            }, %{commands: [], render?: true, trace?: false}} =
+             Workbench.ComponentServer.update(pid, :stop, ctx)
 
     assert_receive {:DOWN, ^ref, :process, ^pid, :normal}
 

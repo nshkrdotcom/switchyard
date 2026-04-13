@@ -36,8 +36,9 @@ on that package instead of owning `Workbench.Node` directly.
 - `Workbench.Component` callbacks can return a single command, a list of
   commands, or runtime opts with `commands`, `render?`, and `trace?`.
 - `Workbench.ComponentServer` mirrors the same update and stop tuple contract
-  for supervised components and safely ignores optional `handle_info/4` when a
-  component does not implement it.
+  for supervised components, retains normalized runtime opts in its snapshot
+  state, returns update results synchronously, and safely ignores optional
+  `handle_info/4` when a component does not implement it.
 - `Workbench.Renderer.ExRatatui` lowers `Workbench.Widgets.WidgetList` into
   `ExRatatui.Widgets.WidgetList`, so row-based variable-height scrolling can be
   exercised through the backend-neutral node layer.
