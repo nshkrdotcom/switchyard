@@ -29,7 +29,7 @@ defmodule Switchyard.Build.DependencyResolverTest do
 
     assert DependencyResolver.ex_ratatui(runtime: false) ==
              {:ex_ratatui,
-             [
+              [
                 github: "nshkrdotcom/ex_ratatui",
                 ref: "d3e7a8fc35f2b8fd37169642c4e56b18d144e74a",
                 runtime: false
