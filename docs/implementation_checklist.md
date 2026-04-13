@@ -115,10 +115,8 @@ Reason:
 
 1. the runtime is designed against the reducer-runtime API in the forked
    `ex_ratatui` dependency
-2. that API is currently consumed as a git-pinned dependency by default, with
-   `EX_RATATUI_PATH` available as a local override
-3. Hex packages cannot depend on git dependencies
-4. the monolith is therefore verified as an internal artifact with full
+2. that API is now consumed through the published `ex_ratatui` Hex package
+3. the monolith is therefore still verified as an internal artifact with full
    `deps.get`, compile, test, and docs gates, while `hex.build` is explicitly
    skipped through Weld rather than failing implicitly
 

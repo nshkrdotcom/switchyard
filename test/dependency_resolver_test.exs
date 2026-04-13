@@ -5,43 +5,12 @@ defmodule Switchyard.Build.DependencyResolverTest do
 
   alias Switchyard.Build.DependencyResolver
 
-  setup do
-    original = System.get_env("EX_RATATUI_PATH")
-
-    on_exit(fn ->
-      case original do
-        nil -> System.delete_env("EX_RATATUI_PATH")
-        value -> System.put_env("EX_RATATUI_PATH", value)
-      end
-    end)
+  test "returns a Hex dependency tuple for ex_ratatui" do
+    assert DependencyResolver.ex_ratatui() == {:ex_ratatui, "~> 0.7.0", []}
   end
 
-  test "returns a valid git dependency tuple when the local ex_ratatui checkout is disabled" do
-    System.put_env("EX_RATATUI_PATH", "disabled")
-
-    assert DependencyResolver.ex_ratatui() ==
-             {:ex_ratatui,
-              [github: "nshkrdotcom/ex_ratatui", ref: "d3e7a8f73d17e77c9047f8dee016bf64c8fd207b"]}
-  end
-
-  test "merges dependency opts into the fallback git dependency tuple" do
-    System.put_env("EX_RATATUI_PATH", "disabled")
-
+  test "merges dependency opts into the Hex dependency tuple" do
     assert DependencyResolver.ex_ratatui(runtime: false) ==
-             {:ex_ratatui,
-              [
-                github: "nshkrdotcom/ex_ratatui",
-                ref: "d3e7a8f73d17e77c9047f8dee016bf64c8fd207b",
-                runtime: false
-              ]}
-  end
-
-  test "prefers an explicit local checkout path when provided" do
-    path = Path.join(System.tmp_dir!(), "switchyard_dependency_resolver_ex_ratatui")
-    File.mkdir_p!(path)
-    System.put_env("EX_RATATUI_PATH", path)
-
-    assert DependencyResolver.ex_ratatui(runtime: false) ==
-             {:ex_ratatui, [path: path, runtime: false]}
+             {:ex_ratatui, "~> 0.7.0", runtime: false}
   end
 end

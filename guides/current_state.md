@@ -78,10 +78,10 @@ projection, not as a Hex-first published product suite.
 
 That posture is explicit:
 
-- the Workbench runtime depends on a git-pinned `ex_ratatui` commit
+- the Workbench runtime depends on `ex_ratatui` from Hex
 - Weld projects the internal `switchyard_foundation` artifact
-- `hex.build` is intentionally disabled for that projection until the dependency
-  posture changes
+- `hex.build` is intentionally disabled for that projection until the
+  publication posture changes
 
 ## What The Next Phase Should Mean
 

@@ -50,11 +50,10 @@ architecture:
 
 - the Workbench runtime depends on the reducer-runtime API in the forked
   `ex_ratatui` repository
-- that dependency is pinned by git commit
-- Hex packages cannot include git-backed dependencies
-- the monolith is therefore verified as an internal artifact through
-  dependency resolution, compile, tests, and docs, while Hex-only packaging is
-  skipped explicitly in Weld
+- that dependency is consumed through the published `ex_ratatui` Hex package
+- the monolith is therefore still verified as an internal artifact through
+  dependency resolution, compile, tests, and docs, while Hex-only packaging
+  remains skipped explicitly in Weld
 
 ## Recontextualization
 

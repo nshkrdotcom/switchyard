@@ -3,6 +3,7 @@
 repo_root = Path.expand("..", __DIR__)
 
 Mix.install([
+  {:ex_ratatui, "~> 0.7.0"},
   {:switchyard_tui, path: Path.join(repo_root, "apps/terminal_workbench_tui")},
   {:workbench_devtools, path: Path.join(repo_root, "core/workbench_devtools")}
 ])

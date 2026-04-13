@@ -72,17 +72,7 @@ defmodule Switchyard.Build.DependencyResolver do
     )
   end
 
-  def ex_ratatui(opts \\ []) do
-    resolve_external(
-      :ex_ratatui,
-      local_root_path("EX_RATATUI_PATH", "../ex_ratatui"),
-      [
-        github: "nshkrdotcom/ex_ratatui",
-        ref: "d3e7a8f73d17e77c9047f8dee016bf64c8fd207b"
-      ],
-      opts
-    )
-  end
+  def ex_ratatui(opts \\ []), do: {:ex_ratatui, "~> 0.7.0", opts}
 
   def jason(opts \\ []) do
     {:jason, "~> 1.4", opts}

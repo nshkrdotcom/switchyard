@@ -30,17 +30,13 @@ behavior matters when reproducing builds across machines.
   workspace uses the Hex package
 - `WELD_PATH`
   only uses a local checkout when the env var is set explicitly
-- `EX_RATATUI_PATH`
-  defaults to `../ex_ratatui` if that sibling checkout exists; otherwise the
-  TUI packages use the git-pinned GitHub ref recorded in the resolver and
-  lockfiles
 
 If you need deterministic "no local checkout" behavior on a machine that
 happens to have those sibling repos, disable the overrides explicitly:
 
 ```bash
-BLITZ_PATH=disabled EX_RATATUI_PATH=disabled mix deps.get
-BLITZ_PATH=disabled EX_RATATUI_PATH=disabled mix mr.deps.get
+BLITZ_PATH=disabled mix deps.get
+BLITZ_PATH=disabled mix mr.deps.get
 ```
 
 ## Day-To-Day Commands
