@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="switchyard_foundation v0.1.0">
+
+
+    <title>Testing And Delivery — switchyard_foundation v0.1.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-B98B0546.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+switchyard_foundation
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-extra" id="main" data-type="extras">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of switchyard_foundation</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>Testing And Delivery</h1>
+
+<a href="testing_and_delivery.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+  </div>
+
+
+<p>Switchyard should continue to grow by proving its seams first. The baseline
+workspace is already in place, so delivery work now means extending behavior
+without weakening the package boundaries that have already been established.</p><h2 id="tdd-rgr" class="section-heading"><a href="#tdd-rgr" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">TDD / RGR</span></h2><p>When introducing behavior:</p><ol><li>write the failing test first</li><li>implement the smallest coherent behavior that makes it pass</li><li>refactor names, boundaries, and docs without weakening the seam</li></ol><p>The current workspace follows that rule:</p><ul><li>contracts are covered with constructor and validation tests</li><li>the registry is covered with provider-driven catalog tests</li><li>process, log, job, store, and transport seams each have focused tests</li><li>the daemon is proven through local integration tests</li><li>site adapters are proven by resource/detail mapping tests</li><li>the Workbench runtime is proven through layout, keymap, and command tests</li><li>the product TUI and external integration seams are covered at the first
+meaningful component boundary</li></ul><h2 id="workspace-quality-gates" class="section-heading"><a href="#workspace-quality-gates" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Workspace Quality Gates</span></h2><p>The root workspace is authoritative for delivery quality:</p><ul><li><code class="inline">mix mr.deps.get</code></li><li><code class="inline">mix mr.format --check-formatted</code></li><li><code class="inline">mix mr.compile</code></li><li><code class="inline">mix mr.test</code></li><li><code class="inline">mix mr.credo --strict</code></li><li><code class="inline">mix mr.dialyzer</code></li><li><code class="inline">mix mr.docs --warnings-as-errors</code></li><li><code class="inline">mix weld.verify</code></li><li><code class="inline">mix release.prepare</code></li><li><code class="inline">mix release.track</code></li><li><code class="inline">mix release.archive</code></li><li><code class="inline">mix ci</code></li></ul><p><code class="inline">mix ci</code> is the final green gate for this repository. <code class="inline">mix weld.verify</code> is the
+projection gate for the internal <code class="inline">switchyard_foundation</code> monolith.</p><p>The internal artifact flow is:</p><ol><li><code class="inline">mix release.prepare</code></li><li><code class="inline">mix release.track</code></li><li><code class="inline">mix release.archive</code></li></ol><p><code class="inline">mix release.prepare</code> builds the prepared artifact bundle under <code class="inline">dist/</code>.
+<code class="inline">mix release.track</code> updates the orphan-backed
+<code class="inline">projection/switchyard_foundation</code> branch from that bundle.
+<code class="inline">mix release.archive</code> snapshots the prepared bundle after validation.</p><p>During local implementation and debugging against unreleased Weld changes, use
+<code class="inline">WELD_PATH=../weld</code>. For deterministic shared pre-release testing, use
+<code class="inline">WELD_GIT_REF=&lt;commit_sha&gt;</code> and optionally <code class="inline">WELD_GIT_URL=&lt;repo_url&gt;</code>.</p><h2 id="internal-monolith-packaging" class="section-heading"><a href="#internal-monolith-packaging" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Internal Monolith Packaging</span></h2><p>The welded monolith is still an internal artifact, but it now keeps
+<code class="inline">hex.build</code> enabled so <code class="inline">mix release.prepare</code> can produce a deterministic tarball
+inside the prepared bundle.</p><p>That does not mean Switchyard is now a publish-first product suite. The actual
+posture is:</p><ul><li>the Workbench runtime depends on the published <code class="inline">ex_ratatui</code> Hex package</li><li>Weld projects the internal <code class="inline">switchyard_foundation</code> artifact</li><li><code class="inline">mix release.prepare</code> builds the tarball and prepared bundle for projection
+tracking and archive durability</li><li><code class="inline">release.publish</code> remains out of scope for this repo</li></ul><h2 id="recontextualization" class="section-heading"><a href="#recontextualization" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Recontextualization</span></h2><p>If work resumes after a pause or compaction:</p><ol><li>read <code class="inline">README.md</code></li><li>read <code class="inline">guides/index.md</code></li><li>read <code class="inline">guides/current_state.md</code></li><li>read <code class="inline">guides/package_boundaries.md</code></li><li>read <code class="inline">guides/runtime_model.md</code></li><li>read <code class="inline">guides/workspace_workflow.md</code></li><li>read <code class="inline">docs/implementation_checklist.md</code></li><li>inspect <code class="inline">git status --short --branch</code></li><li>resume from the earliest unchecked checklist item</li><li>if the work touches packaging, confirm <code class="inline">mix release.prepare</code>,
+<code class="inline">mix release.track</code>, and <code class="inline">mix ci</code> still describe the current workflow</li></ol><h2 id="documentation-standard" class="section-heading"><a href="#documentation-standard" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Documentation Standard</span></h2><p>Repository docs should be self-contained, repo-relative, and written to survive
+handoff. HexDocs extras, README content, and package READMEs should describe the
+delivered architecture in present tense. Local-machine-specific notes belong
+outside the repo, not in the repo docs.</p>
+
+</div>
+
+<div class="bottom-actions" id="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="runtime_model.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+Runtime Model
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="vision.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+Vision
+        </span>
+      </a>
+
+  </div>
+</div>
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/switchyard_foundation/0.1.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/switchyard_foundation/0.1.0">Hex Preview</a>
+
+                (<a href="https://preview.hex.pm/preview/switchyard_foundation/0.1.0/show/guides/testing_and_delivery.md">current file</a>)
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="switchyard_foundation.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

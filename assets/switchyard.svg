@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" role="img" aria-labelledby="title desc">
+  <title id="title">Switchyard logo</title>
+  <desc id="desc">A symmetric hexagonal emblem with interlocking rail lines, signal nodes, and switching geometry representing a terminal workbench control plane.</desc>
+  <defs>
+    <linearGradient id="hexFill" x1="30" y1="24" x2="170" y2="176" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0e1726"/>
+      <stop offset="52%" stop-color="#16243a"/>
+      <stop offset="100%" stop-color="#0c111d"/>
+    </linearGradient>
+    <linearGradient id="railGlow" x1="44" y1="36" x2="156" y2="164" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f0f4ff"/>
+      <stop offset="50%" stop-color="#9cc2ff"/>
+      <stop offset="100%" stop-color="#6f90d9"/>
+    </linearGradient>
+    <linearGradient id="signalFill" x1="72" y1="64" x2="128" y2="136" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f9cf6b"/>
+      <stop offset="100%" stop-color="#d88925"/>
+    </linearGradient>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 0.82 0 0 0  0 0.55 0 0 0  0 0 0 0.32 0"/>
+      <feBlend in="SourceGraphic" mode="screen"/>
+    </filter>
+    <clipPath id="hexClip">
+      <path d="M100 12 L175 56 L175 144 L100 188 L25 144 L25 56 Z"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#hexClip)">
+    <path d="M100 12 L175 56 L175 144 L100 188 L25 144 L25 56 Z" fill="url(#hexFill)"/>
+    <path d="M100 20 L168 60 L168 140 L100 180 L32 140 L32 60 Z" fill="none" stroke="#6d87b8" stroke-opacity="0.45" stroke-width="2"/>
+
+    <g opacity="0.22">
+      <path d="M34 52 L166 52" stroke="#9fb4d9" stroke-width="1"/>
+      <path d="M34 76 L166 76" stroke="#9fb4d9" stroke-width="1"/>
+      <path d="M34 100 L166 100" stroke="#9fb4d9" stroke-width="1"/>
+      <path d="M34 124 L166 124" stroke="#9fb4d9" stroke-width="1"/>
+      <path d="M34 148 L166 148" stroke="#9fb4d9" stroke-width="1"/>
+      <path d="M52 34 L52 166" stroke="#9fb4d9" stroke-width="1"/>
+      <path d="M76 34 L76 166" stroke="#9fb4d9" stroke-width="1"/>
+      <path d="M100 24 L100 176" stroke="#9fb4d9" stroke-width="1"/>
+      <path d="M124 34 L124 166" stroke="#9fb4d9" stroke-width="1"/>
+      <path d="M148 34 L148 166" stroke="#9fb4d9" stroke-width="1"/>
+    </g>
+
+    <g filter="url(#softGlow)">
+      <path d="M48 62 H90 L100 72 H152" fill="none" stroke="url(#railGlow)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M48 138 H90 L100 128 H152" fill="none" stroke="url(#railGlow)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M100 72 V128" fill="none" stroke="url(#railGlow)" stroke-width="6" stroke-linecap="round"/>
+      <path d="M70 100 H130" fill="none" stroke="url(#railGlow)" stroke-width="5" stroke-linecap="round"/>
+      <path d="M68 62 L92 86" fill="none" stroke="url(#railGlow)" stroke-width="4" stroke-linecap="round"/>
+      <path d="M132 138 L108 114" fill="none" stroke="url(#railGlow)" stroke-width="4" stroke-linecap="round"/>
+      <path d="M68 138 L92 114" fill="none" stroke="url(#railGlow)" stroke-width="4" stroke-linecap="round"/>
+      <path d="M132 62 L108 86" fill="none" stroke="url(#railGlow)" stroke-width="4" stroke-linecap="round"/>
+    </g>
+
+    <g>
+      <circle cx="100" cy="100" r="15" fill="#0c1524" stroke="#8ea8d9" stroke-width="2.5"/>
+      <circle cx="100" cy="100" r="7" fill="url(#signalFill)"/>
+      <circle cx="48" cy="62" r="5" fill="#0c1524" stroke="#c7d4ef" stroke-width="2"/>
+      <circle cx="152" cy="62" r="5" fill="#0c1524" stroke="#c7d4ef" stroke-width="2"/>
+      <circle cx="48" cy="138" r="5" fill="#0c1524" stroke="#c7d4ef" stroke-width="2"/>
+      <circle cx="152" cy="138" r="5" fill="#0c1524" stroke="#c7d4ef" stroke-width="2"/>
+      <circle cx="70" cy="100" r="4" fill="#0c1524" stroke="#f2be57" stroke-width="2"/>
+      <circle cx="130" cy="100" r="4" fill="#0c1524" stroke="#f2be57" stroke-width="2"/>
+    </g>
+
+    <g opacity="0.7">
+      <path d="M60 48 L72 48" stroke="#f2be57" stroke-width="2" stroke-linecap="round"/>
+      <path d="M128 152 L140 152" stroke="#f2be57" stroke-width="2" stroke-linecap="round"/>
+      <path d="M40 100 L52 100" stroke="#f2be57" stroke-width="2" stroke-linecap="round"/>
+      <path d="M148 100 L160 100" stroke="#f2be57" stroke-width="2" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <path d="M100 12 L175 56 L175 144 L100 188 L25 144 L25 56 Z" fill="none" stroke="#e5ecff" stroke-opacity="0.8" stroke-width="3"/>
+</svg>

@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="switchyard_foundation v0.1.0">
+
+
+    <title>API Reference — switchyard_foundation v0.1.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-B98B0546.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+switchyard_foundation
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-extra" id="main" data-type="extras">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of switchyard_foundation</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>API Reference <small class="app-vsn">switchyard_foundation v#0.1.0</small></h1>
+<a href="api-reference.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+  </div>
+
+    <section class="details-list">
+      <h2 id="modules" class="section-heading">Modules</h2>
+      <div class="summary">
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Contracts.html" translate="no">Switchyard.<wbr>Contracts</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Shared contract helpers for the Switchyard platform.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Contracts.Action.html" translate="no">Switchyard.<wbr>Contracts.<wbr>Action</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Typed action contract.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Contracts.ActionProvider.html" translate="no">Switchyard.<wbr>Contracts.<wbr>ActionProvider</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behaviour for executable action providers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Contracts.ActionResult.html" translate="no">Switchyard.<wbr>Contracts.<wbr>ActionResult</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Typed action execution result.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Contracts.AppDescriptor.html" translate="no">Switchyard.<wbr>Contracts.<wbr>AppDescriptor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Descriptor for an app mounted under a site.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Contracts.AppProvider.html" translate="no">Switchyard.<wbr>Contracts.<wbr>AppProvider</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behaviour for site-contributed apps.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Contracts.Job.html" translate="no">Switchyard.<wbr>Contracts.<wbr>Job</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Typed job contract.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Contracts.LogEvent.html" translate="no">Switchyard.<wbr>Contracts.<wbr>LogEvent</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Normalized log event contract.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Contracts.Resource.html" translate="no">Switchyard.<wbr>Contracts.<wbr>Resource</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Typed resource envelope used by shell and CLI surfaces.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Contracts.ResourceDetail.html" translate="no">Switchyard.<wbr>Contracts.<wbr>ResourceDetail</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Structured detail payload for a resource.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Contracts.SearchProvider.html" translate="no">Switchyard.<wbr>Contracts.<wbr>SearchProvider</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behaviour for search providers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Contracts.SearchResult.html" translate="no">Switchyard.<wbr>Contracts.<wbr>SearchResult</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Typed search result contract.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Contracts.SiteDescriptor.html" translate="no">Switchyard.<wbr>Contracts.<wbr>SiteDescriptor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Descriptor for an installed site.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Contracts.SiteProvider.html" translate="no">Switchyard.<wbr>Contracts.<wbr>SiteProvider</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Behaviour for installed site providers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Contracts.StreamDescriptor.html" translate="no">Switchyard.<wbr>Contracts.<wbr>StreamDescriptor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Descriptor for a live stream.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Daemon.html" translate="no">Switchyard.<wbr>Daemon</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Local control-plane daemon API.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.JobRuntime.html" translate="no">Switchyard.<wbr>JobRuntime</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Job contract helpers and state transitions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.LogRuntime.html" translate="no">Switchyard.<wbr>LogRuntime</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Pure helpers for bounded log retention and filtering.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.LogRuntime.Buffer.html" translate="no">Switchyard.<wbr>LogRuntime.<wbr>Buffer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Bounded in-memory log buffer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Platform.html" translate="no">Switchyard.<wbr>Platform</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Provider-driven platform catalog helpers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Platform.Registry.html" translate="no">Switchyard.<wbr>Platform.<wbr>Registry</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Registry helpers for site provider modules.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.ProcessRuntime.html" translate="no">Switchyard.<wbr>ProcessRuntime</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Minimal managed local process runtime built on ports.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.ProcessRuntime.Spec.html" translate="no">Switchyard.<wbr>ProcessRuntime.<wbr>Spec</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Specification for a managed process.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Shell.html" translate="no">Switchyard.<wbr>Shell</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Pure shell state and reducer helpers for the terminal host.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Shell.State.html" translate="no">Switchyard.<wbr>Shell.<wbr>State</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Serializable shell state.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Site.Local.html" translate="no">Switchyard.<wbr>Site.<wbr>Local</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Built-in local operations site.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Store.Local.html" translate="no">Switchyard.<wbr>Store.<wbr>Local</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Filesystem-backed JSON persistence for local daemon state.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Switchyard.Transport.Local.html" translate="no">Switchyard.<wbr>Transport.<wbr>Local</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>In-VM local transport that speaks to a daemon-like GenServer.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Accessibility.html" translate="no">Workbench.<wbr>Accessibility</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Accessible mode helpers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Accessibility.Node.html" translate="no">Workbench.<wbr>Accessibility.<wbr>Node</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Accessible fallback interaction node.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Action.html" translate="no">Workbench.<wbr>Action</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Framework action descriptor.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.ActionRegistry.html" translate="no">Workbench.<wbr>ActionRegistry</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Helpers for deriving active actions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Capabilities.html" translate="no">Workbench.<wbr>Capabilities</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Negotiated terminal capability flags.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Cmd.html" translate="no">Workbench.<wbr>Cmd</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Framework command values resolved by the runtime.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Component.html" translate="no">Workbench.<wbr>Component</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Component behaviour for framework-backed screens and widgets.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.ComponentServer.html" translate="no">Workbench.<wbr>ComponentServer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GenServer wrapper for supervised framework components.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.ComponentSupervisor.html" translate="no">Workbench.<wbr>ComponentSupervisor</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Dynamic supervisor for supervised component processes.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Context.html" translate="no">Workbench.<wbr>Context</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Explicit immutable runtime context passed to component callbacks.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Devtools.Driver.html" translate="no">Workbench.<wbr>Devtools.<wbr>Driver</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Deterministic reducer-runtime driver helpers for TUI automation.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Devtools.History.html" translate="no">Workbench.<wbr>Devtools.<wbr>History</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Bounded history helpers for devtools capture.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Devtools.Inspector.html" translate="no">Workbench.<wbr>Devtools.<wbr>Inspector</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Builds inspectable runtime snapshot bundles.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Devtools.Overlay.html" translate="no">Workbench.<wbr>Devtools.<wbr>Overlay</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Builds a product-visible debug rail from runtime devtools data.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Devtools.SessionArtifacts.html" translate="no">Workbench.<wbr>Devtools.<wbr>SessionArtifacts</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Creates durable, human-readable session artifact bundles for debug runs.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.EffectRunner.html" translate="no">Workbench.<wbr>EffectRunner</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Maps framework commands to ExRatatui runtime commands.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.FocusManager.html" translate="no">Workbench.<wbr>FocusManager</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Focus path helpers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.FocusTree.html" translate="no">Workbench.<wbr>FocusTree</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Derived focus traversal metadata.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Keymap.html" translate="no">Workbench.<wbr>Keymap</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Structured keybinding helpers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Keymap.Binding.html" translate="no">Workbench.<wbr>Keymap.<wbr>Binding</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Single keybinding descriptor.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Layout.html" translate="no">Workbench.<wbr>Layout</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Declarative layout intent for a node subtree.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Mouse.html" translate="no">Workbench.<wbr>Mouse</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Mouse region metadata helpers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Node.html" translate="no">Workbench.<wbr>Node</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Backend-neutral render node.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.RegionMap.html" translate="no">Workbench.<wbr>RegionMap</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Derived mouse hit-test regions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.RegionMap.Region.html" translate="no">Workbench.<wbr>RegionMap.<wbr>Region</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Resolved mouse region.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.RenderTree.html" translate="no">Workbench.<wbr>RenderTree</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Resolved render tree derived from declarative nodes.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.RenderTree.Entry.html" translate="no">Workbench.<wbr>RenderTree.<wbr>Entry</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Resolved render tree entry.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Renderer.html" translate="no">Workbench.<wbr>Renderer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Renderer behaviour.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Renderer.ExRatatui.html" translate="no">Workbench.<wbr>Renderer.<wbr>ExRatatui</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>ExRatatui backend lowering for resolved render trees.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Runtime.html" translate="no">Workbench.<wbr>Runtime</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Framework runtime helpers used by thin Workbench-backed terminal apps.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Runtime.State.html" translate="no">Workbench.<wbr>Runtime.<wbr>State</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Runtime state container for thin Workbench-backed terminal apps.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.RuntimeIndex.html" translate="no">Workbench.<wbr>RuntimeIndex</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Derived runtime indexes for bindings, actions, and subscriptions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Screen.html" translate="no">Workbench.<wbr>Screen</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Runtime screen configuration and viewport metadata.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Style.html" translate="no">Workbench.<wbr>Style</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Renderer-neutral node style helpers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Subscription.html" translate="no">Workbench.<wbr>Subscription</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Framework subscription descriptors.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Theme.html" translate="no">Workbench.<wbr>Theme</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Theme token helpers for renderer-neutral Workbench styling.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Transcript.html" translate="no">Workbench.<wbr>Transcript</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Transcript lines for inline and mixed screen modes.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.CommandPalette.html" translate="no">Workbench.<wbr>Widgets.<wbr>CommandPalette</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Command palette widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.Detail.html" translate="no">Workbench.<wbr>Widgets.<wbr>Detail</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Detail pane widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.FieldGroup.html" translate="no">Workbench.<wbr>Widgets.<wbr>FieldGroup</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Field grouping widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.FilePicker.html" translate="no">Workbench.<wbr>Widgets.<wbr>FilePicker</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>File picker widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.Form.html" translate="no">Workbench.<wbr>Widgets.<wbr>Form</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Form widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.Help.html" translate="no">Workbench.<wbr>Widgets.<wbr>Help</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Generated help widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.List.html" translate="no">Workbench.<wbr>Widgets.<wbr>List</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Selectable list widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.LogStream.html" translate="no">Workbench.<wbr>Widgets.<wbr>LogStream</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Scrollable log stream widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.Modal.html" translate="no">Workbench.<wbr>Widgets.<wbr>Modal</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Modal popup widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.Paginator.html" translate="no">Workbench.<wbr>Widgets.<wbr>Paginator</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Pagination status widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.Pane.html" translate="no">Workbench.<wbr>Widgets.<wbr>Pane</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Bordered content pane.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.ProgressBar.html" translate="no">Workbench.<wbr>Widgets.<wbr>ProgressBar</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Progress bar widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.Spinner.html" translate="no">Workbench.<wbr>Widgets.<wbr>Spinner</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Async activity indicator.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.StatusBar.html" translate="no">Workbench.<wbr>Widgets.<wbr>StatusBar</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Single-line status widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.Table.html" translate="no">Workbench.<wbr>Widgets.<wbr>Table</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Tabular data widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.Tabs.html" translate="no">Workbench.<wbr>Widgets.<wbr>Tabs</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Tabs widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.TextArea.html" translate="no">Workbench.<wbr>Widgets.<wbr>TextArea</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Multi-line text area widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.TextInput.html" translate="no">Workbench.<wbr>Widgets.<wbr>TextInput</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Single-line text input widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.Timer.html" translate="no">Workbench.<wbr>Widgets.<wbr>Timer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Timer display widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.Tree.html" translate="no">Workbench.<wbr>Widgets.<wbr>Tree</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Hierarchical tree widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.Viewport.html" translate="no">Workbench.<wbr>Widgets.<wbr>Viewport</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Scrollable viewport widget.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Workbench.Widgets.WidgetList.html" translate="no">Workbench.<wbr>Widgets.<wbr>WidgetList</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Variable-height widget list.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="WorkbenchDevtools.html" translate="no">WorkbenchDevtools</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Public entrypoint for optional Workbench inspection helpers.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="WorkbenchNodeIr.html" translate="no">WorkbenchNodeIr</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Public entrypoint for the backend-neutral Workbench node IR package.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="WorkbenchTuiFramework.html" translate="no">WorkbenchTuiFramework</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Public entrypoint for the Workbench TUI framework package.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="WorkbenchWidgets.html" translate="no">WorkbenchWidgets</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Public entrypoint for reusable Workbench widget constructors.</p></div>
+
+</div>
+
+      </div>
+    </section>
+
+
+</div>
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/switchyard_foundation/0.1.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/switchyard_foundation/0.1.0">Hex Preview</a>
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="switchyard_foundation.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

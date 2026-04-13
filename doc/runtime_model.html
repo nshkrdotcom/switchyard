@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.40.1">
+    <meta name="project" content="switchyard_foundation v0.1.0">
+
+
+    <title>Runtime Model — switchyard_foundation v0.1.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
+
+    <script defer src="dist/sidebar_items-B98B0546.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-YU4BZFVS.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+switchyard_foundation
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras="Pages"></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-extra" id="main" data-type="extras">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of switchyard_foundation</span>
+            <div class="search-input-wrapper">
+              <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+              <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+                <i class="ri-close-line ri-lg" title="Cancel search"></i>
+              </button>
+            </div>
+          </label>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <div class="engine-selector" data-multiple="false">
+          <button type="button" class="engine-button" aria-label="Select search engine" aria-haspopup="true" aria-expanded="false">
+            <i class="ri-search-2-line" aria-hidden="true"></i>
+            <span class="engine-name">Default</span>
+            <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+          </button>
+          <div class="engine-dropdown" hidden role="menu">
+
+              <button type="button"
+                      class="engine-option"
+                      data-engine-url="search.html?q="
+                      role="menuitemradio"
+                      aria-checked="true">
+                <span class="name">Default</span>
+                <span class="help">In-browser search</span>
+              </button>
+
+          </div>
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>Runtime Model</h1>
+
+<a href="runtime_model.md" title="Copy Markdown (hold Ctrl/Cmd and click it to open as Markdown)" class="copy-markdown icon-action" rel="help">
+  <i class="ri-markdown-line" aria-hidden="true"></i>
+  <span class="sr-only">Copy Markdown</span>
+</a>
+
+
+  </div>
+
+
+<p>Switchyard is built around a local control-plane daemon.</p><h2 id="ownership" class="section-heading"><a href="#ownership" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Ownership</span></h2><h3 id="daemon" class="section-heading"><a href="#daemon" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Daemon</span></h3><p>The daemon owns long-lived local operational state:</p><ul><li>managed processes</li><li>job lifecycles</li><li>log buffers</li><li>persisted snapshots</li><li>local transport request handling</li></ul><p>The daemon should survive TUI restarts. The UI is a client, not the authority.</p><h3 id="shell" class="section-heading"><a href="#shell" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Shell</span></h3><p>The shell owns:</p><ul><li>current route</li><li>selected site and pane focus</li><li>drawer visibility</li><li>notifications</li><li>other ephemeral interaction state</li></ul><p>The shell should be pure and reducible from events whenever possible.</p><h3 id="workbench-runtime" class="section-heading"><a href="#workbench-runtime" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Workbench Runtime</span></h3><p>The Workbench runtime owns terminal execution concerns:</p><ul><li>component initialization and update dispatch</li><li>render tree resolution</li><li>effect mapping onto <code class="inline">ex_ratatui</code></li><li>key routing, focus data, and mouse region derivation</li><li>accessible rendering fallback seams</li></ul><p>The runtime is infrastructure. It should not own business truth or product
+workflow state.</p><h3 id="sites" class="section-heading"><a href="#sites" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Sites</span></h3><p>A site owns domain mapping:</p><ul><li>which apps exist for that site</li><li>which actions are possible</li><li>how snapshots become generic resources</li><li>how details and recommended actions are presented through contracts</li></ul><h3 id="apps" class="section-heading"><a href="#apps" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Apps</span></h3><p>Apps are runnable entrypoints over the shared core:</p><ul><li>the daemon app starts the local authority</li><li>the CLI exposes headless control and inspection</li><li>the TUI app is thin product wiring over the Workbench runtime</li></ul><h2 id="data-flow" class="section-heading"><a href="#data-flow" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Data Flow</span></h2><p>The intended flow is:</p><ol><li>a daemon process starts with a configured set of site modules</li><li>site providers expose site definitions, apps, actions, and resource mapping</li><li>the platform registry derives the global catalog from those providers</li><li>the CLI or Workbench-backed TUI requests data and actions through the daemon seam</li><li>the daemon updates local runtime state and persists snapshots as needed</li><li>site providers remap snapshots into typed resources and details</li></ol><p>For the built-in TUI path specifically:</p><ol><li>the product app boots a root Workbench component</li><li>the root shows sites, then site apps, then either a generic list/detail app
+or a framework-native custom component</li><li>the runtime resolves layout and derives focus and mouse indexes</li><li>effects are lowered onto <code class="inline">ex_ratatui</code> commands</li><li>site or integration components route requests back through the daemon seam</li></ol><p>For the built-in local site today:</p><ol><li>the daemon snapshot carries process, job, and log-oriented runtime state</li><li><code class="inline">site_local</code> maps process and job data into generic resources and details</li><li>the product TUI renders those resources through reusable Workbench widgets</li><li>the CLI can inspect the same site and snapshot data without rendering</li></ol><h2 id="why-the-daemon-matters" class="section-heading"><a href="#why-the-daemon-matters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Why The Daemon Matters</span></h2><p>Without the daemon, the TUI would accumulate too much responsibility:</p><ul><li>subprocess ownership</li><li>log fan-out</li><li>retry and lifecycle state</li><li>session persistence</li><li>operational recovery after UI restarts</li></ul><p>That is the wrong center of gravity. The daemon gives Switchyard a stable local
+authority and keeps UI code replaceable.</p><p>Without the Workbench runtime, the product TUI would also accumulate too much
+presentation infrastructure:</p><ul><li>keymap plumbing</li><li>focus and mouse routing</li><li>layout resolution</li><li>widget and renderer concerns</li><li>component lifecycle management</li></ul><p>That is also the wrong center of gravity. The framework keeps product apps thin
+and reusable across integrations.</p><h2 id="headless-parity" class="section-heading"><a href="#headless-parity" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Headless Parity</span></h2><p>The CLI and tests are not second-class tools. They are proof that the platform
+behavior exists beneath the rendering layer.</p><p>Every meaningful operator action should be conceptually expressible through:</p><ul><li>a daemon call</li><li>a transport request</li><li>a headless CLI or test seam</li></ul><p>If an action exists only because the TUI invented it, the design has drifted.</p>
+
+</div>
+
+<div class="bottom-actions" id="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="package_boundaries.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+Package Boundaries
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="testing_and_delivery.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+Testing And Delivery
+        </span>
+      </a>
+
+  </div>
+</div>
+    <footer class="footer">
+
+        <p>
+
+            <span class="line">
+              <a href="https://hex.pm/packages/switchyard_foundation/0.1.0">Hex Package</a>
+
+              <a href="https://preview.hex.pm/preview/switchyard_foundation/0.1.0">Hex Preview</a>
+
+                (<a href="https://preview.hex.pm/preview/switchyard_foundation/0.1.0/show/guides/runtime_model.md">current file</a>)
+
+            </span>
+
+          <span class="line">
+            <button class="a-main footer-button display-quick-switch" title="Go to package docs">
+              Go to package docs
+            </button>
+
+              <a href="llms.txt" target="_blank">
+                View llms.txt
+              </a>
+
+
+              <a href="switchyard_foundation.epub">
+                Download ePub version
+              </a>
+
+          </span>
+        </p>
+
+        <p class="built-using">
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.40.1) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+        </p>
+
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

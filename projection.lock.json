@@ -1,0 +1,531 @@
+{
+  "projection": {
+    "build_path": "/home/home/p/g/n/switchyard/dist/monolith/switchyard_foundation",
+    "copied_files": [
+      ".formatter.exs",
+      "CHANGELOG.md",
+      "LICENSE",
+      "README.md",
+      "assets/switchyard.svg",
+      "config/config.exs",
+      "config/dev.exs",
+      "config/prod.exs",
+      "config/test.exs",
+      "docs/implementation_checklist.md",
+      "guides/current_state.md",
+      "guides/index.md",
+      "guides/monorepo_strategy.md",
+      "guides/package_boundaries.md",
+      "guides/runtime_model.md",
+      "guides/testing_and_delivery.md",
+      "guides/vision.md",
+      "guides/workspace_workflow.md",
+      "lib/switchyard/contracts.ex",
+      "lib/switchyard/contracts/action.ex",
+      "lib/switchyard/contracts/action_provider.ex",
+      "lib/switchyard/contracts/action_result.ex",
+      "lib/switchyard/contracts/app_descriptor.ex",
+      "lib/switchyard/contracts/app_provider.ex",
+      "lib/switchyard/contracts/job.ex",
+      "lib/switchyard/contracts/log_event.ex",
+      "lib/switchyard/contracts/resource.ex",
+      "lib/switchyard/contracts/resource_detail.ex",
+      "lib/switchyard/contracts/search_provider.ex",
+      "lib/switchyard/contracts/search_result.ex",
+      "lib/switchyard/contracts/site_descriptor.ex",
+      "lib/switchyard/contracts/site_provider.ex",
+      "lib/switchyard/contracts/stream_descriptor.ex",
+      "lib/switchyard/daemon.ex",
+      "lib/switchyard/daemon/application.ex",
+      "lib/switchyard/daemon/server.ex",
+      "lib/switchyard/job_runtime.ex",
+      "lib/switchyard/log_runtime.ex",
+      "lib/switchyard/platform.ex",
+      "lib/switchyard/platform/registry.ex",
+      "lib/switchyard/process_runtime.ex",
+      "lib/switchyard/shell.ex",
+      "lib/switchyard/site/local.ex",
+      "lib/switchyard/store/local.ex",
+      "lib/switchyard/transport/local.ex",
+      "lib/switchyard_foundation/application.ex",
+      "lib/workbench/component_runtime.ex",
+      "lib/workbench/effects.ex",
+      "lib/workbench/primitives.ex",
+      "lib/workbench/renderer.ex",
+      "lib/workbench/runtime.ex",
+      "lib/workbench/runtime_structures.ex",
+      "lib/workbench_devtools.ex",
+      "lib/workbench_node_ir.ex",
+      "lib/workbench_tui_framework.ex",
+      "lib/workbench_widgets.ex",
+      "mix.exs",
+      "priv/plts/dialyxir_erlang-28.3.1_elixir-1.19.5_deps-dev.plt",
+      "priv/plts/dialyxir_erlang-28.3.1_elixir-1.19.5_deps-dev.plt.hash",
+      "priv/plts/dialyxir_erlang-28.3_elixir-1.18.4_deps-dev.plt",
+      "priv/plts/dialyxir_erlang-28.3_elixir-1.18.4_deps-dev.plt.hash",
+      "test/core_workbench_contracts/switchyard/contracts_test.exs",
+      "test/core_workbench_daemon/switchyard/daemon_test.exs",
+      "test/core_workbench_devtools/workbench_devtools_test.exs",
+      "test/core_workbench_job_runtime/switchyard/job_runtime_test.exs",
+      "test/core_workbench_log_runtime/switchyard/log_runtime_test.exs",
+      "test/core_workbench_node_ir/workbench_node_ir_test.exs",
+      "test/core_workbench_platform/switchyard/platform_test.exs",
+      "test/core_workbench_process_runtime/switchyard/process_runtime_test.exs",
+      "test/core_workbench_shell_core/switchyard/shell_test.exs",
+      "test/core_workbench_store_local/switchyard/store/local_test.exs",
+      "test/core_workbench_transport_local/switchyard/transport/local_test.exs",
+      "test/core_workbench_tui_framework/workbench_tui_framework_test.exs",
+      "test/core_workbench_widgets/workbench_widgets_test.exs",
+      "test/sites_site_local/switchyard/site/local_test.exs",
+      "test/support/weld_helpers/core_workbench_contracts_test_helper.exs",
+      "test/support/weld_helpers/core_workbench_daemon_test_helper.exs",
+      "test/support/weld_helpers/core_workbench_devtools_test_helper.exs",
+      "test/support/weld_helpers/core_workbench_job_runtime_test_helper.exs",
+      "test/support/weld_helpers/core_workbench_log_runtime_test_helper.exs",
+      "test/support/weld_helpers/core_workbench_node_ir_test_helper.exs",
+      "test/support/weld_helpers/core_workbench_platform_test_helper.exs",
+      "test/support/weld_helpers/core_workbench_process_runtime_test_helper.exs",
+      "test/support/weld_helpers/core_workbench_shell_core_test_helper.exs",
+      "test/support/weld_helpers/core_workbench_store_local_test_helper.exs",
+      "test/support/weld_helpers/core_workbench_transport_local_test_helper.exs",
+      "test/support/weld_helpers/core_workbench_tui_framework_test_helper.exs",
+      "test/support/weld_helpers/core_workbench_widgets_test_helper.exs",
+      "test/support/weld_helpers/sites_site_local_test_helper.exs",
+      "test/test_helper.exs"
+    ],
+    "package_files": [
+      ".formatter.exs",
+      "LICENSE",
+      "README.md",
+      "config",
+      "docs",
+      "guides",
+      "lib",
+      "mix.exs",
+      "priv",
+      "projection.lock.json"
+    ],
+    "git_revision": "8f00b2006d36ae9cdce300b2b0f60b0b4455fe38",
+    "tree_digest": "29422e7611fee34cd0c27345a386866ed5334100e01b58db00fa33cc8dd9c12d"
+  },
+  "manifest": {
+    "path": "/home/home/p/g/n/switchyard/build_support/weld.exs",
+    "digest": "b4c27191e58be188785cf1f1c772b59d7bd379cdfb1b7b0b4510ef4c5e2f4d4e"
+  },
+  "verification": [
+    {
+      "env": "test",
+      "status": "ok",
+      "task": "selected_tests_baseline",
+      "test_count": 51,
+      "project_test_counts": [
+        {
+          "app": "workbench_tui_framework",
+          "test_count": 16,
+          "project_id": "core/workbench_tui_framework"
+        },
+        {
+          "app": "switchyard_shell",
+          "test_count": 2,
+          "project_id": "core/workbench_shell_core"
+        },
+        {
+          "app": "workbench_devtools",
+          "test_count": 2,
+          "project_id": "core/workbench_devtools"
+        },
+        {
+          "app": "workbench_widgets",
+          "test_count": 3,
+          "project_id": "core/workbench_widgets"
+        },
+        {
+          "app": "workbench_node_ir",
+          "test_count": 4,
+          "project_id": "core/workbench_node_ir"
+        },
+        {
+          "app": "switchyard_site_local",
+          "test_count": 3,
+          "project_id": "sites/site_local"
+        },
+        {
+          "app": "switchyard_transport_local",
+          "test_count": 2,
+          "project_id": "core/workbench_transport_local"
+        },
+        {
+          "app": "switchyard_daemon",
+          "test_count": 2,
+          "project_id": "core/workbench_daemon"
+        },
+        {
+          "app": "switchyard_store_local",
+          "test_count": 2,
+          "project_id": "core/workbench_store_local"
+        },
+        {
+          "app": "switchyard_process_runtime",
+          "test_count": 2,
+          "project_id": "core/workbench_process_runtime"
+        },
+        {
+          "app": "switchyard_platform",
+          "test_count": 3,
+          "project_id": "core/workbench_platform"
+        },
+        {
+          "app": "switchyard_log_runtime",
+          "test_count": 2,
+          "project_id": "core/workbench_log_runtime"
+        },
+        {
+          "app": "switchyard_job_runtime",
+          "test_count": 4,
+          "project_id": "core/workbench_job_runtime"
+        },
+        {
+          "app": "switchyard_contracts",
+          "test_count": 4,
+          "project_id": "core/workbench_contracts"
+        }
+      ]
+    },
+    {
+      "env": "dev",
+      "status": "ok",
+      "task": "deps.get"
+    },
+    {
+      "env": "dev",
+      "status": "ok",
+      "task": "compile --warnings-as-errors"
+    },
+    {
+      "env": "test",
+      "status": "ok",
+      "task": "test",
+      "failure_count": 0,
+      "test_count": 51
+    },
+    {
+      "env": "dev",
+      "status": "ok",
+      "task": "docs --warnings-as-errors"
+    },
+    {
+      "env": "dev",
+      "status": "ok",
+      "task": "hex.build"
+    }
+  ],
+  "artifact": {
+    "id": "switchyard",
+    "package": {
+      "name": "switchyard_foundation",
+      "version": "0.1.0",
+      "otp_app": "switchyard_foundation"
+    }
+  },
+  "workspace": {
+    "root": "/home/home/p/g/n/switchyard",
+    "discovery": {
+      "source": "blitz_workspace",
+      "project_ids": [
+        ".",
+        "apps/terminal_workbench_cli",
+        "apps/terminal_workbench_tui",
+        "apps/terminal_workbenchd",
+        "core/workbench_contracts",
+        "core/workbench_daemon",
+        "core/workbench_devtools",
+        "core/workbench_job_runtime",
+        "core/workbench_log_runtime",
+        "core/workbench_node_ir",
+        "core/workbench_platform",
+        "core/workbench_process_runtime",
+        "core/workbench_shell_core",
+        "core/workbench_store_local",
+        "core/workbench_transport_local",
+        "core/workbench_tui_framework",
+        "core/workbench_widgets",
+        "sites/site_local"
+      ],
+      "adapter": "blitz_workspace",
+      "globs": [
+        ".",
+        "apps/*",
+        "core/*",
+        "sites/*"
+      ],
+      "root_project?": true
+    },
+    "project_count": 18
+  },
+  "graph": {
+    "edges": [
+      {
+        "kind": "runtime",
+        "app": "switchyard_contracts",
+        "to": "core/workbench_contracts",
+        "requirement": null,
+        "from": "apps/terminal_workbench_cli"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_daemon",
+        "to": "core/workbench_daemon",
+        "requirement": null,
+        "from": "apps/terminal_workbench_cli"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_transport_local",
+        "to": "core/workbench_transport_local",
+        "requirement": null,
+        "from": "apps/terminal_workbench_cli"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_site_local",
+        "to": "sites/site_local",
+        "requirement": null,
+        "from": "apps/terminal_workbench_cli"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_contracts",
+        "to": "core/workbench_contracts",
+        "requirement": null,
+        "from": "apps/terminal_workbench_tui"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_daemon",
+        "to": "core/workbench_daemon",
+        "requirement": null,
+        "from": "apps/terminal_workbench_tui"
+      },
+      {
+        "kind": "runtime",
+        "app": "workbench_devtools",
+        "to": "core/workbench_devtools",
+        "requirement": null,
+        "from": "apps/terminal_workbench_tui"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_platform",
+        "to": "core/workbench_platform",
+        "requirement": null,
+        "from": "apps/terminal_workbench_tui"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_shell",
+        "to": "core/workbench_shell_core",
+        "requirement": null,
+        "from": "apps/terminal_workbench_tui"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_transport_local",
+        "to": "core/workbench_transport_local",
+        "requirement": null,
+        "from": "apps/terminal_workbench_tui"
+      },
+      {
+        "kind": "runtime",
+        "app": "workbench_tui_framework",
+        "to": "core/workbench_tui_framework",
+        "requirement": null,
+        "from": "apps/terminal_workbench_tui"
+      },
+      {
+        "kind": "runtime",
+        "app": "workbench_widgets",
+        "to": "core/workbench_widgets",
+        "requirement": null,
+        "from": "apps/terminal_workbench_tui"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_site_local",
+        "to": "sites/site_local",
+        "requirement": null,
+        "from": "apps/terminal_workbench_tui"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_daemon",
+        "to": "core/workbench_daemon",
+        "requirement": null,
+        "from": "apps/terminal_workbenchd"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_site_local",
+        "to": "sites/site_local",
+        "requirement": null,
+        "from": "apps/terminal_workbenchd"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_contracts",
+        "to": "core/workbench_contracts",
+        "requirement": null,
+        "from": "core/workbench_daemon"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_job_runtime",
+        "to": "core/workbench_job_runtime",
+        "requirement": null,
+        "from": "core/workbench_daemon"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_log_runtime",
+        "to": "core/workbench_log_runtime",
+        "requirement": null,
+        "from": "core/workbench_daemon"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_platform",
+        "to": "core/workbench_platform",
+        "requirement": null,
+        "from": "core/workbench_daemon"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_process_runtime",
+        "to": "core/workbench_process_runtime",
+        "requirement": null,
+        "from": "core/workbench_daemon"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_store_local",
+        "to": "core/workbench_store_local",
+        "requirement": null,
+        "from": "core/workbench_daemon"
+      },
+      {
+        "kind": "runtime",
+        "app": "workbench_node_ir",
+        "to": "core/workbench_node_ir",
+        "requirement": null,
+        "from": "core/workbench_devtools"
+      },
+      {
+        "kind": "runtime",
+        "app": "workbench_widgets",
+        "to": "core/workbench_widgets",
+        "requirement": null,
+        "from": "core/workbench_devtools"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_contracts",
+        "to": "core/workbench_contracts",
+        "requirement": null,
+        "from": "core/workbench_job_runtime"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_contracts",
+        "to": "core/workbench_contracts",
+        "requirement": null,
+        "from": "core/workbench_log_runtime"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_contracts",
+        "to": "core/workbench_contracts",
+        "requirement": null,
+        "from": "core/workbench_platform"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_contracts",
+        "to": "core/workbench_contracts",
+        "requirement": null,
+        "from": "core/workbench_process_runtime"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_contracts",
+        "to": "core/workbench_contracts",
+        "requirement": null,
+        "from": "core/workbench_shell_core"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_platform",
+        "to": "core/workbench_platform",
+        "requirement": null,
+        "from": "core/workbench_shell_core"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_contracts",
+        "to": "core/workbench_contracts",
+        "requirement": null,
+        "from": "core/workbench_store_local"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_contracts",
+        "to": "core/workbench_contracts",
+        "requirement": null,
+        "from": "core/workbench_transport_local"
+      },
+      {
+        "kind": "runtime",
+        "app": "workbench_node_ir",
+        "to": "core/workbench_node_ir",
+        "requirement": null,
+        "from": "core/workbench_tui_framework"
+      },
+      {
+        "kind": "runtime",
+        "app": "workbench_node_ir",
+        "to": "core/workbench_node_ir",
+        "requirement": null,
+        "from": "core/workbench_widgets"
+      },
+      {
+        "kind": "runtime",
+        "app": "switchyard_contracts",
+        "to": "core/workbench_contracts",
+        "requirement": null,
+        "from": "sites/site_local"
+      }
+    ],
+    "digest": "75fa25af430330ecc8dd94f837ad138834bf725a66b8a837c3cb97b0c345f6fc",
+    "excluded_projects": [
+      ".",
+      "apps/terminal_workbench_cli",
+      "apps/terminal_workbench_tui",
+      "apps/terminal_workbenchd"
+    ],
+    "selected_projects": [
+      "core/workbench_contracts",
+      "core/workbench_daemon",
+      "core/workbench_devtools",
+      "core/workbench_job_runtime",
+      "core/workbench_log_runtime",
+      "core/workbench_node_ir",
+      "core/workbench_platform",
+      "core/workbench_process_runtime",
+      "core/workbench_shell_core",
+      "core/workbench_store_local",
+      "core/workbench_transport_local",
+      "core/workbench_tui_framework",
+      "core/workbench_widgets",
+      "sites/site_local"
+    ],
+    "violations": []
+  }
+}
