@@ -21,7 +21,7 @@ defmodule Switchyard.Build.DependencyResolverTest do
 
     assert DependencyResolver.ex_ratatui() ==
              {:ex_ratatui,
-              [github: "nshkrdotcom/ex_ratatui", ref: "abb502870942e1842a4b93d5ad32cd85030bfd00"]}
+              [github: "nshkrdotcom/ex_ratatui", ref: "d3e7a8fc35f2b8fd37169642c4e56b18d144e74a"]}
   end
 
   test "merges dependency opts into the fallback git dependency tuple" do
@@ -29,9 +29,9 @@ defmodule Switchyard.Build.DependencyResolverTest do
 
     assert DependencyResolver.ex_ratatui(runtime: false) ==
              {:ex_ratatui,
-              [
+             [
                 github: "nshkrdotcom/ex_ratatui",
-                ref: "abb502870942e1842a4b93d5ad32cd85030bfd00",
+                ref: "d3e7a8fc35f2b8fd37169642c4e56b18d144e74a",
                 runtime: false
               ]}
   end

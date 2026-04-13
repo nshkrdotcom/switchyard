@@ -78,7 +78,7 @@ defmodule Switchyard.Build.DependencyResolver do
       local_root_path("EX_RATATUI_PATH", "../ex_ratatui"),
       [
         github: "nshkrdotcom/ex_ratatui",
-        ref: "abb502870942e1842a4b93d5ad32cd85030bfd00"
+        ref: "d3e7a8fc35f2b8fd37169642c4e56b18d144e74a"
       ],
       opts
     )
