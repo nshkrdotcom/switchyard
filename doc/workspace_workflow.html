@@ -12,7 +12,7 @@
 
     <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
 
-    <script defer src="dist/sidebar_items-B98B0546.js"></script>
+    <script defer src="dist/sidebar_items-EF666FF1.js"></script>
     <script defer src="docs_config.js"></script>
     <script defer src="dist/html-YU4BZFVS.js"></script>
 
@@ -108,19 +108,13 @@ are useful for tight iteration, but the workspace commands are the final gate.</
 </span><span class="">mix mr.deps.get
 </span><span class="">mix ci
 </span></code></pre><p>That sequence does three different jobs:</p><ul><li><a href="https://hexdocs.pm/mix/Mix.Tasks.Deps.Get.html"><code class="inline">mix deps.get</code></a> resolves root workspace dependencies such as Blitz and Weld</li><li><code class="inline">mix mr.deps.get</code> resolves child Mix project dependencies across <code class="inline">core/*</code>,
-<code class="inline">sites/*</code>, and <code class="inline">apps/*</code></li><li><code class="inline">mix ci</code> runs the repo-wide quality gates</li></ul><h2 id="dependency-override-behavior" class="section-heading"><a href="#dependency-override-behavior" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Dependency Override Behavior</span></h2><p>The workspace intentionally supports local dependency overrides, and that
-behavior matters when reproducing builds across machines.</p><ul><li><code class="inline">BLITZ_PATH</code>
+<code class="inline">sites/*</code>, and <code class="inline">apps/*</code></li><li><code class="inline">mix ci</code> runs the repo-wide quality gates</li></ul><h2 id="dependency-policy" class="section-heading"><a href="#dependency-policy" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Dependency Policy</span></h2><ul><li><code class="inline">BLITZ_PATH</code>
 defaults to <code class="inline">../blitz</code> if that sibling checkout exists; otherwise the root
-workspace uses the Hex package</li><li><code class="inline">WELD_PATH</code>
-only uses a local checkout when the env var is set explicitly</li><li><code class="inline">WELD_GIT_REF</code>
-pins an unreleased Weld commit when you need deterministic shared testing
-without a local checkout</li><li><code class="inline">WELD_GIT_URL</code>
-optionally overrides the default Weld Git remote when <code class="inline">WELD_GIT_REF</code> is set</li></ul><p>If you need deterministic &quot;no local checkout&quot; behavior on a machine that
+workspace uses the Hex package</li><li><code class="inline">weld</code>
+stays on the committed Hex dependency line in the repo root</li><li>prerelease Weld validation should happen through normal prerelease version
+bumps, not through committed path/git override logic</li></ul><p>If you need deterministic &quot;no local checkout&quot; behavior on a machine that
 happens to have those sibling repos, disable the overrides explicitly:</p><pre><code class="makeup bash" translate="no"><span class="">BLITZ_PATH=disabled mix deps.get
 </span><span class="">BLITZ_PATH=disabled mix mr.deps.get
-</span></code></pre><p>For local Weld implementation and debugging, point the workspace at the sibling
-checkout explicitly:</p><pre><code class="makeup bash" translate="no"><span class="">WELD_PATH=../weld mix deps.get
-</span><span class="">WELD_PATH=../weld mix mr.deps.get
 </span></code></pre><h2 id="day-to-day-commands" class="section-heading"><a href="#day-to-day-commands" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Day-To-Day Commands</span></h2><p>Use these from the repo root:</p><ul><li><code class="inline">mix mr.format --check-formatted</code></li><li><code class="inline">mix mr.compile</code></li><li><code class="inline">mix mr.test</code></li><li><code class="inline">mix mr.credo --strict</code></li><li><code class="inline">mix mr.dialyzer</code></li><li><code class="inline">mix mr.docs --warnings-as-errors</code></li><li><code class="inline">mix weld.verify</code></li><li><code class="inline">mix release.prepare</code></li><li><code class="inline">mix release.track</code></li><li><code class="inline">mix release.archive</code></li><li><code class="inline">mix ci</code></li></ul><p><code class="inline">mix ci</code> is the final gate. Use narrower commands only when you are shortening
 the local feedback loop.</p><h2 id="internal-projection-flow" class="section-heading"><a href="#internal-projection-flow" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Internal Projection Flow</span></h2><p>The internal <code class="inline">switchyard_foundation</code> artifact is tracked through a prepared
 bundle and a projection branch, not through a publish step:</p><ol><li><code class="inline">mix release.prepare</code></li><li><code class="inline">mix release.track</code></li><li><code class="inline">mix release.archive</code></li></ol><p><code class="inline">mix release.prepare</code> builds the artifact bundle under <code class="inline">dist/</code>.

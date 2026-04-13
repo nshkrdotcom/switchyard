@@ -12,7 +12,7 @@
 
     <link rel="stylesheet" href="dist/html-elixir-YJO4MOOW.css" />
 
-    <script defer src="dist/sidebar_items-B98B0546.js"></script>
+    <script defer src="dist/sidebar_items-EF666FF1.js"></script>
     <script defer src="docs_config.js"></script>
     <script defer src="dist/html-YU4BZFVS.js"></script>
 
@@ -144,10 +144,9 @@ Hex package. The release lifecycle is therefore bundle- and projection-oriented:
 <code class="inline">mix release.track</code> updates the orphan-backed
 <code class="inline">projection/switchyard_foundation</code> branch from that bundle so downstream repos
 can pin a real generated-source ref before any formal release boundary exists.
-<code class="inline">mix release.archive</code> snapshots the prepared bundle after validation.</p><p>For local implementation and debugging against unreleased Weld changes, use
-<code class="inline">WELD_PATH=../weld</code>. For shared pre-release testing, use
-<code class="inline">WELD_GIT_REF=&lt;commit_sha&gt;</code> and optionally <code class="inline">WELD_GIT_URL=&lt;repo_url&gt;</code>. The
-committed steady state should return to the released Hex line.</p><h2 id="documentation" class="section-heading"><a href="#documentation" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Documentation</span></h2><p>Start here if you are orienting yourself in the codebase:</p><ul><li><a href="index.html">Guide Index</a></li><li><a href="current_state.html">Current State</a></li><li><a href="vision.html">Vision</a></li><li><a href="monorepo_strategy.html">Monorepo Strategy</a></li><li><a href="package_boundaries.html">Package Boundaries</a></li><li><a href="runtime_model.html">Runtime Model</a></li><li><a href="workspace_workflow.html">Workspace Workflow</a></li><li><a href="testing_and_delivery.html">Testing And Delivery</a></li><li><a href="implementation_checklist.html">Implementation Checklist</a></li></ul><h2 id="license" class="section-heading"><a href="#license" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">License</span></h2><p>Switchyard is released under the <a href="license.html">MIT License</a>.</p>
+<code class="inline">mix release.archive</code> snapshots the prepared bundle after validation.</p><p>The committed workspace dependency stays on the released Hex Weld line. If a
+coordinated prerelease Weld validation run is needed, do it with an ordinary
+prerelease version bump rather than with repo-local path or git override logic.</p><h2 id="documentation" class="section-heading"><a href="#documentation" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Documentation</span></h2><p>Start here if you are orienting yourself in the codebase:</p><ul><li><a href="index.html">Guide Index</a></li><li><a href="current_state.html">Current State</a></li><li><a href="vision.html">Vision</a></li><li><a href="monorepo_strategy.html">Monorepo Strategy</a></li><li><a href="package_boundaries.html">Package Boundaries</a></li><li><a href="runtime_model.html">Runtime Model</a></li><li><a href="workspace_workflow.html">Workspace Workflow</a></li><li><a href="testing_and_delivery.html">Testing And Delivery</a></li><li><a href="implementation_checklist.html">Implementation Checklist</a></li></ul><h2 id="license" class="section-heading"><a href="#license" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">License</span></h2><p>Switchyard is released under the <a href="license.html">MIT License</a>.</p>
 
 </div>
 

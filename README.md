@@ -123,10 +123,9 @@ Hex package. The release lifecycle is therefore bundle- and projection-oriented:
 can pin a real generated-source ref before any formal release boundary exists.
 `mix release.archive` snapshots the prepared bundle after validation.
 
-For local implementation and debugging against unreleased Weld changes, use
-`WELD_PATH=../weld`. For shared pre-release testing, use
-`WELD_GIT_REF=<commit_sha>` and optionally `WELD_GIT_URL=<repo_url>`. The
-committed steady state should return to the released Hex line.
+The committed workspace dependency stays on the released Hex Weld line. If a
+coordinated prerelease Weld validation run is needed, do it with an ordinary
+prerelease version bump rather than with repo-local path or git override logic.
 
 ## Documentation
 

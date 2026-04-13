@@ -20,21 +20,15 @@ That sequence does three different jobs:
   `sites/*`, and `apps/*`
 - `mix ci` runs the repo-wide quality gates
 
-## Dependency Override Behavior
-
-The workspace intentionally supports local dependency overrides, and that
-behavior matters when reproducing builds across machines.
+## Dependency Policy
 
 - `BLITZ_PATH`
   defaults to `../blitz` if that sibling checkout exists; otherwise the root
   workspace uses the Hex package
-- `WELD_PATH`
-  only uses a local checkout when the env var is set explicitly
-- `WELD_GIT_REF`
-  pins an unreleased Weld commit when you need deterministic shared testing
-  without a local checkout
-- `WELD_GIT_URL`
-  optionally overrides the default Weld Git remote when `WELD_GIT_REF` is set
+- `weld`
+  stays on the committed Hex dependency line in the repo root
+- prerelease Weld validation should happen through normal prerelease version
+  bumps, not through committed path/git override logic
 
 If you need deterministic "no local checkout" behavior on a machine that
 happens to have those sibling repos, disable the overrides explicitly:
@@ -42,14 +36,6 @@ happens to have those sibling repos, disable the overrides explicitly:
 ```bash
 BLITZ_PATH=disabled mix deps.get
 BLITZ_PATH=disabled mix mr.deps.get
-```
-
-For local Weld implementation and debugging, point the workspace at the sibling
-checkout explicitly:
-
-```bash
-WELD_PATH=../weld mix deps.get
-WELD_PATH=../weld mix mr.deps.get
 ```
 
 ## Day-To-Day Commands

@@ -54,23 +54,23 @@ The internal artifact flow is:
 `projection/switchyard_foundation` branch from that bundle.
 `mix release.archive` snapshots the prepared bundle after validation.
 
-During local implementation and debugging against unreleased Weld changes, use
-`WELD_PATH=../weld`. For deterministic shared pre-release testing, use
-`WELD_GIT_REF=<commit_sha>` and optionally `WELD_GIT_URL=<repo_url>`.
+The committed workspace dependency stays on the released Hex Weld line. If a
+coordinated prerelease Weld validation run is needed, do it with an ordinary
+prerelease version bump rather than with repo-local path or git override logic.
 
 ## Internal Monolith Packaging
 
 The welded monolith is still an internal artifact, but it now keeps
-`hex.build` enabled so `mix release.prepare` can produce a deterministic tarball
-inside the prepared bundle.
+`hex.build` disabled explicitly through the Weld manifest while still allowing
+`mix release.prepare`, `mix release.track`, and `mix release.archive` to work.
 
 That does not mean Switchyard is now a publish-first product suite. The actual
 posture is:
 
 - the Workbench runtime depends on the published `ex_ratatui` Hex package
 - Weld projects the internal `switchyard_foundation` artifact
-- `mix release.prepare` builds the tarball and prepared bundle for projection
-  tracking and archive durability
+- `mix release.prepare` builds the prepared bundle for projection tracking and
+  archive durability without pretending the artifact is Hex-buildable
 - `release.publish` remains out of scope for this repo
 
 ## Recontextualization

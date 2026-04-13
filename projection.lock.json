@@ -105,8 +105,8 @@
       "priv",
       "projection.lock.json"
     ],
-    "git_revision": "8f00b2006d36ae9cdce300b2b0f60b0b4455fe38",
-    "tree_digest": "29422e7611fee34cd0c27345a386866ed5334100e01b58db00fa33cc8dd9c12d"
+    "git_revision": "cf715e841b43f3c8f81ca9973f2dc49953049a87",
+    "tree_digest": "51513dd52738700987c097a6534587d8c19240295f9983eabb72d5f1f4e0da3e"
   },
   "manifest": {
     "path": "/home/home/p/g/n/switchyard/build_support/weld.exs",
@@ -215,7 +215,8 @@
     },
     {
       "env": "dev",
-      "status": "ok",
+      "reason": "artifact_opted_out",
+      "status": "skipped",
       "task": "hex.build"
     }
   ],
