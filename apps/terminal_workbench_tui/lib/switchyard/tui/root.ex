@@ -8,6 +8,7 @@ defmodule Switchyard.TUI.Root do
   alias Switchyard.Site.Local
   alias Switchyard.TUI.State
   alias Workbench.{Context, Keymap, Layout, Node, Style}
+  alias Workbench.Devtools.Overlay
   alias Workbench.Widgets.{Detail, Help, List, Pane, StatusBar}
 
   @impl true
@@ -18,6 +19,7 @@ defmodule Switchyard.TUI.Root do
       State.new(
         sites: catalog.sites,
         apps: catalog.apps,
+        debug_overlay_visible: Map.get(props, :debug, false),
         snapshot: Map.get(props, :snapshot, %{processes: [], jobs: []}),
         context: props,
         app_component_overrides:
@@ -102,6 +104,15 @@ defmodule Switchyard.TUI.Root do
     {:ok, %{state | shell: Shell.reduce(state.shell, {:open_route, :home})}, []}
   end
 
+  def update(:toggle_debug_overlay, %State{} = state, _props, %Context{} = ctx) do
+    if debug_enabled?(ctx) do
+      next_state = %{state | debug_overlay_visible: not state.debug_overlay_visible}
+      {:ok, State.set_status(next_state, debug_overlay_status(next_state), :info), []}
+    else
+      :unhandled
+    end
+  end
+
   def update(msg, %State{} = state, _props, %Context{} = ctx) do
     _ = ctx
     _ = msg
@@ -118,104 +129,114 @@ defmodule Switchyard.TUI.Root do
   end
 
   @impl true
-  def render(%State{shell: %{route: :home}} = state, _props, _ctx) do
-    Node.vstack(
-      :root,
-      [
-        Pane.new(
-          id: :header,
-          title: "Switchyard",
-          lines: ["Terminal workbench for sites, jobs, logs, and processes"]
-        )
-        |> Style.border_fg(:accent),
-        List.new(
-          id: :sites,
-          title: "Sites",
-          items: Enum.map(state.sites, & &1.title),
-          selected: state.home_cursor,
-          meta: [focusable: true, region: Workbench.Mouse.region(:sites)]
-        )
-        |> Style.border_fg(:warning)
-        |> Style.highlight_fg(:focus),
-        Help.new(
-          id: :help,
-          title: "Keys",
-          lines: ["Up/Down select site  ·  Enter open  ·  Ctrl+Q quit"]
-        )
-        |> Style.border_fg(:muted),
-        status_node(state)
-      ],
-      constraints: [{:length, 3}, {:min, 8}, {:length, 3}, {:length, 1}]
-    )
+  def render(%State{shell: %{route: :home}} = state, _props, %Context{} = ctx) do
+    content =
+      Node.vstack(
+        :root,
+        [
+          Pane.new(
+            id: :header,
+            title: "Switchyard",
+            lines: ["Terminal workbench for sites, jobs, logs, and processes"]
+          )
+          |> Style.border_fg(:accent),
+          List.new(
+            id: :sites,
+            title: "Sites",
+            items: Enum.map(state.sites, & &1.title),
+            selected: state.home_cursor,
+            meta: [focusable: true, region: Workbench.Mouse.region(:sites)]
+          )
+          |> Style.border_fg(:warning)
+          |> Style.highlight_fg(:focus),
+          Help.new(
+            id: :help,
+            title: "Keys",
+            lines: home_help_lines(ctx)
+          )
+          |> Style.border_fg(:muted),
+          status_node(state)
+        ],
+        constraints: [{:length, 3}, {:min, 8}, {:length, 3}, {:length, 1}]
+      )
+
+    content
     |> Layout.with_padding({1, 1, 0, 0})
+    |> maybe_wrap_debug(state, ctx)
   end
 
-  def render(%State{shell: %{route: :site_apps}} = state, _props, _ctx) do
+  def render(%State{shell: %{route: :site_apps}} = state, _props, %Context{} = ctx) do
     selected_site =
       State.selected_home_site(state) || %{title: state.shell.selected_site_id || "Site"}
 
-    Node.vstack(
-      :root,
-      [
-        Pane.new(
-          id: :header,
-          title: selected_site.title,
-          lines: ["Installed apps"]
-        )
-        |> Style.border_fg(:accent),
-        List.new(
-          id: :apps,
-          title: "Apps",
-          items: Enum.map(State.apps_for_selected_site(state), & &1.title),
-          selected: state.site_app_cursor,
-          meta: [focusable: true, region: Workbench.Mouse.region(:apps)]
-        )
-        |> Style.border_fg(:warning)
-        |> Style.highlight_fg(:focus),
-        Help.new(
-          id: :help,
-          title: "Keys",
-          lines: ["Up/Down select app  ·  Enter open  ·  Esc home  ·  Ctrl+Q quit"]
-        )
-        |> Style.border_fg(:muted),
-        status_node(state)
-      ],
-      constraints: [{:length, 3}, {:min, 8}, {:length, 3}, {:length, 1}]
-    )
+    content =
+      Node.vstack(
+        :root,
+        [
+          Pane.new(
+            id: :header,
+            title: selected_site.title,
+            lines: ["Installed apps"]
+          )
+          |> Style.border_fg(:accent),
+          List.new(
+            id: :apps,
+            title: "Apps",
+            items: Enum.map(State.apps_for_selected_site(state), & &1.title),
+            selected: state.site_app_cursor,
+            meta: [focusable: true, region: Workbench.Mouse.region(:apps)]
+          )
+          |> Style.border_fg(:warning)
+          |> Style.highlight_fg(:focus),
+          Help.new(
+            id: :help,
+            title: "Keys",
+            lines: site_apps_help_lines(ctx)
+          )
+          |> Style.border_fg(:muted),
+          status_node(state)
+        ],
+        constraints: [{:length, 3}, {:min, 8}, {:length, 3}, {:length, 1}]
+      )
+
+    content
     |> Layout.with_padding({1, 1, 0, 0})
+    |> maybe_wrap_debug(state, ctx)
   end
 
   def render(%State{shell: %{route: :app}} = state, _props, %Context{} = ctx) do
-    case State.current_app_component_module(state) do
-      nil ->
-        generic_app_node(state)
+    content =
+      case State.current_app_component_module(state) do
+        nil ->
+          generic_app_node(state, ctx)
 
-      module ->
-        _ = ctx
+        module ->
+          Node.component(
+            :active_app,
+            module,
+            child_props(state),
+            mode: Workbench.Component.mode(module)
+          )
+      end
 
-        Node.component(
-          :active_app,
-          module,
-          child_props(state),
-          mode: Workbench.Component.mode(module)
-        )
-    end
+    maybe_wrap_debug(content, state, ctx)
   end
 
   @impl true
   def render_accessible(_state, _props, _ctx), do: :unsupported
 
   @impl true
-  def keymap(%State{shell: %{route: :home}}, _props, _ctx) do
+  def keymap(%State{shell: %{route: :home}}, _props, ctx) do
     [
       binding(:quit, "q", ["ctrl"], "Quit", :quit),
       binding(:prev, "up", [], "Select previous", :select_prev),
       binding(:next, "down", [], "Select next", :select_next),
       binding(:enter, "enter", [], "Open site", :enter)
     ]
+    |> maybe_add_debug_binding(ctx)
   end
 
-  def keymap(%State{shell: %{route: :site_apps}}, _props, _ctx) do
+  def keymap(%State{shell: %{route: :site_apps}}, _props, ctx) do
     [
       binding(:quit, "q", ["ctrl"], "Quit", :quit),
       binding(:prev, "up", [], "Select previous", :select_prev),
@@ -223,10 +244,16 @@ defmodule Switchyard.TUI.Root do
       binding(:enter, "enter", [], "Open app", :enter),
       binding(:back, "esc", [], "Back", :back)
     ]
+    |> maybe_add_debug_binding(ctx)
   end
 
   def keymap(%State{shell: %{route: :app}} = state, _props, %Context{} = ctx) do
-    base = [binding(:quit, "q", ["ctrl"], "Quit", :quit)]
+    base =
+      [
+        binding(:quit, "q", ["ctrl"], "Quit", :quit),
+        binding(:back, "esc", [], "Back", :back)
+      ]
+      |> maybe_add_debug_binding(ctx)
 
     case State.current_app_component_module(state) do
       nil ->
@@ -272,7 +299,7 @@ defmodule Switchyard.TUI.Root do
     end
   end
 
-  defp generic_app_node(%State{} = state) do
+  defp generic_app_node(%State{} = state, %Context{} = ctx) do
     app = State.current_app(state)
 
     Node.vstack(
@@ -308,7 +335,7 @@ defmodule Switchyard.TUI.Root do
         Help.new(
           id: :help,
           title: "Keys",
-          lines: ["Up/Down select resource  ·  Esc back  ·  Ctrl+Q quit"]
+          lines: generic_app_help_lines(ctx)
         )
         |> Style.border_fg(:muted),
         status_node(state)
@@ -337,6 +364,57 @@ defmodule Switchyard.TUI.Root do
       description: description,
       message: message
     )
+  end
+
+  defp maybe_wrap_debug(%Node{} = content, %State{debug_overlay_visible: true}, %Context{} = ctx) do
+    if debug_enabled?(ctx) do
+      Node.hstack(
+        :debug_shell,
+        [
+          content,
+          Overlay.node(ctx.devtools)
+        ],
+        constraints: [{:percentage, 70}, {:percentage, 30}]
+      )
+    else
+      content
+    end
+  end
+
+  defp maybe_wrap_debug(%Node{} = content, _state, _ctx), do: content
+
+  defp maybe_add_debug_binding(bindings, %Context{} = ctx) do
+    if debug_enabled?(ctx) do
+      bindings ++
+        [binding(:toggle_debug_overlay, "f12", [], "Toggle debug rail", :toggle_debug_overlay)]
+    else
+      bindings
+    end
+  end
+
+  defp debug_enabled?(%Context{} = ctx), do: Map.get(ctx.devtools, :enabled?, false)
+
+  defp debug_overlay_status(%State{debug_overlay_visible: true}), do: "Debug rail shown."
+  defp debug_overlay_status(%State{debug_overlay_visible: false}), do: "Debug rail hidden."
+
+  defp home_help_lines(%Context{} = ctx) do
+    ["Up/Down select site  ·  Enter open  ·  Ctrl+Q quit"] ++ debug_help_suffix(ctx)
+  end
+
+  defp site_apps_help_lines(%Context{} = ctx) do
+    ["Up/Down select app  ·  Enter open  ·  Esc home  ·  Ctrl+Q quit"] ++ debug_help_suffix(ctx)
+  end
+
+  defp generic_app_help_lines(%Context{} = ctx) do
+    ["Up/Down select resource  ·  Esc back  ·  Ctrl+Q quit"] ++ debug_help_suffix(ctx)
+  end
+
+  defp debug_help_suffix(%Context{} = ctx) do
+    if debug_enabled?(ctx) do
+      ["F12 toggle debug rail"]
+    else
+      []
+    end
   end
 
   defp status_node(%State{} = state) do

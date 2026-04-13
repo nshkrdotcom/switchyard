@@ -3,7 +3,8 @@
 repo_root = Path.expand("..", __DIR__)
 
 Mix.install([
-  {:switchyard_tui, path: Path.join(repo_root, "apps/terminal_workbench_tui")}
+  {:switchyard_tui, path: Path.join(repo_root, "apps/terminal_workbench_tui")},
+  {:workbench_devtools, path: Path.join(repo_root, "core/workbench_devtools")}
 ])
 
 defmodule Switchyard.Examples.FullFeatured.Data do
@@ -493,7 +494,7 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
   end
 
   @impl true
-  def render(state, props, _ctx) do
+  def render(state, props, ctx) do
     Node.vstack(
       :control_room,
       [
@@ -511,7 +512,7 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
         Help.new(
           id: :help,
           title: "Keys",
-          lines: help_lines(state)
+          lines: help_lines(state, ctx)
         )
         |> Style.border_fg(:muted),
         StatusBar.new(
@@ -1034,18 +1035,26 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
     |> Enum.take(6)
   end
 
-  defp help_lines(%{active_tab: 3}) do
+  defp help_lines(%{active_tab: 3}, %Context{} = ctx) do
     [
       "Up/Down row-scroll runtime trace  ·  Left/Right change tabs  ·  s snapshot  ·  t trace on/off",
-      "x failing diagnostic  ·  quiet runtime polling is using render?: false  ·  Ctrl+Q quit"
-    ]
+      "x failing diagnostic  ·  Esc back  ·  Ctrl+Q quit"
+    ] ++ debug_help_lines(ctx)
   end
 
-  defp help_lines(_state) do
+  defp help_lines(_state, %Context{} = ctx) do
     [
       "Left/Right tabs  ·  Up/Down selection  ·  r refresh dashboard  ·  o runtime tab",
-      "d deploy selected service  ·  a acknowledge selected incident  ·  s snapshot  ·  t trace  ·  x failing diagnostic  ·  Ctrl+Q quit"
-    ]
+      "d deploy selected service  ·  a acknowledge selected incident  ·  s snapshot  ·  t trace  ·  x failing diagnostic  ·  Esc back  ·  Ctrl+Q quit"
+    ] ++ debug_help_lines(ctx)
+  end
+
+  defp debug_help_lines(%Context{} = ctx) do
+    if Map.get(ctx.devtools, :enabled?, false) do
+      ["F12 toggle debug rail"]
+    else
+      []
+    end
   end
 
   defp trace_widget_items(state) do
@@ -1334,6 +1343,7 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
   alias Switchyard.Site.Local
   alias Switchyard.TUI
   alias Switchyard.TUI.App
+  alias Workbench.Devtools.Driver
 
   def main(argv) do
     {opts, _args, _invalid} =
@@ -1344,48 +1354,58 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
           distributed_smoke: :boolean,
           distributed: :boolean,
           attach: :string,
-          open_app: :string
+          open_app: :string,
+          debug: :boolean,
+          debug_dir: :string
         ]
       )
+
+    debug_opts =
+      opts
+      |> Keyword.take([:debug, :debug_dir])
+      |> Enum.filter(fn
+        {:debug, true} -> true
+        {_key, value} -> not is_nil(value)
+      end)
 
     cond do
       Keyword.get(opts, :describe, false) ->
         describe()
 
       Keyword.get(opts, :smoke, false) ->
-        smoke(Keyword.get(opts, :open_app))
+        smoke(Keyword.get(opts, :open_app), debug_opts)
 
       Keyword.get(opts, :distributed_smoke, false) ->
-        distributed_smoke(Keyword.get(opts, :open_app))
+        distributed_smoke(Keyword.get(opts, :open_app), debug_opts)
 
       Keyword.get(opts, :distributed, false) ->
-        run_distributed(Keyword.get(opts, :open_app))
+        run_distributed(Keyword.get(opts, :open_app), debug_opts)
 
       node_name = Keyword.get(opts, :attach) ->
         attach(node_name)
 
       true ->
-        interactive(Keyword.get(opts, :open_app))
+        interactive(Keyword.get(opts, :open_app), debug_opts)
     end
   end
 
-  defp interactive(open_app) do
-    TUI.run(base_opts(normalize_open_app(open_app)))
+  defp interactive(open_app, debug_opts) do
+    TUI.run(base_opts(normalize_open_app(open_app), debug_opts))
   end
 
-  defp smoke(open_app) do
+  defp smoke(open_app, debug_opts) do
     app_id = normalize_open_app(open_app) || "fleet_demo.control_room"
 
     {:ok, pid} =
       App.start_link(
-        base_opts(app_id)
+        base_opts(app_id, debug_opts)
         |> Keyword.put(:test_mode, {110, 32})
       )
 
     ref = Process.monitor(pid)
 
     initial_snapshot =
-      wait_for_snapshot!(pid, "local smoke startup", fn snapshot ->
+      Driver.wait_for_snapshot!(pid, "local smoke startup", fn snapshot ->
         not snapshot.polling_enabled? and
           snapshot.render_count >= 1 and
           snapshot.subscription_count >= 5 and
@@ -1400,19 +1420,19 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
       raise "smoke mode should be headless under test_mode"
     end
 
-    inject_key(pid, "r")
-    inject_key(pid, "d")
-    inject_key(pid, "right")
-    inject_key(pid, "down")
-    inject_key(pid, "right")
-    inject_key(pid, "a")
-    inject_key(pid, "o")
-    inject_key(pid, "down")
-    inject_key(pid, "s")
-    inject_key(pid, "x")
+    Driver.inject_key(pid, "r")
+    Driver.inject_key(pid, "d")
+    Driver.inject_key(pid, "right")
+    Driver.inject_key(pid, "down")
+    Driver.inject_key(pid, "right")
+    Driver.inject_key(pid, "a")
+    Driver.inject_key(pid, "o")
+    Driver.inject_key(pid, "down")
+    Driver.inject_key(pid, "s")
+    Driver.inject_key(pid, "x")
 
     pre_resize_snapshot =
-      wait_for_snapshot!(pid, "local smoke actions", fn snapshot ->
+      Driver.wait_for_snapshot!(pid, "local smoke actions", fn snapshot ->
         snapshot.active_async_commands == 0 and
           snapshot.render_count > initial_snapshot.render_count and
           snapshot_has_message?(snapshot, &match?({:deploy_started, _}, &1)) and
@@ -1423,10 +1443,10 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
           snapshot_has_event?(snapshot, &match?(%Event.Key{code: "x"}, &1))
       end)
 
-    inject_resize(pid, 120, 36)
+    Driver.inject_resize(pid, 120, 36)
 
     snapshot =
-      wait_for_snapshot!(pid, "local smoke resize", fn snapshot ->
+      Driver.wait_for_snapshot!(pid, "local smoke resize", fn snapshot ->
         snapshot.render_count > pre_resize_snapshot.render_count and
           snapshot_has_event?(snapshot, &match?(%Event.Resize{width: 120, height: 36}, &1))
       end)
@@ -1451,7 +1471,7 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
         :ok
     end
 
-    inject_key(pid, "q", ["ctrl"])
+    Driver.inject_key(pid, "q", ["ctrl"])
 
     receive do
       {:DOWN, ^ref, :process, ^pid, _reason} ->
@@ -1464,11 +1484,11 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
     end
   end
 
-  defp run_distributed(open_app) do
+  defp run_distributed(open_app, debug_opts) do
     ensure_distributed!("--distributed")
 
     {:ok, pid} =
-      App.start_link(distributed_opts(normalize_open_app(open_app)))
+      App.start_link(distributed_opts(normalize_open_app(open_app), debug_opts))
 
     IO.puts("""
 
@@ -1486,13 +1506,13 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
     wait_for(pid)
   end
 
-  defp distributed_smoke(open_app) do
+  defp distributed_smoke(open_app, debug_opts) do
     ensure_distributed!("--distributed-smoke")
 
     app_id = normalize_open_app(open_app) || "fleet_demo.control_room"
 
     {:ok, listener} =
-      App.start_link(distributed_opts(app_id))
+      App.start_link(distributed_opts(app_id, debug_opts))
 
     try do
       {:ok, pid} = ExRatatui.Distributed.Listener.start_session(self(), 110, 32, listener)
@@ -1502,27 +1522,27 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
       :ok = Runtime.enable_trace(pid)
 
       startup_snapshot =
-        wait_for_snapshot!(pid, "distributed smoke startup", fn snapshot ->
+        Driver.wait_for_snapshot!(pid, "distributed smoke startup", fn snapshot ->
           snapshot.transport == :distributed_server and
             snapshot.render_count >= 1 and
             snapshot.trace_enabled?
         end)
 
-      send(pid, {:ex_ratatui_event, %Event.Key{code: "o", modifiers: [], kind: "press"}})
-      send(pid, {:ex_ratatui_event, %Event.Key{code: "right", modifiers: [], kind: "press"}})
+      Driver.inject_key(pid, "o")
+      Driver.inject_key(pid, "right")
 
       pre_resize_snapshot =
-        wait_for_snapshot!(pid, "distributed smoke actions", fn snapshot ->
+        Driver.wait_for_snapshot!(pid, "distributed smoke actions", fn snapshot ->
           snapshot.active_async_commands == 0 and
             snapshot.render_count >= startup_snapshot.render_count + 2 and
             snapshot_has_event?(snapshot, &match?(%Event.Key{code: "o"}, &1)) and
             snapshot_has_event?(snapshot, &match?(%Event.Key{code: "right"}, &1))
         end)
 
-      send(pid, {:ex_ratatui_resize, 120, 36})
+      Driver.inject_resize(pid, 120, 36)
 
       snapshot =
-        wait_for_snapshot!(pid, "distributed smoke resize", fn snapshot ->
+        Driver.wait_for_snapshot!(pid, "distributed smoke resize", fn snapshot ->
           snapshot.dimensions == {120, 36} and
             snapshot.render_count > pre_resize_snapshot.render_count
         end)
@@ -1544,7 +1564,7 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
           :ok
       end
 
-      send(pid, {:ex_ratatui_event, %Event.Key{code: "q", modifiers: ["ctrl"], kind: "press"}})
+      Driver.inject_key(pid, "q", ["ctrl"])
 
       receive do
         {:DOWN, ^ref, :process, ^pid, _reason} ->
@@ -1595,13 +1615,14 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
     - elixir examples/full_featured_workbench.exs
     - elixir examples/full_featured_workbench.exs --open-app control-room
     - elixir examples/full_featured_workbench.exs --smoke
+    - elixir examples/full_featured_workbench.exs --debug
     - elixir --sname switchyard_smoke --cookie demo examples/full_featured_workbench.exs --distributed-smoke
     - elixir --sname switchyard_demo --cookie demo examples/full_featured_workbench.exs --distributed
     - elixir --sname operator --cookie demo examples/full_featured_workbench.exs --attach switchyard_demo@YOUR_HOST
     """)
   end
 
-  defp base_opts(open_app) do
+  defp base_opts(open_app, debug_opts) do
     [
       name: nil,
       site_modules: [DemoSite, Local],
@@ -1610,10 +1631,11 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
       initial_trace?: true
     ]
     |> maybe_put_open_app(open_app)
+    |> Keyword.merge(debug_opts)
   end
 
-  defp distributed_opts(open_app) do
-    base_opts(open_app)
+  defp distributed_opts(open_app, debug_opts) do
+    base_opts(open_app, debug_opts)
     |> Keyword.delete(:name)
     |> Keyword.put(:transport, :distributed)
   end
@@ -1642,14 +1664,6 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
   defp normalize_open_app("incidents"), do: "fleet_demo.incidents"
   defp normalize_open_app("local-processes"), do: "local.processes"
   defp normalize_open_app(open_app), do: open_app
-
-  defp inject_key(pid, code, modifiers \\ []) do
-    :ok = Runtime.inject_event(pid, %Event.Key{code: code, modifiers: modifiers, kind: "press"})
-  end
-
-  defp inject_resize(pid, width, height) do
-    :ok = Runtime.inject_event(pid, %Event.Resize{width: width, height: height})
-  end
 
   defp ensure_distributed!(mode) do
     if Node.alive?() do
@@ -1691,30 +1705,6 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
     end
   end
 
-  defp wait_for_snapshot!(pid, label, predicate, timeout_ms \\ 3_000) do
-    deadline = System.monotonic_time(:millisecond) + timeout_ms
-    do_wait_for_snapshot(pid, label, predicate, deadline)
-  end
-
-  defp do_wait_for_snapshot(pid, label, predicate, deadline) do
-    snapshot = Runtime.snapshot(pid)
-
-    cond do
-      predicate.(snapshot) ->
-        snapshot
-
-      System.monotonic_time(:millisecond) >= deadline ->
-        raise "#{label} timed out waiting for runtime condition. Last snapshot: #{inspect(snapshot_brief(snapshot))}"
-
-      true ->
-        receive do
-          {:ex_ratatui_draw, _widgets} -> do_wait_for_snapshot(pid, label, predicate, deadline)
-        after
-          10 -> do_wait_for_snapshot(pid, label, predicate, deadline)
-        end
-    end
-  end
-
   defp snapshot_has_message?(snapshot, matcher) when is_function(matcher, 1) do
     Enum.any?(snapshot.trace_events, fn
       %{kind: :message, details: %{payload: payload}} -> matcher.(payload)
@@ -1727,19 +1717,6 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
       %{kind: :message, details: %{source: :event, payload: payload}} -> matcher.(payload)
       _other -> false
     end)
-  end
-
-  defp snapshot_brief(snapshot) do
-    %{
-      transport: snapshot.transport,
-      dimensions: snapshot.dimensions,
-      polling_enabled?: snapshot.polling_enabled?,
-      render_count: snapshot.render_count,
-      subscription_count: snapshot.subscription_count,
-      active_async_commands: snapshot.active_async_commands,
-      trace_enabled?: snapshot.trace_enabled?,
-      recent_trace_kinds: Enum.map(snapshot.trace_events, & &1.kind) |> Enum.take(-8)
-    }
   end
 end
 

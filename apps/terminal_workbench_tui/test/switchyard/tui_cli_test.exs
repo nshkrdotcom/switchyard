@@ -6,6 +6,7 @@ defmodule Switchyard.TUICLITest do
   alias Switchyard.TUI.App
   alias Switchyard.TUI.CLI
   alias Switchyard.TUI.EscriptBootstrap
+  alias Workbench.Devtools.Driver
   alias Workbench.Widgets.Pane
 
   defmodule ExampleSite do
@@ -68,10 +69,12 @@ defmodule Switchyard.TUICLITest do
       do: Pane.new(id: :workspace, title: "Workspace", lines: ["ready"])
   end
 
-  test "parse_run_opts resolves debug logging and ignores unrelated args" do
-    opts = CLI.parse_run_opts(["--debug", "--bogus"])
+  test "parse_run_opts resolves real debug mode and ignores unrelated args" do
+    opts = CLI.parse_run_opts(["--debug", "--debug-dir", "/tmp/switchyard-debug", "--bogus"])
 
     assert Keyword.get(opts, :log_level) == "debug"
+    assert Keyword.get(opts, :debug) == true
+    assert Keyword.get(opts, :debug_dir) == "/tmp/switchyard-debug"
   end
 
   test "escript bootstrap is a no-op outside escript runtime" do
@@ -93,6 +96,44 @@ defmodule Switchyard.TUICLITest do
     assert [%Command{kind: :async}] = runtime_opts[:commands]
     assert runtime_opts[:render?] == true
     assert runtime_opts[:trace?] == nil
+  end
+
+  test "app init enables real debug runtime state" do
+    base_dir =
+      Path.join(System.tmp_dir!(), "switchyard_tui_debug_#{System.unique_integer([:positive])}")
+
+    on_exit(fn -> File.rm_rf(base_dir) end)
+
+    assert {:ok, %Workbench.Runtime.State{} = state, _runtime_opts} =
+             App.init(debug: true, debug_dir: base_dir)
+
+    assert state.devtools.enabled? == true
+    assert is_binary(state.devtools.artifact_dir)
+    assert state.root_state.debug_overlay_visible == true
+  end
+
+  test "driver can fetch workbench debug snapshots from a running app" do
+    base_dir =
+      Path.join(System.tmp_dir!(), "switchyard_tui_driver_#{System.unique_integer([:positive])}")
+
+    on_exit(fn -> File.rm_rf(base_dir) end)
+
+    assert {:ok, pid} =
+             App.start_link(
+               name: nil,
+               debug: true,
+               debug_dir: base_dir,
+               test_mode: {90, 28}
+             )
+
+    assert %{enabled?: true, latest: %{route: :home, render_tree_entries: entry_count}} =
+             Driver.wait_for_debug_snapshot!(pid, "debug startup", fn snapshot ->
+               Map.get(snapshot, :enabled?, false) and
+                 match?(%{route: :home}, Map.get(snapshot, :latest))
+             end)
+
+    assert entry_count > 0
+    GenServer.stop(pid)
   end
 
   test "app update stops cleanly on quit messages" do

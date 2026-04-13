@@ -14,6 +14,7 @@ defmodule Switchyard.TUI.State do
             resource_cursor: 0,
             status_line: "Ready",
             status_severity: :info,
+            debug_overlay_visible: false,
             snapshot: %{processes: [], jobs: []},
             context: %{},
             app_component_overrides: %{}
@@ -27,6 +28,7 @@ defmodule Switchyard.TUI.State do
           resource_cursor: non_neg_integer(),
           status_line: String.t(),
           status_severity: :info | :warn | :error,
+          debug_overlay_visible: boolean(),
           snapshot: map(),
           context: map(),
           app_component_overrides: %{optional(String.t()) => module()}

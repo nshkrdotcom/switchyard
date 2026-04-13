@@ -185,6 +185,29 @@ defmodule Switchyard.TUI.RootTest do
              Root.render(state, %{}, %Context{app_env: %{}})
   end
 
+  test "custom app route still exposes esc back through the root shell keymap" do
+    state =
+      base_state()
+      |> Map.put(:apps, [
+        AppDescriptor.new!(%{
+          id: "example.mounted",
+          site_id: "example",
+          title: "Mounted Workspace",
+          provider: ExampleSite,
+          resource_kinds: [:workspace],
+          route_kind: :workspace,
+          tui_component: ExampleComponent
+        })
+      ])
+      |> Map.put(:shell, %{base_state().shell | route: :app, selected_app_id: "example.mounted"})
+
+    bindings = Root.keymap(state, %{}, %Context{app_env: %{}})
+
+    assert Enum.any?(bindings, fn binding ->
+             binding.message == :back and %{code: "esc", modifiers: []} in binding.keys
+           end)
+  end
+
   test "custom app key events are unhandled by the root when runtime-managed" do
     state =
       base_state()

@@ -18,8 +18,10 @@ not parallel demo scaffolding.
 - `Workbench.Subscription.interval/4` and `Workbench.Subscription.once/4`
 - runtime inspection through `ExRatatui.Runtime.snapshot/1`, trace toggles, and
   retained trace events rendered in-app
+- runtime-owned debug session artifacts and a product-visible debug rail through
+  `--debug`
 - render suppression through `render?: false` for quiet runtime snapshot polling
-- synthetic headless input through `ExRatatui.Runtime.inject_event/2`
+- deterministic scripted input through `Workbench.Devtools.Driver`
 - distributed listener / attach mode through the same `Switchyard.TUI.App`
 - ex_ratatui-backed rendering through tabs, tables, lists, panes, detail panes,
   spinners, gauges, status bars, and a row-scrolled variable-height
@@ -46,6 +48,7 @@ Useful variants:
 ```bash
 elixir examples/full_featured_workbench.exs --open-app control-room
 elixir examples/full_featured_workbench.exs --open-app runbooks
+elixir examples/full_featured_workbench.exs --debug
 elixir examples/full_featured_workbench.exs --describe
 elixir examples/full_featured_workbench.exs --smoke
 elixir --sname switchyard_smoke --cookie demo examples/full_featured_workbench.exs --distributed-smoke
@@ -64,6 +67,8 @@ elixir --sname operator --cookie demo examples/full_featured_workbench.exs --att
 - `s`: request an on-demand runtime snapshot
 - `t`: toggle runtime trace capture
 - `x`: run a failing async diagnostic probe
+- `Esc`: return to the app list
+- `F12`: toggle the product debug rail when debug mode is enabled
 - `Ctrl+Q`: quit
 
 ## Success Gates
@@ -77,6 +82,7 @@ The example is doing its job if all of the following are true:
 - manual refresh and deploy actions update the status line and event stream
 - the runtime tab shows retained reducer trace events in a row-scrolled
   variable-height `WidgetList`
+- `--debug` creates a readable session artifact bundle and exposes the debug rail
 - runtime snapshot polling continues without forcing a redundant frame on every
   poll tick
 - toggling trace and running the failing diagnostic probe update both the runtime
@@ -91,8 +97,8 @@ The example is doing its job if all of the following are true:
 ## Notes
 
 - The example uses `Mix.install/1` with the local `apps/terminal_workbench_tui`
-  package, so it stays outside the workspace contract while still using the
-  real app and dependency graph.
+  and `core/workbench_devtools` packages, so it stays outside the workspace
+  contract while still using the real app and dependency graph.
 - `--smoke` runs the same example in `test_mode` and drives it through
-  `ExRatatui.Runtime.inject_event/2`, so it validates the reducer runtime
-  through the same headless event path used by the upstream runtime tests.
+  `Workbench.Devtools.Driver`, so it validates the reducer runtime through the
+  named deterministic automation seam rather than ad hoc helpers.

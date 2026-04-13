@@ -53,6 +53,7 @@ defmodule Switchyard.TUI.MixProject do
       DependencyResolver.switchyard_shell(),
       DependencyResolver.switchyard_tui_framework(),
       DependencyResolver.switchyard_widgets(),
+      DependencyResolver.switchyard_devtools(),
       DependencyResolver.switchyard_daemon(),
       DependencyResolver.switchyard_transport_local(),
       DependencyResolver.switchyard_site_local(),

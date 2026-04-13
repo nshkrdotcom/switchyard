@@ -5,9 +5,10 @@ Workbench runtime.
 
 ## Responsibilities
 
-- expose overlay-oriented inspection surfaces
-- provide render-tree, focus-tree, and region-map views
-- support event, command, and render-stat tracing
+- expose bounded session history helpers
+- create durable debug session artifact bundles
+- render overlay / debug-rail nodes from runtime devtools data
+- provide deterministic reducer-runtime driver helpers for automation
 - host development helpers such as file watching and hot-reload plumbing
 
 This package is intentionally optional. Product apps should be able to run
@@ -15,10 +16,28 @@ without it.
 
 ## Current Surface
 
-- inspector and overlay helpers
-- render-tree, focus-tree, and region-map inspection helpers
-- focus, event, command, and render-stat tracing helpers
+- `Workbench.Devtools.SessionArtifacts.runtime_config/1` creates a debug session
+  directory and sink suitable for `Workbench.Runtime` devtools capture
+- `Workbench.Devtools.Overlay.node/1` renders a debug rail from the current
+  devtools map
+- `Workbench.Devtools.Driver` wraps runtime snapshot polling plus synthetic key
+  and resize injection for deterministic TUI automation
+- inspector, render-tree, focus-tree, region-map, focus, event, command, and
+  render-stat helpers
 - file watching and hot-reload plumbing
+
+## Artifact Shape
+
+The first durable debug bundle is intentionally simple and readable:
+
+- `manifest.json`
+- `events.jsonl`
+- `commands.jsonl`
+- `snapshots.jsonl`
+- `latest.json`
+
+This is designed to be usable by both humans and agents after the session has
+already exited.
 
 ## Package Checks
 

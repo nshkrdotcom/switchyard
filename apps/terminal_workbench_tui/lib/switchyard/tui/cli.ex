@@ -6,7 +6,7 @@ defmodule Switchyard.TUI.CLI do
   alias Switchyard.TUI
   alias Switchyard.TUI.EscriptBootstrap
 
-  @switches [debug: :boolean]
+  @switches [debug: :boolean, debug_dir: :string, debug_history_limit: :integer]
 
   @spec main([String.t()]) :: no_return()
   def main(argv) do
@@ -36,6 +36,17 @@ defmodule Switchyard.TUI.CLI do
   @spec parse_run_opts([String.t()]) :: keyword()
   def parse_run_opts(argv) do
     {opts, _args, _invalid} = OptionParser.parse(argv, strict: @switches)
-    if Keyword.get(opts, :debug, false), do: [log_level: "debug"], else: []
+
+    if Keyword.get(opts, :debug, false) do
+      [
+        debug: true,
+        log_level: "debug",
+        debug_dir: Keyword.get(opts, :debug_dir),
+        debug_history_limit: Keyword.get(opts, :debug_history_limit)
+      ]
+      |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+    else
+      []
+    end
   end
 end

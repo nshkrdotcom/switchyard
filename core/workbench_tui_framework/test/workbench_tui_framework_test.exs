@@ -393,6 +393,58 @@ defmodule WorkbenchTuiFrameworkTest do
              Workbench.Runtime.render(next_state, %ExRatatui.Frame{width: 80, height: 20})
   end
 
+  test "captures bounded devtools history and replies to snapshot requests" do
+    parent = self()
+
+    sink = fn entry ->
+      send(parent, {:devtools_entry, entry})
+      :ok
+    end
+
+    assert {:ok, %Workbench.Runtime.State{} = state, _init_opts} =
+             Workbench.Runtime.init(RuntimeOptsComponent,
+               devtools: [
+                 enabled?: true,
+                 history_limit: 2,
+                 session_label: "framework-test",
+                 sink: sink
+               ]
+             )
+
+    assert state.devtools.enabled? == true
+    assert length(state.devtools.snapshots) == 1
+    assert state.devtools.latest.trigger.kind == :init
+
+    assert_receive {:devtools_entry,
+                    %{kind: :event, entry: %{sequence: 1, trigger: %{kind: :init}}}}
+
+    assert_receive {:devtools_entry, %{kind: :command, entry: %{sequence: 1}}}
+
+    assert_receive {:devtools_entry,
+                    %{kind: :snapshot, entry: %{sequence: 1, render_tree_entries: 1}}}
+
+    assert {:noreply, %Workbench.Runtime.State{} = next_state, _update_opts} =
+             Workbench.Runtime.update({:info, {:workbench_root, :advance}}, state)
+
+    assert length(next_state.devtools.events) == 2
+    assert length(next_state.devtools.commands) == 2
+    assert length(next_state.devtools.snapshots) == 2
+    assert next_state.devtools.latest.trigger.kind == :info
+    assert next_state.devtools.latest.subscription_count == 0
+    assert next_state.devtools.latest.component_count == 0
+
+    assert {:noreply, ^next_state} =
+             Workbench.Runtime.update(
+               {:info, {:workbench_devtools_snapshot_request, self()}},
+               next_state
+             )
+
+    assert_receive {:workbench_devtools_snapshot, snapshot}
+    assert snapshot.enabled? == true
+    assert snapshot.latest.sequence == 2
+    assert length(snapshot.snapshots) == 2
+  end
+
   test "supervised component server ignores missing handle_info callbacks" do
     ctx = %Context{}
     {:ok, pid} = Workbench.ComponentServer.start_link(module: RuntimeOptsComponent, ctx: ctx)

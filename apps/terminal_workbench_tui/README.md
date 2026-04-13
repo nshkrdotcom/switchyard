@@ -47,6 +47,15 @@ The current startup path opens the generic home screen. From there you can:
 - use list/detail views for generic resource-backed apps
 - hand off to framework-native app components for richer product-specific flows
 
+With `--debug` enabled, the app now also:
+
+- creates a durable session artifact bundle under `tmp/switchyard_debug/...`
+- shows a debug rail by default
+- lets you toggle that rail with `F12`
+
+On active app routes, `Esc` now reliably returns to the app list even when the
+current app is a mounted custom component.
+
 ## Developer Workflow
 
 Run package-local checks from this directory:
@@ -72,6 +81,7 @@ mix ci
 - [test/switchyard/tui_cli_test.exs](test/switchyard/tui_cli_test.exs) exercises the escript CLI surface.
 - [test/switchyard/tui_test.exs](test/switchyard/tui_test.exs) covers the public `Switchyard.TUI` startup seam.
 - [test/switchyard/tui/controller_test.exs](test/switchyard/tui/controller_test.exs) is the best entry point for understanding root-component routing and custom app component flow.
+- [test/full_featured_workbench_example_test.exs](test/full_featured_workbench_example_test.exs) proves the example’s local and distributed smoke paths.
 
 ## Related Reading
 

@@ -41,6 +41,10 @@ on that package instead of owning `Workbench.Node` directly.
   ignores optional `handle_info/4` when a component does not implement it.
 - `Workbench.Runtime` now owns mounted child component registry/supervisor state
   and routes mounted child updates and info by stable component path.
+- `Workbench.Runtime` also accepts a `:devtools` runtime option, retains bounded
+  debug/session history in runtime state, surfaces current devtools data through
+  `Workbench.Context.devtools`, and can answer
+  `{:workbench_devtools_snapshot_request, pid}` for deterministic driver access.
 - `Workbench.RenderTree` now applies `Workbench.Layout.padding` before splitting
   child areas.
 - `Workbench.Renderer.ExRatatui` lowers `Workbench.Widgets.WidgetList` into
@@ -63,6 +67,17 @@ Node.vstack(:root, children)
 
 Renderer-specific `%ExRatatui.Style{}` structs remain supported as a lowering
 fallback, but they are no longer the preferred authoring API.
+
+## Debug Mode
+
+The framework-level debug seam now has two parts:
+
+- runtime-owned bounded session history in `Workbench.Runtime.State.devtools`
+- optional durable artifact emission through a sink function supplied in the
+  `:devtools` runtime option
+
+This keeps capture in the runtime while letting product apps decide how to
+present or persist that information.
 
 ## Package Checks
 
