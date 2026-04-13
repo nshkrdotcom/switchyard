@@ -35,25 +35,43 @@ The root workspace is authoritative for delivery quality:
 - `mix mr.dialyzer`
 - `mix mr.docs --warnings-as-errors`
 - `mix weld.verify`
+- `mix release.prepare`
+- `mix release.track`
+- `mix release.archive`
 - `mix ci`
 
 `mix ci` is the final green gate for this repository. `mix weld.verify` is the
 projection gate for the internal `switchyard_foundation` monolith.
 
+The internal artifact flow is:
+
+1. `mix release.prepare`
+2. `mix release.track`
+3. `mix release.archive`
+
+`mix release.prepare` builds the prepared artifact bundle under `dist/`.
+`mix release.track` updates the orphan-backed
+`projection/switchyard_foundation` branch from that bundle.
+`mix release.archive` snapshots the prepared bundle after validation.
+
+During local implementation and debugging against unreleased Weld changes, use
+`WELD_PATH=../weld`. For deterministic shared pre-release testing, use
+`WELD_GIT_REF=<commit_sha>` and optionally `WELD_GIT_URL=<repo_url>`.
+
 ## Internal Monolith Packaging
 
-The welded monolith intentionally opts out of `hex.build` through
-`verify: [hex_build: false]`.
+The welded monolith is still an internal artifact, but it now keeps
+`hex.build` enabled so `mix release.prepare` can produce a deterministic tarball
+inside the prepared bundle.
 
-That is not a workaround. It is the explicit packaging contract for the current
-architecture:
+That does not mean Switchyard is now a publish-first product suite. The actual
+posture is:
 
-- the Workbench runtime depends on the reducer-runtime API in the forked
-  `ex_ratatui` repository
-- that dependency is consumed through the published `ex_ratatui` Hex package
-- the monolith is therefore still verified as an internal artifact through
-  dependency resolution, compile, tests, and docs, while Hex-only packaging
-  remains skipped explicitly in Weld
+- the Workbench runtime depends on the published `ex_ratatui` Hex package
+- Weld projects the internal `switchyard_foundation` artifact
+- `mix release.prepare` builds the tarball and prepared bundle for projection
+  tracking and archive durability
+- `release.publish` remains out of scope for this repo
 
 ## Recontextualization
 
@@ -68,6 +86,8 @@ If work resumes after a pause or compaction:
 7. read `docs/implementation_checklist.md`
 8. inspect `git status --short --branch`
 9. resume from the earliest unchecked checklist item
+10. if the work touches packaging, confirm `mix release.prepare`,
+    `mix release.track`, and `mix ci` still describe the current workflow
 
 ## Documentation Standard
 

@@ -108,17 +108,26 @@ Read these before making structural changes:
 
 ## Packaging Note
 
-The welded `switchyard_foundation` monolith intentionally sets
-`verify: [hex_build: false]`.
+The welded `switchyard_foundation` monolith remains an internal artifact, but
+the current release flow keeps `hex.build` enabled so `mix release.prepare`
+can produce a deterministic tarball inside the prepared bundle.
 
-Reason:
+That does not change the repo's publication posture:
 
-1. the runtime is designed against the reducer-runtime API in the forked
-   `ex_ratatui` dependency
-2. that API is now consumed through the published `ex_ratatui` Hex package
-3. the monolith is therefore still verified as an internal artifact with full
-   `deps.get`, compile, test, and docs gates, while `hex.build` is explicitly
-   skipped through Weld rather than failing implicitly
+1. the runtime is designed against the published `ex_ratatui` Hex package
+2. the welded artifact is still tracked internally through bundle, projection,
+   and archive steps
+3. `release.publish` remains out of scope for this repo
+
+Current internal artifact operations therefore run through:
+
+1. `mix release.prepare`
+2. `mix release.track`
+3. `mix release.archive`
+
+Use `WELD_PATH=../weld` for local Weld implementation/debugging, and
+`WELD_GIT_REF` plus optional `WELD_GIT_URL` when you need a pinned unreleased
+Weld commit without a local checkout.
 
 ## Recontextualization Instructions
 

@@ -17,7 +17,7 @@ defmodule Switchyard.Build.WeldContract do
 
   @dependencies [
     blitz: [requirement: "~> 0.2.0"],
-    weld: [requirement: "~> 0.5.0"],
+    weld: [requirement: "~> 0.6.0"],
     ex_ratatui: [requirement: "~> 0.7.0"]
   ]
 
@@ -69,9 +69,6 @@ defmodule Switchyard.Build.WeldContract do
           "GitHub" => "https://github.com/nshkrdotcom/switchyard",
           "Guides" => "https://hexdocs.pm/switchyard_workspace/workspace_readme.html"
         }
-      ],
-      verify: [
-        hex_build: false
       ],
       output: [
         docs: @artifact_docs,

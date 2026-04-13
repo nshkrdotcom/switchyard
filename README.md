@@ -24,7 +24,8 @@ stack, built-in local site, and runnable daemon, CLI, and TUI entrypoints.
   generic list/detail flows, and custom framework-native app components
 - headless CLI and daemon entrypoints that prove meaningful behavior exists
   beneath the UI
-- Weld projection metadata for the internal `switchyard_foundation` artifact
+- Weld projection metadata and tracked projection flow for the internal
+  `switchyard_foundation` artifact
 
 Switchyard is no longer just a scaffold. The baseline architecture is in place,
 the package boundaries are explicit, and the current work is about extending and
@@ -102,7 +103,30 @@ The repo root is authoritative for workspace-wide quality gates:
 - `mix mr.dialyzer`
 - `mix mr.docs --warnings-as-errors`
 - `mix weld.verify`
+- `mix release.prepare`
+- `mix release.track`
+- `mix release.archive`
 - `mix ci`
+
+## Internal Artifact Flow
+
+`switchyard_foundation` is still an internal welded artifact, not a published
+Hex package. The release lifecycle is therefore bundle- and projection-oriented:
+
+1. `mix release.prepare`
+2. `mix release.track`
+3. `mix release.archive`
+
+`mix release.prepare` builds the prepared artifact bundle under `dist/`.
+`mix release.track` updates the orphan-backed
+`projection/switchyard_foundation` branch from that bundle so downstream repos
+can pin a real generated-source ref before any formal release boundary exists.
+`mix release.archive` snapshots the prepared bundle after validation.
+
+For local implementation and debugging against unreleased Weld changes, use
+`WELD_PATH=../weld`. For shared pre-release testing, use
+`WELD_GIT_REF=<commit_sha>` and optionally `WELD_GIT_URL=<repo_url>`. The
+committed steady state should return to the released Hex line.
 
 ## Documentation
 

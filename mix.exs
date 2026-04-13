@@ -89,7 +89,19 @@ defmodule Switchyard.Workspace.MixProject do
       "weld.inspect": ["weld.inspect build_support/weld.exs --artifact switchyard"],
       "weld.graph": ["weld.graph build_support/weld.exs --artifact switchyard"],
       "weld.project": ["weld.project build_support/weld.exs --artifact switchyard"],
-      "weld.verify": ["weld.verify build_support/weld.exs --artifact switchyard"]
+      "weld.verify": ["weld.verify build_support/weld.exs --artifact switchyard"],
+      "weld.release.prepare": [
+        "weld.release.prepare build_support/weld.exs --artifact switchyard"
+      ],
+      "weld.release.track": [
+        "weld.release.track build_support/weld.exs --artifact switchyard"
+      ],
+      "weld.release.archive": [
+        "weld.release.archive build_support/weld.exs --artifact switchyard"
+      ],
+      "release.prepare": ["weld.release.prepare"],
+      "release.track": ["weld.release.track"],
+      "release.archive": ["weld.release.archive"]
     ] ++ monorepo_aliases ++ mr_aliases
   end
 

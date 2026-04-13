@@ -30,6 +30,11 @@ behavior matters when reproducing builds across machines.
   workspace uses the Hex package
 - `WELD_PATH`
   only uses a local checkout when the env var is set explicitly
+- `WELD_GIT_REF`
+  pins an unreleased Weld commit when you need deterministic shared testing
+  without a local checkout
+- `WELD_GIT_URL`
+  optionally overrides the default Weld Git remote when `WELD_GIT_REF` is set
 
 If you need deterministic "no local checkout" behavior on a machine that
 happens to have those sibling repos, disable the overrides explicitly:
@@ -37,6 +42,14 @@ happens to have those sibling repos, disable the overrides explicitly:
 ```bash
 BLITZ_PATH=disabled mix deps.get
 BLITZ_PATH=disabled mix mr.deps.get
+```
+
+For local Weld implementation and debugging, point the workspace at the sibling
+checkout explicitly:
+
+```bash
+WELD_PATH=../weld mix deps.get
+WELD_PATH=../weld mix mr.deps.get
 ```
 
 ## Day-To-Day Commands
@@ -50,10 +63,28 @@ Use these from the repo root:
 - `mix mr.dialyzer`
 - `mix mr.docs --warnings-as-errors`
 - `mix weld.verify`
+- `mix release.prepare`
+- `mix release.track`
+- `mix release.archive`
 - `mix ci`
 
 `mix ci` is the final gate. Use narrower commands only when you are shortening
 the local feedback loop.
+
+## Internal Projection Flow
+
+The internal `switchyard_foundation` artifact is tracked through a prepared
+bundle and a projection branch, not through a publish step:
+
+1. `mix release.prepare`
+2. `mix release.track`
+3. `mix release.archive`
+
+`mix release.prepare` builds the artifact bundle under `dist/`.
+`mix release.track` updates the orphan-backed
+`projection/switchyard_foundation` branch from that bundle so consumers can pin
+tracked generated source before any formal release boundary exists.
+`mix release.archive` preserves the prepared bundle after validation.
 
 ## Package-Local Iteration
 

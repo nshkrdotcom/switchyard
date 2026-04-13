@@ -80,8 +80,8 @@ That posture is explicit:
 
 - the Workbench runtime depends on `ex_ratatui` from Hex
 - Weld projects the internal `switchyard_foundation` artifact
-- `hex.build` is intentionally disabled for that projection until the
-  publication posture changes
+- `mix release.prepare` still builds a deterministic tarball for bundle and
+  projection tracking, but `release.publish` remains out of scope
 
 ## What The Next Phase Should Mean
 
