@@ -39,18 +39,20 @@ defmodule Workbench.RenderTree do
   end
 
   defp resolve_entry(%Workbench.Node{} = node, %Rect{} = area, path) do
+    child_area = inset_area(area, node.layout.padding)
+
     children =
       case {node.kind, node.layout.direction, node.children} do
         {:layout, :vertical, children} when is_list(children) ->
-          split_children(children, area, :vertical, node.layout.constraints, path)
+          split_children(children, child_area, :vertical, node.layout.constraints, path)
 
         {:layout, :horizontal, children} when is_list(children) ->
-          split_children(children, area, :horizontal, node.layout.constraints, path)
+          split_children(children, child_area, :horizontal, node.layout.constraints, path)
 
         {:portal, _direction, children} when is_list(children) ->
           Enum.with_index(children, fn child, index ->
             child_path = path ++ [child.id || index]
-            resolve_entry(child, area, child_path)
+            resolve_entry(child, child_area, child_path)
           end)
 
         _other ->
@@ -80,6 +82,15 @@ defmodule Workbench.RenderTree do
   defp equal_constraints(children) do
     percentage = floor(100 / max(length(children), 1))
     Enum.map(children, fn _ -> {:percentage, percentage} end)
+  end
+
+  defp inset_area(%Rect{} = area, {left, right, top, bottom}) do
+    %Rect{
+      x: area.x + left,
+      y: area.y + top,
+      width: max(area.width - left - right, 0),
+      height: max(area.height - top - bottom, 0)
+    }
   end
 end
 

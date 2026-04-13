@@ -365,13 +365,65 @@ defmodule Switchyard.Examples.FullFeatured.DemoSite do
   end
 end
 
+defmodule Switchyard.Examples.FullFeatured.ControlLoopActor do
+  @moduledoc false
+
+  @behaviour Workbench.Component
+
+  alias Workbench.{Cmd, Context, Style, Subscription}
+  alias Workbench.Widgets.Spinner
+
+  @pulse_ms 650
+
+  @impl true
+  def mode, do: :supervised
+
+  @impl true
+  def init(_props, %Context{} = ctx) do
+    {:ok,
+     %{
+       step: 0,
+       ticks: 0,
+       mounted_path: ctx.path
+     }, commands: Cmd.message({:mounted_actor_ready, ctx.path})}
+  end
+
+  @impl true
+  def update(_msg, _state, _props, _ctx), do: :unhandled
+
+  @impl true
+  def handle_info(:control_loop_pulse, state, _props, _ctx) do
+    next_state = %{state | step: state.step + 1, ticks: state.ticks + 1}
+    {:ok, next_state, commands: Cmd.message({:mounted_actor_tick, next_state.ticks})}
+  end
+
+  def handle_info(_msg, _state, _props, _ctx), do: :unhandled
+
+  @impl true
+  def subscriptions(_state, _props, _ctx) do
+    [Subscription.interval(:control_loop_pulse, @pulse_ms, :control_loop_pulse)]
+  end
+
+  @impl true
+  def render(state, props, _ctx) do
+    Spinner.new(
+      id: :control_loop_actor,
+      title: Map.get(props, :title, "Control Loop"),
+      label:
+        "#{Map.get(props, :label, "subscriptions + async requests")}  ·  ticks #{state.ticks}",
+      step: state.step
+    )
+    |> Style.border_fg(:surface_alt)
+  end
+end
+
 defmodule Switchyard.Examples.FullFeatured.ControlRoom do
   @moduledoc false
 
   @behaviour Workbench.Component
 
-  alias ExRatatui.Style
-  alias Workbench.{Cmd, Context, Keymap, Node, Subscription}
+  alias Switchyard.Examples.FullFeatured.ControlLoopActor
+  alias Workbench.{Cmd, Context, Keymap, Layout, Node, Style, Subscription}
 
   alias Workbench.Widgets.{
     Detail,
@@ -379,7 +431,6 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
     List,
     Pane,
     ProgressBar,
-    Spinner,
     StatusBar,
     Table,
     Tabs,
@@ -400,7 +451,6 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
       service_cursor: 0,
       job_cursor: 0,
       incident_cursor: 0,
-      spinner_step: 0,
       refresh_count: 0,
       last_refresh_at: format_datetime(ctx.clock.()),
       cluster_health: 0.0,
@@ -416,7 +466,8 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
       logs: [
         "[boot] control room mounted",
         "[boot] local snapshot captured with #{length(Map.get(snapshot, :processes, []))} processes",
-        "[boot] quiet runtime polling will refresh the observability tab without forcing a repaint"
+        "[boot] quiet runtime polling will refresh the observability tab without forcing a repaint",
+        "[boot] mounted control-loop actor will own its own spinner pulse"
       ],
       status_line: "Booting Fleet Demo control room.",
       status_severity: :warn,
@@ -452,22 +503,22 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
           lines: [
             "Switchyard site catalog + Workbench component seam + ex_ratatui reducer runtime",
             "Runtime tab shows trace events, quiet snapshot polling, async failure normalization, and row-based WidgetList scrolling. Distributed mode is available with --distributed / --attach."
-          ],
-          border_fg: :cyan
-        ),
+          ]
+        )
+        |> Style.border_fg(:accent),
         Tabs.new(id: :tabs, titles: @tab_titles, selected: state.active_tab),
         content_panel(state, props),
         Help.new(
           id: :help,
           title: "Keys",
-          lines: help_lines(state),
-          border_fg: :dark_gray
-        ),
+          lines: help_lines(state)
+        )
+        |> Style.border_fg(:muted),
         StatusBar.new(
           id: :status,
-          text: state.status_line,
-          style: status_style(state.status_severity)
+          text: state.status_line
         )
+        |> Style.fg(status_tone(state.status_severity))
       ],
       constraints: [
         {:length, 4},
@@ -477,6 +528,7 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
         {:length, 1}
       ]
     )
+    |> Layout.with_padding({1, 1, 0, 0})
   end
 
   @impl true
@@ -585,12 +637,7 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
 
   @impl true
   def handle_info(:pulse, state, _props, _ctx) do
-    next_state =
-      state
-      |> Map.update!(:spinner_step, &(&1 + 1))
-      |> advance_rollout()
-
-    {:ok, next_state, []}
+    {:ok, advance_rollout(state), []}
   end
 
   def handle_info(:auto_refresh, state, _props, _ctx) do
@@ -741,36 +788,36 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
           id: :runtime_trace,
           title: "Runtime Trace",
           items: trace_widget_items(state),
-          scroll_offset: state.trace_scroll_offset,
-          border_fg: :magenta
-        ),
+          scroll_offset: state.trace_scroll_offset
+        )
+        |> Style.border_fg(:focus),
         Node.vstack(
           :runtime_sidebar,
           [
             Pane.new(
               id: :runtime_summary,
               title: "Runtime Snapshot",
-              lines: runtime_summary_lines(state),
-              border_fg: :green
-            ),
-            ProgressBar.new(
-              id: :trace_buffer,
-              title: "Trace Buffer",
-              ratio: trace_buffer_ratio(state),
-              label: trace_buffer_label(state)
+              lines: runtime_summary_lines(state)
+            )
+            |> Style.border_fg(:success),
+            Node.component(
+              :control_loop_actor,
+              ControlLoopActor,
+              %{title: "Control Loop", label: "subscriptions + async requests"},
+              mode: Workbench.Component.mode(ControlLoopActor)
             ),
             Detail.new(
               id: :subscriptions,
               title: "Subscriptions",
-              lines: subscription_lines(state.runtime_snapshot),
-              border_fg: :yellow
-            ),
+              lines: subscription_lines(state.runtime_snapshot)
+            )
+            |> Style.border_fg(:warning),
             Pane.new(
               id: :probe,
               title: "Last Probe",
-              lines: state.last_probe_lines,
-              border_fg: probe_border(state.status_severity)
+              lines: state.last_probe_lines
             )
+            |> Style.border_fg(status_tone(state.status_severity))
           ],
           constraints: [{:min, 7}, {:length, 3}, {:min, 7}, {:min, 6}]
         )
@@ -790,9 +837,9 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
             Pane.new(
               id: :summary,
               title: "Ops Snapshot",
-              lines: summary_lines(state, props),
-              border_fg: :green
-            ),
+              lines: summary_lines(state, props)
+            )
+            |> Style.border_fg(:success),
             ProgressBar.new(
               id: :cluster_health,
               title: "Cluster Health",
@@ -805,24 +852,24 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
               ratio: state.rollout.percent,
               label: rollout_label(state.rollout)
             ),
-            Spinner.new(
-              id: :spinner,
-              title: "Control Loop",
-              label: "subscriptions + async requests",
-              step: state.spinner_step
+            Node.component(
+              :control_loop_actor,
+              ControlLoopActor,
+              %{title: "Control Loop", label: "subscriptions + async requests"},
+              mode: Workbench.Component.mode(ControlLoopActor)
             ),
             Detail.new(
               id: :selection,
               title: "Selection",
-              lines: selection_lines(state),
-              border_fg: :yellow
-            ),
+              lines: selection_lines(state)
+            )
+            |> Style.border_fg(:warning),
             Pane.new(
               id: :activity,
               title: "Recent Activity",
-              lines: recent_activity_lines(state),
-              border_fg: :blue
+              lines: recent_activity_lines(state)
             )
+            |> Style.border_fg(:accent)
           ],
           constraints: [{:min, 7}, {:length, 3}, {:length, 3}, {:length, 3}, {:min, 8}, {:min, 6}]
         )
@@ -846,9 +893,10 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
           ]
         end),
       widths: [{:percentage, 34}, {:percentage, 26}, {:percentage, 20}, {:percentage, 20}],
-      selected: state.service_cursor,
-      border_fg: :yellow
+      selected: state.service_cursor
     )
+    |> Style.border_fg(:warning)
+    |> Style.highlight_fg(:focus)
   end
 
   defp main_panel(%{active_tab: 1} = state) do
@@ -861,9 +909,10 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
           [job.id, job.status, "#{job.current}/#{job.total}", job.worker]
         end),
       widths: [{:percentage, 28}, {:percentage, 18}, {:percentage, 22}, {:percentage, 32}],
-      selected: state.job_cursor,
-      border_fg: :yellow
+      selected: state.job_cursor
     )
+    |> Style.border_fg(:warning)
+    |> Style.highlight_fg(:focus)
   end
 
   defp main_panel(%{active_tab: 2} = state) do
@@ -875,9 +924,10 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
           incident_prefix(incident, state.acknowledged_incidents) <>
             incident.title <> "  ·  " <> incident.owner
         end),
-      selected: state.incident_cursor,
-      border_fg: :yellow
+      selected: state.incident_cursor
     )
+    |> Style.border_fg(:warning)
+    |> Style.highlight_fg(:focus)
   end
 
   defp summary_lines(state, props) do
@@ -1011,9 +1061,9 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
                 "No trace events are retained yet.",
                 "Press t to toggle trace capture and x to provoke a failing async probe.",
                 "The runtime refresh subscription keeps sampling snapshot state without forcing a redundant render."
-              ],
-              border_fg: :magenta
-            ),
+              ]
+            )
+            |> Style.border_fg(:focus),
             5
           }
         ]
@@ -1026,9 +1076,9 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
             Pane.new(
               id: {:trace, index},
               title: trace_title(event, index),
-              lines: lines,
-              border_fg: trace_border(event.kind)
-            ),
+              lines: lines
+            )
+            |> Style.border_fg(trace_border(event.kind)),
             length(lines) + 2
           }
         end)
@@ -1049,25 +1099,11 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
     "##{index + 1}  ·  #{event.kind}"
   end
 
-  defp trace_border(:command), do: :cyan
-  defp trace_border(:event), do: :yellow
-  defp trace_border(:render), do: :green
-  defp trace_border(:subscription), do: :magenta
-  defp trace_border(_other), do: :blue
-
-  defp trace_buffer_ratio(state) do
-    trace_count = length(state.runtime_snapshot.trace_events)
-    limit = max(state.runtime_snapshot.trace_limit, 1)
-    min(trace_count / limit, 1.0)
-  end
-
-  defp trace_buffer_label(state) do
-    "#{length(state.runtime_snapshot.trace_events)} / #{state.runtime_snapshot.trace_limit}"
-  end
-
-  defp probe_border(:error), do: :red
-  defp probe_border(:warn), do: :yellow
-  defp probe_border(_severity), do: :green
+  defp trace_border(:command), do: :accent
+  defp trace_border(:event), do: :warning
+  defp trace_border(:render), do: :success
+  defp trace_border(:subscription), do: :focus
+  defp trace_border(_other), do: :surface_alt
 
   defp selected_service(state), do: Enum.at(state.services, state.service_cursor)
   defp selected_job(state), do: Enum.at(state.jobs, state.job_cursor)
@@ -1262,9 +1298,9 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
     %{state | status_line: line, status_severity: severity}
   end
 
-  defp status_style(:error), do: %Style{fg: :red, modifiers: [:bold]}
-  defp status_style(:warn), do: %Style{fg: :yellow}
-  defp status_style(_severity), do: %Style{fg: :green}
+  defp status_tone(:error), do: :danger
+  defp status_tone(:warn), do: :warning
+  defp status_tone(_severity), do: :success
 
   defp clamp_index(_index, []), do: 0
   defp clamp_index(index, items), do: index |> max(0) |> min(length(items) - 1)
@@ -1352,11 +1388,12 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
       wait_for_snapshot!(pid, "local smoke startup", fn snapshot ->
         not snapshot.polling_enabled? and
           snapshot.render_count >= 1 and
-          snapshot.subscription_count >= 3 and
+          snapshot.subscription_count >= 5 and
           snapshot.active_async_commands == 0 and
           snapshot_has_message?(snapshot, &match?({:dashboard_loaded, _}, &1)) and
           snapshot_has_message?(snapshot, &match?({:snapshot_summary_ready, _}, &1)) and
-          snapshot_has_message?(snapshot, &match?({:runtime_snapshot_ready, _}, &1))
+          snapshot_has_message?(snapshot, &match?({:runtime_snapshot_ready, _}, &1)) and
+          snapshot_has_message?(snapshot, &match?({:mounted_actor_ready, _}, &1))
       end)
 
     if initial_snapshot.polling_enabled? do
@@ -1381,6 +1418,7 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
           snapshot_has_message?(snapshot, &match?({:deploy_started, _}, &1)) and
           snapshot_has_message?(snapshot, &match?({:incident_acknowledged, _}, &1)) and
           snapshot_has_message?(snapshot, &match?({:runtime_snapshot_ready, _}, &1)) and
+          snapshot_has_message?(snapshot, &match?({:mounted_actor_tick, _}, &1)) and
           snapshot_has_message?(snapshot, &match?({:diagnostic_probe_finished, {:error, _}}, &1)) and
           snapshot_has_event?(snapshot, &match?(%Event.Key{code: "x"}, &1))
       end)
@@ -1545,6 +1583,7 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
     Control Room features
     - provider-driven site and app catalog
     - custom Workbench component rendered through Switchyard.TUI
+    - mounted supervised child actor proving runtime-owned widget lifecycle and subscriptions
     - Workbench request, async, timer, batch, and subscription commands
     - reducer runtime observability: snapshot polling, trace toggles, and a controlled async failure probe
     - quiet runtime refreshes that use render?: false before the async snapshot result paints

@@ -10,7 +10,7 @@ defmodule Workbench.Renderer.ExRatatui do
 
   @behaviour Workbench.Renderer
 
-  alias ExRatatui.Style
+  alias ExRatatui.Style, as: ExStyle
 
   alias ExRatatui.Widgets.{
     Block,
@@ -25,193 +25,296 @@ defmodule Workbench.Renderer.ExRatatui do
   }
 
   alias Workbench.{Node, RenderTree}
+  alias Workbench.Theme
 
   @impl true
-  def render(%RenderTree{} = tree, _opts \\ []) do
+  def render(%RenderTree{} = tree, opts \\ []) do
     tree.flat
     |> Enum.filter(fn entry -> entry.children == [] end)
-    |> Enum.flat_map(&to_widget_tuple/1)
+    |> Enum.flat_map(&to_widget_tuple(&1, opts))
   end
 
-  defp to_widget_tuple(%{node: %{kind: :component}}), do: []
+  defp to_widget_tuple(%{node: %{kind: :component}}, _opts), do: []
 
-  defp to_widget_tuple(%{node: %{kind: :text, props: props}, area: area}) do
-    [{%Paragraph{text: Map.get(props, :text, ""), wrap: Map.get(props, :wrap, true)}, area}]
+  defp to_widget_tuple(%{node: %Node{kind: :text} = node, area: area}, opts) do
+    [{text_widget(node, opts), area}]
   end
 
-  defp to_widget_tuple(%{node: %{module: module, props: props}, area: area}) do
-    [{widget_for(module, props), area}]
+  defp to_widget_tuple(%{node: %Node{} = node, area: area}, opts) do
+    [{widget_for(node, opts), area}]
   end
 
-  defp widget_for(Workbench.Widgets.Pane, props), do: pane_widget(props)
-  defp widget_for(Workbench.Widgets.Detail, props), do: pane_widget(props)
-  defp widget_for(Workbench.Widgets.LogStream, props), do: pane_widget(props)
-  defp widget_for(Workbench.Widgets.StatusBar, props), do: status_widget(props)
-  defp widget_for(Workbench.Widgets.Help, props), do: pane_widget(props)
-  defp widget_for(Workbench.Widgets.List, props), do: list_widget(props)
-  defp widget_for(Workbench.Widgets.WidgetList, props), do: widget_list_widget(props)
-  defp widget_for(Workbench.Widgets.Table, props), do: table_widget(props)
-  defp widget_for(Workbench.Widgets.Spinner, props), do: spinner_widget(props)
-  defp widget_for(Workbench.Widgets.ProgressBar, props), do: progress_widget(props)
-  defp widget_for(Workbench.Widgets.Tabs, props), do: tabs_widget(props)
-  defp widget_for(Workbench.Widgets.Modal, props), do: modal_widget(props)
-  defp widget_for(Workbench.Widgets.TextInput, props), do: pane_widget(props)
-  defp widget_for(Workbench.Widgets.TextArea, props), do: pane_widget(props)
-  defp widget_for(Workbench.Widgets.Viewport, props), do: pane_widget(props)
-  defp widget_for(Workbench.Widgets.Paginator, props), do: status_widget(props)
-  defp widget_for(Workbench.Widgets.Timer, props), do: status_widget(props)
-  defp widget_for(Workbench.Widgets.Tree, props), do: pane_widget(props)
-  defp widget_for(Workbench.Widgets.Form, props), do: pane_widget(props)
-  defp widget_for(Workbench.Widgets.FieldGroup, props), do: pane_widget(props)
-  defp widget_for(Workbench.Widgets.CommandPalette, props), do: pane_widget(props)
-  defp widget_for(Workbench.Widgets.FilePicker, props), do: pane_widget(props)
-  defp widget_for(module, props), do: pane_widget(Map.put(props, :title, inspect(module)))
+  defp widget_for(%Node{module: Workbench.Widgets.Pane} = node, opts), do: pane_widget(node, opts)
 
-  defp pane_widget(props) do
-    lines = Map.get(props, :lines, []) |> Elixir.List.wrap() |> Enum.join("\n")
+  defp widget_for(%Node{module: Workbench.Widgets.Detail} = node, opts),
+    do: pane_widget(node, opts)
+
+  defp widget_for(%Node{module: Workbench.Widgets.LogStream} = node, opts),
+    do: pane_widget(node, opts)
+
+  defp widget_for(%Node{module: Workbench.Widgets.StatusBar} = node, opts),
+    do: status_widget(node, opts)
+
+  defp widget_for(%Node{module: Workbench.Widgets.Help} = node, opts), do: pane_widget(node, opts)
+  defp widget_for(%Node{module: Workbench.Widgets.List} = node, opts), do: list_widget(node, opts)
+
+  defp widget_for(%Node{module: Workbench.Widgets.WidgetList} = node, opts),
+    do: widget_list_widget(node, opts)
+
+  defp widget_for(%Node{module: Workbench.Widgets.Table} = node, opts),
+    do: table_widget(node, opts)
+
+  defp widget_for(%Node{module: Workbench.Widgets.Spinner} = node, opts),
+    do: spinner_widget(node, opts)
+
+  defp widget_for(%Node{module: Workbench.Widgets.ProgressBar} = node, opts),
+    do: progress_widget(node, opts)
+
+  defp widget_for(%Node{module: Workbench.Widgets.Tabs} = node, opts), do: tabs_widget(node, opts)
+
+  defp widget_for(%Node{module: Workbench.Widgets.Modal} = node, opts),
+    do: modal_widget(node, opts)
+
+  defp widget_for(%Node{module: Workbench.Widgets.TextInput} = node, opts),
+    do: pane_widget(node, opts)
+
+  defp widget_for(%Node{module: Workbench.Widgets.TextArea} = node, opts),
+    do: pane_widget(node, opts)
+
+  defp widget_for(%Node{module: Workbench.Widgets.Viewport} = node, opts),
+    do: pane_widget(node, opts)
+
+  defp widget_for(%Node{module: Workbench.Widgets.Paginator} = node, opts),
+    do: status_widget(node, opts)
+
+  defp widget_for(%Node{module: Workbench.Widgets.Timer} = node, opts),
+    do: status_widget(node, opts)
+
+  defp widget_for(%Node{module: Workbench.Widgets.Tree} = node, opts), do: pane_widget(node, opts)
+  defp widget_for(%Node{module: Workbench.Widgets.Form} = node, opts), do: pane_widget(node, opts)
+
+  defp widget_for(%Node{module: Workbench.Widgets.FieldGroup} = node, opts),
+    do: pane_widget(node, opts)
+
+  defp widget_for(%Node{module: Workbench.Widgets.CommandPalette} = node, opts),
+    do: pane_widget(node, opts)
+
+  defp widget_for(%Node{module: Workbench.Widgets.FilePicker} = node, opts),
+    do: pane_widget(node, opts)
+
+  defp widget_for(%Node{module: module} = node, opts) do
+    pane_widget(%{node | props: Map.put(node.props, :title, inspect(module))}, opts)
+  end
+
+  defp text_widget(%Node{} = node, opts) do
+    %Paragraph{
+      text: Map.get(node.props, :text, ""),
+      wrap: Map.get(node.props, :wrap, true),
+      alignment: alignment_for(node),
+      style: text_style_for(node, opts, %ExStyle{})
+    }
+  end
+
+  defp pane_widget(%Node{} = node, opts) do
+    lines = Map.get(node.props, :lines, []) |> Elixir.List.wrap() |> Enum.join("\n")
 
     %Paragraph{
       text: lines,
-      wrap: Map.get(props, :wrap, true),
-      style: Map.get(props, :style, %Style{fg: :white}),
-      block: %Block{
-        title: Map.get(props, :title, ""),
-        borders: [:all],
-        border_type: :rounded,
-        border_style: %Style{fg: Map.get(props, :border_fg, :cyan)},
-        padding: {1, 1, 0, 0}
-      }
+      wrap: Map.get(node.props, :wrap, true),
+      alignment: alignment_for(node),
+      style: text_style_for(node, opts, %ExStyle{fg: :white}),
+      block: block_for(node, opts, border_fg: :cyan, padding: {1, 1, 0, 0})
     }
   end
 
-  defp status_widget(props) do
+  defp status_widget(%Node{} = node, opts) do
     %Paragraph{
       text:
-        Map.get(props, :text, Enum.join(Elixir.List.wrap(Map.get(props, :lines, [])), "  ·  ")),
+        Map.get(
+          node.props,
+          :text,
+          Enum.join(Elixir.List.wrap(Map.get(node.props, :lines, [])), "  ·  ")
+        ),
       wrap: false,
-      style: Map.get(props, :style, %Style{fg: :green})
+      alignment: alignment_for(node),
+      style: text_style_for(node, opts, %ExStyle{fg: :green})
     }
   end
 
-  defp list_widget(props) do
+  defp list_widget(%Node{} = node, opts) do
     %List{
-      items: Enum.map(Elixir.List.wrap(Map.get(props, :items, [])), &to_string/1),
-      selected: Map.get(props, :selected),
-      highlight_symbol: Map.get(props, :highlight_symbol, "> "),
-      highlight_style: %Style{fg: Map.get(props, :highlight_fg, :yellow), modifiers: [:bold]},
-      block: %Block{
-        title: Map.get(props, :title, ""),
-        borders: [:all],
-        border_type: :rounded,
-        border_style: %Style{fg: Map.get(props, :border_fg, :yellow)},
-        padding: {1, 1, 0, 0}
-      }
+      items: Enum.map(Elixir.List.wrap(Map.get(node.props, :items, [])), &to_string/1),
+      selected: Map.get(node.props, :selected),
+      style: text_style_for(node, opts, %ExStyle{fg: :white}),
+      highlight_symbol: Map.get(node.props, :highlight_symbol, "> "),
+      highlight_style: highlight_style_for(node, opts, %ExStyle{fg: :yellow, modifiers: [:bold]}),
+      block: block_for(node, opts, border_fg: :yellow, padding: {1, 1, 0, 0})
     }
   end
 
-  defp widget_list_widget(props) do
+  defp widget_list_widget(%Node{} = node, opts) do
     %WidgetList{
       items:
-        props
+        node.props
         |> Map.get(:items, [])
         |> Elixir.List.wrap()
-        |> Enum.map(&widget_list_item/1),
-      selected: Map.get(props, :selected),
-      scroll_offset: Map.get(props, :scroll_offset, 0),
-      highlight_style: %Style{
-        fg: Map.get(props, :highlight_fg, :yellow),
-        modifiers: Map.get(props, :highlight_modifiers, [:bold])
-      },
-      style: Map.get(props, :style, %Style{fg: :white}),
-      block: %Block{
-        title: Map.get(props, :title, ""),
-        borders: [:all],
-        border_type: :rounded,
-        border_style: %Style{fg: Map.get(props, :border_fg, :yellow)},
-        padding: {1, 1, 0, 0}
-      }
+        |> Enum.map(&widget_list_item(&1, opts)),
+      selected: Map.get(node.props, :selected),
+      scroll_offset: Map.get(node.props, :scroll_offset, 0),
+      highlight_style: highlight_style_for(node, opts, %ExStyle{fg: :yellow, modifiers: [:bold]}),
+      style: text_style_for(node, opts, %ExStyle{fg: :white}),
+      block: block_for(node, opts, border_fg: :yellow, padding: {1, 1, 0, 0})
     }
   end
 
-  defp table_widget(props) do
+  defp table_widget(%Node{} = node, opts) do
     %Table{
       rows:
-        Enum.map(Elixir.List.wrap(Map.get(props, :rows, [])), fn row ->
+        Enum.map(Elixir.List.wrap(Map.get(node.props, :rows, [])), fn row ->
           Enum.map(row, &to_string/1)
         end),
-      header: Enum.map(Elixir.List.wrap(Map.get(props, :header, [])), &to_string/1),
-      widths: Map.get(props, :widths, []),
-      selected: Map.get(props, :selected),
-      highlight_symbol: Map.get(props, :highlight_symbol, "> "),
-      block: %Block{
-        title: Map.get(props, :title, ""),
-        borders: [:all],
-        border_type: :rounded,
-        border_style: %Style{fg: Map.get(props, :border_fg, :yellow)}
-      }
+      header: Enum.map(Elixir.List.wrap(Map.get(node.props, :header, [])), &to_string/1),
+      widths: Map.get(node.props, :widths, []),
+      selected: Map.get(node.props, :selected),
+      style: text_style_for(node, opts, %ExStyle{fg: :white}),
+      highlight_style: highlight_style_for(node, opts, %ExStyle{fg: :yellow, modifiers: [:bold]}),
+      highlight_symbol: Map.get(node.props, :highlight_symbol, "> "),
+      block: block_for(node, opts, border_fg: :yellow)
     }
   end
 
-  defp widget_list_item({%Node{} = node, height}) when is_integer(height) and height >= 0 do
-    {item_widget(node), height}
+  defp widget_list_item({%Node{} = node, height}, opts) when is_integer(height) and height >= 0 do
+    {item_widget(node, opts), height}
   end
 
-  defp widget_list_item({widget, height}) when is_integer(height) and height >= 0 do
+  defp widget_list_item({widget, height}, _opts) when is_integer(height) and height >= 0 do
     {widget, height}
   end
 
-  defp item_widget(%Node{kind: :text, props: props}) do
-    %Paragraph{text: Map.get(props, :text, ""), wrap: Map.get(props, :wrap, true)}
+  defp item_widget(%Node{kind: :text} = node, opts), do: text_widget(node, opts)
+
+  defp item_widget(%Node{} = node, opts) do
+    widget_for(node, opts)
   end
 
-  defp item_widget(%Node{module: module, props: props}) do
-    widget_for(module, props)
-  end
-
-  defp spinner_widget(props) do
+  defp spinner_widget(%Node{} = node, opts) do
     %Throbber{
-      label: Map.get(props, :label, ""),
-      step: Map.get(props, :step, 0),
-      block: %Block{
-        title: Map.get(props, :title, ""),
-        borders: [:all],
-        border_type: :rounded
-      }
+      label: Map.get(node.props, :label, ""),
+      step: Map.get(node.props, :step, 0),
+      block: block_for(node, opts)
     }
   end
 
-  defp progress_widget(props) do
+  defp progress_widget(%Node{} = node, opts) do
     %Gauge{
-      ratio: Map.get(props, :ratio, 0.0),
-      label: Map.get(props, :label),
-      block: %Block{
-        title: Map.get(props, :title, ""),
-        borders: [:all],
-        border_type: :rounded
-      }
+      ratio: Map.get(node.props, :ratio, 0.0),
+      label: Map.get(node.props, :label),
+      style: text_style_for(node, opts, %ExStyle{}),
+      gauge_style: text_style_for(node, opts, %ExStyle{}),
+      block: block_for(node, opts)
     }
   end
 
-  defp tabs_widget(props) do
+  defp tabs_widget(%Node{} = node, _opts) do
     %Tabs{
-      titles: Enum.map(Elixir.List.wrap(Map.get(props, :titles, [])), &to_string/1),
-      selected: Map.get(props, :selected, 0)
+      titles: Enum.map(Elixir.List.wrap(Map.get(node.props, :titles, [])), &to_string/1),
+      selected: Map.get(node.props, :selected, 0)
     }
   end
 
-  defp modal_widget(props) do
-    content = pane_widget(%{title: "", lines: Map.get(props, :lines, [])})
+  defp modal_widget(%Node{} = node, opts) do
+    content =
+      pane_widget(
+        %{node | props: %{title: "", lines: Map.get(node.props, :lines, [])}},
+        opts
+      )
 
     %Popup{
       content: content,
-      fixed_width: Map.get(props, :width, 72),
-      fixed_height: Map.get(props, :height, 18),
-      block: %Block{
-        title: Map.get(props, :title, ""),
-        borders: [:all],
-        border_type: :rounded,
-        border_style: %Style{fg: Map.get(props, :border_fg, :yellow)}
-      }
+      fixed_width: Map.get(node.props, :width, 72),
+      fixed_height: Map.get(node.props, :height, 18),
+      block: block_for(node, opts, border_fg: :yellow, padding: {0, 0, 0, 0})
     }
   end
+
+  defp block_for(%Node{} = node, opts, defaults \\ []) do
+    style = normalized_node_style(node)
+    theme = Keyword.get(opts, :theme, %{})
+
+    %Block{
+      title: Map.get(node.props, :title, ""),
+      borders: Map.get(node.props, :borders, [:all]),
+      border_type: Map.get(style, :border_type, Map.get(node.props, :border_type, :rounded)),
+      border_style: %ExStyle{
+        fg:
+          color_from(
+            Map.get(style, :border_fg, Map.get(node.props, :border_fg)),
+            theme,
+            Keyword.get(defaults, :border_fg)
+          ),
+        bg: color_from(Map.get(style, :border_bg), theme, nil),
+        modifiers:
+          Map.get(style, :border_modifiers, Map.get(node.props, :border_modifiers, []))
+          |> Elixir.List.wrap()
+      },
+      style: text_style_for(node, opts, %ExStyle{}),
+      padding:
+        Map.get(
+          style,
+          :padding,
+          Map.get(node.props, :padding, Keyword.get(defaults, :padding, {0, 0, 0, 0}))
+        )
+    }
+  end
+
+  defp text_style_for(%Node{} = node, opts, %ExStyle{} = defaults) do
+    style = normalized_node_style(node)
+    theme = Keyword.get(opts, :theme, %{})
+    legacy_style = legacy_style_from(node.props, defaults)
+
+    %ExStyle{
+      fg: color_from(Map.get(style, :fg), theme, legacy_style.fg),
+      bg: color_from(Map.get(style, :bg), theme, legacy_style.bg),
+      modifiers: Map.get(style, :modifiers, legacy_style.modifiers)
+    }
+  end
+
+  defp highlight_style_for(%Node{} = node, opts, %ExStyle{} = defaults) do
+    style = normalized_node_style(node)
+    theme = Keyword.get(opts, :theme, %{})
+
+    %ExStyle{
+      fg:
+        color_from(
+          Map.get(style, :highlight_fg, Map.get(node.props, :highlight_fg)),
+          theme,
+          defaults.fg
+        ),
+      bg: color_from(Map.get(style, :highlight_bg), theme, defaults.bg),
+      modifiers:
+        Map.get(
+          style,
+          :highlight_modifiers,
+          Map.get(node.props, :highlight_modifiers, defaults.modifiers)
+        )
+        |> Elixir.List.wrap()
+    }
+  end
+
+  defp normalized_node_style(%Node{} = node), do: Workbench.Style.normalize(node.style)
+
+  defp alignment_for(%Node{} = node) do
+    node
+    |> normalized_node_style()
+    |> Map.get(:align, Map.get(node.props, :alignment, :left))
+  end
+
+  defp legacy_style_from(props, %ExStyle{} = defaults) do
+    case Map.get(props, :style) do
+      %ExStyle{} = style -> style
+      _other -> defaults
+    end
+  end
+
+  defp color_from(value, theme, fallback), do: Theme.resolve_color(value, theme, fallback)
 end

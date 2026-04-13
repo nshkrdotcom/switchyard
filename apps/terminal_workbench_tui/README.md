@@ -19,11 +19,15 @@ The primary pieces are:
 
 - a thin `ExRatatui.App` bridge
 - a product root component
+- a product theme bootstrap that supplies semantic tokens to the runtime
 - a product-local UI state module
 - CLI and escript startup wiring
 
 Custom integrations plug in through `Switchyard.Contracts.AppDescriptor` using
 `tui_component`, not through a compatibility mount seam.
+
+The root screens now emit normalized `Workbench.Node.style` data and
+`Workbench.Layout.padding` instead of relying on renderer-flavored style props.
 
 ## Quick Start
 

@@ -3,7 +3,7 @@ defmodule Switchyard.TUI.RootTest do
 
   alias Switchyard.Contracts.{AppDescriptor, Resource, ResourceDetail, SiteDescriptor}
   alias Switchyard.TUI.{Root, State}
-  alias Workbench.{Cmd, Context}
+  alias Workbench.{Context, Node}
   alias Workbench.Widgets.Pane
 
   defmodule ExampleSite do
@@ -122,11 +122,25 @@ defmodule Switchyard.TUI.RootTest do
     assert next_state.site_app_cursor == 0
   end
 
+  test "home route emits normalized node styles and layout padding" do
+    assert %Node{layout: %{padding: {1, 1, 0, 0}}, children: [header, sites, help, status]} =
+             Root.render(base_state(), %{}, %Context{app_env: %{}})
+
+    assert header.style[:border_fg] == :accent
+    refute Map.has_key?(header.props, :border_fg)
+
+    assert sites.style[:border_fg] == :warning
+    assert sites.style[:highlight_fg] == :focus
+
+    assert help.style[:border_fg] == :muted
+    assert status.style[:fg] == :success
+  end
+
   test "quit requests a reducer stop instead of an unsupported command" do
     assert {:stop, %State{}} = Root.update(:quit, base_state(), %{}, %Context{app_env: %{}})
   end
 
-  test "enter on a custom component app opens the app route and initializes component state" do
+  test "enter on a custom component app opens the app route without root-owned component state" do
     state =
       base_state()
       |> Map.put(:apps, [
@@ -148,11 +162,10 @@ defmodule Switchyard.TUI.RootTest do
     assert next_state.shell.route == :app
     assert next_state.shell.selected_app_id == "example.mounted"
     assert next_state.status_line == "Opened example.mounted."
-    assert next_state.app_component_states["example.mounted"].opened?
-    assert [%Cmd{kind: :async}] = Cmd.normalize(commands)
+    assert commands == []
   end
 
-  test "custom app key events are delegated to the active component" do
+  test "custom app route renders a component mount node" do
     state =
       base_state()
       |> Map.put(:apps, [
@@ -167,18 +180,34 @@ defmodule Switchyard.TUI.RootTest do
         })
       ])
       |> Map.put(:shell, %{base_state().shell | route: :app, selected_app_id: "example.mounted"})
-      |> State.put_app_component_state("example.mounted", %{opened?: true, messages: []})
 
-    assert {:ok, next_state, commands} =
+    assert %Node{kind: :component, id: :active_app, module: ExampleComponent} =
+             Root.render(state, %{}, %Context{app_env: %{}})
+  end
+
+  test "custom app key events are unhandled by the root when runtime-managed" do
+    state =
+      base_state()
+      |> Map.put(:apps, [
+        AppDescriptor.new!(%{
+          id: "example.mounted",
+          site_id: "example",
+          title: "Mounted Workspace",
+          provider: ExampleSite,
+          resource_kinds: [:workspace],
+          route_kind: :workspace,
+          tui_component: ExampleComponent
+        })
+      ])
+      |> Map.put(:shell, %{base_state().shell | route: :app, selected_app_id: "example.mounted"})
+
+    assert :unhandled ==
              Root.update(
                {:key, %ExRatatui.Event.Key{code: "x", modifiers: []}},
                state,
                %{},
                %Context{app_env: %{}}
              )
-
-    assert commands == []
-    assert next_state.app_component_states["example.mounted"].messages == [:mount_ping]
   end
 
   test "generic apps use host resource navigation" do

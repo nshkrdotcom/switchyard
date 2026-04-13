@@ -27,6 +27,18 @@ package just to compile.
 `Workbench.Widgets.WidgetList` is the current escape hatch for examples and app
 surfaces that need per-row widget heights while staying backend-neutral.
 
+## Styling
+
+Common widget style keys such as `border_fg` and `highlight_fg` now normalize
+onto `node.style` when you construct a widget. The preferred authoring pattern
+is still to pipe through `Workbench.Style` helpers:
+
+```elixir
+Workbench.Widgets.List.new(id: :sites, title: "Sites", items: ["Local", "Demo"])
+|> Workbench.Style.border_fg(:warning)
+|> Workbench.Style.highlight_fg(:focus)
+```
+
 ## Package Checks
 
 From this directory:

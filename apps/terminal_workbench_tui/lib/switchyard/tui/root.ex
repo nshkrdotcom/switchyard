@@ -3,12 +3,11 @@ defmodule Switchyard.TUI.Root do
 
   @behaviour Workbench.Component
 
-  alias ExRatatui.Style
   alias Switchyard.Platform
   alias Switchyard.Shell
   alias Switchyard.Site.Local
   alias Switchyard.TUI.State
-  alias Workbench.{Context, Keymap, Node}
+  alias Workbench.{Context, Keymap, Layout, Node, Style}
   alias Workbench.Widgets.{Detail, Help, List, Pane, StatusBar}
 
   @impl true
@@ -104,12 +103,18 @@ defmodule Switchyard.TUI.Root do
   end
 
   def update(msg, %State{} = state, _props, %Context{} = ctx) do
-    delegate_to_component(msg, state, ctx)
+    _ = ctx
+    _ = msg
+    _ = state
+    :unhandled
   end
 
   @impl true
   def handle_info(msg, %State{} = state, _props, %Context{} = ctx) do
-    delegate_info(msg, state, ctx)
+    _ = msg
+    _ = state
+    _ = ctx
+    :unhandled
   end
 
   @impl true
@@ -120,27 +125,29 @@ defmodule Switchyard.TUI.Root do
         Pane.new(
           id: :header,
           title: "Switchyard",
-          lines: ["Terminal workbench for sites, jobs, logs, and processes"],
-          border_fg: :cyan
-        ),
+          lines: ["Terminal workbench for sites, jobs, logs, and processes"]
+        )
+        |> Style.border_fg(:accent),
         List.new(
           id: :sites,
           title: "Sites",
           items: Enum.map(state.sites, & &1.title),
           selected: state.home_cursor,
-          border_fg: :yellow,
           meta: [focusable: true, region: Workbench.Mouse.region(:sites)]
-        ),
+        )
+        |> Style.border_fg(:warning)
+        |> Style.highlight_fg(:focus),
         Help.new(
           id: :help,
           title: "Keys",
-          lines: ["Up/Down select site  ·  Enter open  ·  Ctrl+Q quit"],
-          border_fg: :dark_gray
-        ),
+          lines: ["Up/Down select site  ·  Enter open  ·  Ctrl+Q quit"]
+        )
+        |> Style.border_fg(:muted),
         status_node(state)
       ],
       constraints: [{:length, 3}, {:min, 8}, {:length, 3}, {:length, 1}]
     )
+    |> Layout.with_padding({1, 1, 0, 0})
   end
 
   def render(%State{shell: %{route: :site_apps}} = state, _props, _ctx) do
@@ -153,27 +160,29 @@ defmodule Switchyard.TUI.Root do
         Pane.new(
           id: :header,
           title: selected_site.title,
-          lines: ["Installed apps"],
-          border_fg: :cyan
-        ),
+          lines: ["Installed apps"]
+        )
+        |> Style.border_fg(:accent),
         List.new(
           id: :apps,
           title: "Apps",
           items: Enum.map(State.apps_for_selected_site(state), & &1.title),
           selected: state.site_app_cursor,
-          border_fg: :yellow,
           meta: [focusable: true, region: Workbench.Mouse.region(:apps)]
-        ),
+        )
+        |> Style.border_fg(:warning)
+        |> Style.highlight_fg(:focus),
         Help.new(
           id: :help,
           title: "Keys",
-          lines: ["Up/Down select app  ·  Enter open  ·  Esc home  ·  Ctrl+Q quit"],
-          border_fg: :dark_gray
-        ),
+          lines: ["Up/Down select app  ·  Enter open  ·  Esc home  ·  Ctrl+Q quit"]
+        )
+        |> Style.border_fg(:muted),
         status_node(state)
       ],
       constraints: [{:length, 3}, {:min, 8}, {:length, 3}, {:length, 1}]
     )
+    |> Layout.with_padding({1, 1, 0, 0})
   end
 
   def render(%State{shell: %{route: :app}} = state, _props, %Context{} = ctx) do
@@ -182,10 +191,14 @@ defmodule Switchyard.TUI.Root do
         generic_app_node(state)
 
       module ->
-        child_ctx = child_context(ctx, state)
-        child_props = child_props(state)
-        child_state = State.current_app_component_state(state)
-        module.render(child_state, child_props, child_ctx)
+        _ = ctx
+
+        Node.component(
+          :active_app,
+          module,
+          child_props(state),
+          mode: Workbench.Component.mode(module)
+        )
     end
   end
 
@@ -224,16 +237,9 @@ defmodule Switchyard.TUI.Root do
             binding(:back, "esc", [], "Back", :back)
           ]
 
-      module ->
-        child_ctx = child_context(ctx, state)
-        child_props = child_props(state)
-        child_state = State.current_app_component_state(state)
-
-        base ++
-          if(function_exported?(module, :keymap, 3),
-            do: module.keymap(child_state, child_props, child_ctx),
-            else: []
-          )
+      _module ->
+        _ = ctx
+        base
     end
   end
 
@@ -241,23 +247,7 @@ defmodule Switchyard.TUI.Root do
   def actions(_state, _props, _ctx), do: []
 
   @impl true
-  def subscriptions(%State{} = state, _props, %Context{} = ctx) do
-    case State.current_app_component_module(state) do
-      nil ->
-        []
-
-      module ->
-        child_ctx = child_context(ctx, state)
-        child_props = child_props(state)
-        child_state = State.current_app_component_state(state)
-
-        if function_exported?(module, :subscriptions, 3) do
-          module.subscriptions(child_state, child_props, child_ctx)
-        else
-          []
-        end
-    end
-  end
+  def subscriptions(_state, _props, _ctx), do: []
 
   defp open_app(%State{} = state, app_id, %Context{} = ctx) when is_binary(app_id) do
     case Enum.find(state.apps, &(&1.id == app_id)) do
@@ -277,32 +267,8 @@ defmodule Switchyard.TUI.Root do
             %{next_state | shell: Shell.reduce(next_state.shell, {:open_route, :app})}
           end)
 
-        maybe_init_component(next_state, ctx, app)
-    end
-  end
-
-  defp maybe_init_component(%State{} = state, %Context{} = ctx, %{id: app_id}) do
-    case State.current_app_component_module(state) do
-      nil ->
-        {:ok, State.set_status(state, "Opened #{app_id}.", :info), []}
-
-      module ->
-        if Code.ensure_loaded?(module) do
-          child_ctx = child_context(ctx, state)
-          child_props = child_props(state)
-          {:ok, child_state, cmds} = module.init(child_props, child_ctx)
-
-          next_state =
-            state
-            |> State.put_app_component_state(app_id, child_state)
-            |> State.set_status("Opened #{app_id}.", :info)
-
-          {:ok, next_state, cmds}
-        else
-          {:ok,
-           State.set_status(state, "TUI component #{inspect(module)} is unavailable.", :error),
-           []}
-        end
+        _ = ctx
+        {:ok, State.set_status(next_state, "Opened #{app.id}.", :info), []}
     end
   end
 
@@ -315,9 +281,9 @@ defmodule Switchyard.TUI.Root do
         Pane.new(
           id: :header,
           title: app_title(app),
-          lines: [app_subtitle(app)],
-          border_fg: :cyan
-        ),
+          lines: [app_subtitle(app)]
+        )
+        |> Style.border_fg(:accent),
         Node.hstack(
           :content,
           [
@@ -326,63 +292,30 @@ defmodule Switchyard.TUI.Root do
               title: "Resources",
               items: resource_lines(state),
               selected: state.resource_cursor,
-              border_fg: :yellow,
               meta: [focusable: true, region: Workbench.Mouse.region(:resources)]
-            ),
+            )
+            |> Style.border_fg(:warning)
+            |> Style.highlight_fg(:focus),
             Detail.new(
               id: :detail,
               title: "Detail",
-              lines: detail_lines(State.detail_for_selected_resource(state)),
-              border_fg: :green
+              lines: detail_lines(State.detail_for_selected_resource(state))
             )
+            |> Style.border_fg(:success)
           ],
           constraints: [{:percentage, 42}, {:percentage, 58}]
         ),
         Help.new(
           id: :help,
           title: "Keys",
-          lines: ["Up/Down select resource  ·  Esc back  ·  Ctrl+Q quit"],
-          border_fg: :dark_gray
-        ),
+          lines: ["Up/Down select resource  ·  Esc back  ·  Ctrl+Q quit"]
+        )
+        |> Style.border_fg(:muted),
         status_node(state)
       ],
       constraints: [{:length, 3}, {:min, 8}, {:length, 3}, {:length, 1}]
     )
-  end
-
-  defp delegate_to_component(msg, %State{} = state, %Context{} = ctx) do
-    case State.current_app_component_module(state) do
-      nil ->
-        :unhandled
-
-      module ->
-        child_ctx = child_context(ctx, state)
-        child_props = child_props(state)
-        child_state = State.current_app_component_state(state)
-
-        case module.update(msg, child_state, child_props, child_ctx) do
-          {:ok, next_child_state, cmds} ->
-            {:ok,
-             State.put_app_component_state(state, state.shell.selected_app_id, next_child_state),
-             cmds}
-
-          :unhandled ->
-            :unhandled
-        end
-    end
-  end
-
-  defp delegate_info(msg, %State{} = state, %Context{} = ctx) do
-    with module when not is_nil(module) <- State.current_app_component_module(state),
-         true <- function_exported?(module, :handle_info, 4),
-         {:ok, next_child_state, cmds} <- component_handle_info(module, msg, state, ctx) do
-      {:ok, State.put_app_component_state(state, state.shell.selected_app_id, next_child_state),
-       cmds}
-    else
-      nil -> :unhandled
-      false -> :unhandled
-      :unhandled -> :unhandled
-    end
+    |> Layout.with_padding({1, 1, 0, 0})
   end
 
   defp child_props(%State{} = state) do
@@ -391,19 +324,6 @@ defmodule Switchyard.TUI.Root do
       context: state.context,
       snapshot: state.snapshot
     }
-  end
-
-  defp child_context(%Context{} = ctx, %State{} = state) do
-    %{ctx | path: ctx.path ++ [{:app, state.shell.selected_app_id}]}
-  end
-
-  defp component_handle_info(module, msg, %State{} = state, %Context{} = ctx) do
-    module.handle_info(
-      msg,
-      State.current_app_component_state(state),
-      child_props(state),
-      child_context(ctx, state)
-    )
   end
 
   defp normalize_component_overrides(overrides) when is_map(overrides), do: overrides
@@ -422,14 +342,14 @@ defmodule Switchyard.TUI.Root do
   defp status_node(%State{} = state) do
     StatusBar.new(
       id: :status,
-      text: state.status_line,
-      style: status_style(state.status_severity)
+      text: state.status_line
     )
+    |> Style.fg(status_tone(state.status_severity))
   end
 
-  defp status_style(:error), do: %Style{fg: :red, modifiers: [:bold]}
-  defp status_style(:warn), do: %Style{fg: :yellow}
-  defp status_style(_severity), do: %Style{fg: :green}
+  defp status_tone(:error), do: :danger
+  defp status_tone(:warn), do: :warning
+  defp status_tone(_severity), do: :success
 
   defp app_title(nil), do: "App"
   defp app_title(app), do: app.title

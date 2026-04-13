@@ -107,6 +107,15 @@ defmodule Workbench.ComponentServer do
     GenServer.call(pid, {:update, msg, ctx})
   end
 
+  @spec handle_info(pid(), term(), Workbench.Context.t()) ::
+          {:ok, t(), runtime_opts()}
+          | {:stop, t()}
+          | {:stop, t(), runtime_opts()}
+          | :unhandled
+  def handle_info(pid, msg, %Workbench.Context{} = ctx) do
+    GenServer.call(pid, {:handle_info, msg, ctx})
+  end
+
   @spec snapshot(pid()) :: t()
   def snapshot(pid), do: GenServer.call(pid, :snapshot)
 
@@ -129,7 +138,48 @@ defmodule Workbench.ComponentServer do
 
   @impl true
   def handle_call({:update, msg, ctx}, _from, %__MODULE__{} = server) do
-    case server.module.update(msg, server.state, server.props, ctx) do
+    reply_with_callback(server, ctx, fn current_server ->
+      current_server.module.update(msg, current_server.state, current_server.props, ctx)
+    end)
+  end
+
+  def handle_call({:handle_info, msg, ctx}, _from, %__MODULE__{} = server) do
+    if function_exported?(server.module, :handle_info, 4) do
+      reply_with_callback(server, ctx, fn current_server ->
+        current_server.module.handle_info(msg, current_server.state, current_server.props, ctx)
+      end)
+    else
+      {:reply, :unhandled, %{server | ctx: ctx}}
+    end
+  end
+
+  @impl true
+  def handle_call(:snapshot, _from, %__MODULE__{} = server), do: {:reply, server, server}
+
+  @impl true
+  def handle_info(msg, %__MODULE__{} = server) do
+    if function_exported?(server.module, :handle_info, 4) do
+      case server.module.handle_info(msg, server.state, server.props, server.ctx) do
+        {:ok, state, runtime_opts} ->
+          {:noreply, %{server | state: state, runtime_opts: normalize_runtime_opts(runtime_opts)}}
+
+        {:stop, state} ->
+          {:stop, :normal, %{server | state: state, runtime_opts: default_runtime_opts()}}
+
+        {:stop, state, runtime_opts} ->
+          {:stop, :normal,
+           %{server | state: state, runtime_opts: normalize_runtime_opts(runtime_opts)}}
+
+        :unhandled ->
+          {:noreply, server}
+      end
+    else
+      {:noreply, server}
+    end
+  end
+
+  defp reply_with_callback(%__MODULE__{} = server, %Workbench.Context{} = ctx, callback) do
+    case callback.(server) do
       {:ok, state, runtime_opts} ->
         next_server = %{
           server
@@ -156,31 +206,6 @@ defmodule Workbench.ComponentServer do
 
       :unhandled ->
         {:reply, :unhandled, %{server | ctx: ctx}}
-    end
-  end
-
-  @impl true
-  def handle_call(:snapshot, _from, %__MODULE__{} = server), do: {:reply, server, server}
-
-  @impl true
-  def handle_info(msg, %__MODULE__{} = server) do
-    if function_exported?(server.module, :handle_info, 4) do
-      case server.module.handle_info(msg, server.state, server.props, server.ctx) do
-        {:ok, state, runtime_opts} ->
-          {:noreply, %{server | state: state, runtime_opts: normalize_runtime_opts(runtime_opts)}}
-
-        {:stop, state} ->
-          {:stop, :normal, %{server | state: state, runtime_opts: default_runtime_opts()}}
-
-        {:stop, state, runtime_opts} ->
-          {:stop, :normal,
-           %{server | state: state, runtime_opts: normalize_runtime_opts(runtime_opts)}}
-
-        :unhandled ->
-          {:noreply, server}
-      end
-    else
-      {:noreply, server}
     end
   end
 

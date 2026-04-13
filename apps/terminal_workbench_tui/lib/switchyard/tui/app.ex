@@ -4,10 +4,11 @@ defmodule Switchyard.TUI.App do
   use ExRatatui.App, runtime: :reducer
 
   alias Switchyard.TUI.Root
+  alias Switchyard.TUI.Theme
   alias Workbench.Runtime
 
   @impl true
-  def init(opts), do: Runtime.init(Root, opts)
+  def init(opts), do: Runtime.init(Root, Keyword.put_new(opts, :theme, Theme.default()))
 
   @impl true
   def render(state, frame), do: Runtime.render(state, frame)

@@ -16,7 +16,6 @@ defmodule Switchyard.TUI.State do
             status_severity: :info,
             snapshot: %{processes: [], jobs: []},
             context: %{},
-            app_component_states: %{},
             app_component_overrides: %{}
 
   @type t :: %__MODULE__{
@@ -30,7 +29,6 @@ defmodule Switchyard.TUI.State do
           status_severity: :info | :warn | :error,
           snapshot: map(),
           context: map(),
-          app_component_states: %{optional(String.t()) => term()},
           app_component_overrides: %{optional(String.t()) => module()}
         }
 
@@ -146,17 +144,6 @@ defmodule Switchyard.TUI.State do
       _other ->
         nil
     end
-  end
-
-  @spec current_app_component_state(t()) :: term()
-  def current_app_component_state(%__MODULE__{} = state) do
-    Map.get(state.app_component_states, state.shell.selected_app_id)
-  end
-
-  @spec put_app_component_state(t(), String.t(), term()) :: t()
-  def put_app_component_state(%__MODULE__{} = state, app_id, component_state)
-      when is_binary(app_id) do
-    %{state | app_component_states: Map.put(state.app_component_states, app_id, component_state)}
   end
 
   defp resource_matches_app?(%Resource{} = resource, %AppDescriptor{} = app) do

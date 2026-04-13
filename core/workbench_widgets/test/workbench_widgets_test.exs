@@ -23,4 +23,18 @@ defmodule WorkbenchWidgetsTest do
     assert node.props.scroll_offset == 2
     assert node.props.items == [{item, 3}]
   end
+
+  test "widget constructors normalize shared style keys onto node style" do
+    node =
+      Widgets.List.new(
+        id: :sites,
+        title: "Sites",
+        items: ["local", "demo"],
+        border_fg: :accent,
+        highlight_fg: :focus
+      )
+
+    assert node.style[:border_fg] == :accent
+    assert node.style[:highlight_fg] == :focus
+  end
 end

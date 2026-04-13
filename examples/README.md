@@ -10,6 +10,8 @@ not parallel demo scaffolding.
 - the actual `Switchyard.TUI.run/1` startup path
 - provider-driven site and app catalog assembly
 - a custom `Workbench.Component` mounted through `AppDescriptor.tui_component`
+- a mounted supervised child actor inside that custom component, owned by
+  `Workbench.Runtime` rather than by product-local state
 - generic list/detail apps for site-owned resources
 - `Workbench.Cmd.request/3`, `Workbench.Cmd.async/2`, `Workbench.Cmd.after_ms/2`,
   and `Workbench.Cmd.batch/1`
@@ -22,6 +24,8 @@ not parallel demo scaffolding.
 - ex_ratatui-backed rendering through tabs, tables, lists, panes, detail panes,
   spinners, gauges, status bars, and a row-scrolled variable-height
   `WidgetList`
+- the normalized style/layout surface through `Workbench.Style`,
+  `Workbench.Theme`, and `Workbench.Layout.with_padding/2`
 
 The example includes two sites:
 
@@ -69,6 +73,7 @@ The example is doing its job if all of the following are true:
 - the home screen shows `Fleet Demo` and `Local`
 - the `Fleet Demo` site opens `Control Room`, `Runbooks`, and `Incidents`
 - `Control Room` animates over time without blocking the BEAM
+- the mounted control-loop actor keeps ticking without product-local child state
 - manual refresh and deploy actions update the status line and event stream
 - the runtime tab shows retained reducer trace events in a row-scrolled
   variable-height `WidgetList`

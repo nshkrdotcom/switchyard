@@ -17,6 +17,26 @@ belong in `workbench_tui_framework`.
 
 - `Workbench.Layout`
 - `Workbench.Node`
+- `Workbench.Style`
+- `Workbench.Theme`
+
+## Current Styling And Layout Surface
+
+- `Workbench.Layout.padding` is now part of resolved child geometry rather than
+  inert metadata
+- `Workbench.Layout.with_padding/2` can update a layout or a node in-place
+- `Workbench.Style` provides renderer-neutral helpers such as `fg/2`,
+  `border_fg/2`, `padding/2`, `align/2`, and `highlight_fg/2`
+- `Workbench.Theme` provides semantic token resolution for values such as
+  `:accent`, `:warning`, and `:focus`
+
+Example:
+
+```elixir
+Node.vstack(:root, [Node.text(:title, "Jobs"), Node.text(:body, "steady")])
+|> Workbench.Layout.with_padding({1, 1, 0, 0})
+|> Workbench.Style.border_fg(:accent)
+```
 
 ## Package Checks
 
