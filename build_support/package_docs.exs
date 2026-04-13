@@ -24,6 +24,8 @@ defmodule Switchyard.Build.PackageDocs do
       {Path.join(root_prefix, "README.md"),
        filename: "workspace_readme", title: "Workspace Overview"},
       {Path.join(root_prefix, "guides/index.md"), filename: "guide_index", title: "Guide Index"},
+      {Path.join(root_prefix, "guides/current_state.md"),
+       filename: "current_state", title: "Current State"},
       {Path.join(root_prefix, "guides/vision.md"), filename: "vision", title: "Vision"},
       {Path.join(root_prefix, "guides/monorepo_strategy.md"),
        filename: "monorepo_strategy", title: "Monorepo Strategy"},
@@ -31,6 +33,8 @@ defmodule Switchyard.Build.PackageDocs do
        filename: "package_boundaries", title: "Package Boundaries"},
       {Path.join(root_prefix, "guides/runtime_model.md"),
        filename: "runtime_model", title: "Runtime Model"},
+      {Path.join(root_prefix, "guides/workspace_workflow.md"),
+       filename: "workspace_workflow", title: "Workspace Workflow"},
       {Path.join(root_prefix, "guides/testing_and_delivery.md"),
        filename: "testing_and_delivery", title: "Testing And Delivery"},
       {Path.join(root_prefix, "docs/implementation_checklist.md"),
@@ -43,9 +47,10 @@ defmodule Switchyard.Build.PackageDocs do
   defp groups_for_extras(root_prefix) do
     [
       Package: ["README.md"],
-      Workspace: [
+      Overview: [
         Path.join(root_prefix, "README.md"),
         Path.join(root_prefix, "guides/index.md"),
+        Path.join(root_prefix, "guides/current_state.md"),
         Path.join(root_prefix, "guides/vision.md")
       ],
       Architecture: [
@@ -53,11 +58,15 @@ defmodule Switchyard.Build.PackageDocs do
         Path.join(root_prefix, "guides/package_boundaries.md"),
         Path.join(root_prefix, "guides/runtime_model.md")
       ],
-      Execution: [
-        Path.join(root_prefix, "guides/testing_and_delivery.md"),
-        Path.join(root_prefix, "docs/implementation_checklist.md")
+      Workflow: [
+        Path.join(root_prefix, "guides/workspace_workflow.md"),
+        Path.join(root_prefix, "guides/testing_and_delivery.md")
       ],
-      Project: [Path.join(root_prefix, "CHANGELOG.md"), Path.join(root_prefix, "LICENSE")]
+      Delivery: [
+        Path.join(root_prefix, "docs/implementation_checklist.md"),
+        Path.join(root_prefix, "CHANGELOG.md")
+      ],
+      Project: [Path.join(root_prefix, "LICENSE")]
     ]
   end
 end

@@ -4,10 +4,12 @@ defmodule Switchyard.Build.WeldContract do
   @artifact_docs [
     "README.md",
     "guides/index.md",
+    "guides/current_state.md",
     "guides/vision.md",
     "guides/monorepo_strategy.md",
     "guides/package_boundaries.md",
     "guides/runtime_model.md",
+    "guides/workspace_workflow.md",
     "guides/testing_and_delivery.md",
     "docs/implementation_checklist.md",
     "LICENSE"

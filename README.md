@@ -7,116 +7,116 @@
 
 # Switchyard
 
-Switchyard is a terminal-native operator workbench for multi-site terminal
-applications. It is built as a non-umbrella Elixir monorepo with a local
-control daemon, a pure shell core, a reusable BEAM-native TUI framework, and
-pluggable site packages.
+Switchyard is a terminal-native operator workbench workspace for local
+operations and multi-site terminal applications. The repository already
+contains the platform contracts, daemon/runtime layers, reusable Workbench TUI
+stack, built-in local site, and runnable daemon, CLI, and TUI entrypoints.
 
-The project goal is straightforward:
+## Current State
 
-- host multiple "sites" inside one terminal workbench
-- manage jobs, logs, processes, and connections from the same shell
-- keep durable local operational state out of the UI process
-- let domain systems plug in as external sites rather than defining the
-  platform itself
+- non-umbrella Elixir workspace with 18 Mix projects:
+  root workspace, 13 `core/*` packages, 1 built-in site, and 3 runnable apps
+- typed contracts, site catalog derivation, daemon transport, and local runtime
+  packages for processes, jobs, logs, and snapshot storage
+- backend-neutral Workbench node IR, reusable widgets, and a BEAM-native TUI
+  runtime bridged onto `ex_ratatui`
+- Switchyard product TUI that already supports site navigation, app routing,
+  generic list/detail flows, and custom framework-native app components
+- headless CLI and daemon entrypoints that prove meaningful behavior exists
+  beneath the UI
+- Weld projection metadata for the internal `switchyard_foundation` artifact
 
-## Project Status
+Switchyard is no longer just a scaffold. The baseline architecture is in place,
+the package boundaries are explicit, and the current work is about extending and
+hardening those seams rather than inventing them.
 
-This repository is greenfield and intentionally staged.
+## What You Can Run Today
 
-The current foundation establishes:
+- `apps/terminal_workbenchd` starts the local daemon with the first-party site
+  catalog.
+- `apps/terminal_workbench_cli` exposes a small JSON-oriented control surface:
+  `sites`, `apps <site-id>`, and `local snapshot`.
+- `apps/terminal_workbench_tui` boots the Switchyard shell on top of the
+  reusable Workbench runtime.
+- `sites/site_local` currently provides the built-in local site with app
+  descriptors for processes, jobs, and logs; processes and jobs are already
+  mapped into resources and details.
 
-- root workspace orchestration with Blitz
-- early Weld integration for artifact shaping
-- branded documentation and implementation tracking
-- typed contracts for sites, apps, resources, actions, jobs, and logs
-- a local daemon seam for process, job, log, and snapshot ownership
-- a reusable Workbench runtime, widget, and devtools layer under `core/*`
-- a thin Switchyard product TUI over that framework
-- a framework-native component seam so external repos can contribute real TUI
-  components without changing Switchyard core
+## Repository Layout
 
-## Start Here
+- `core/*`
+  reusable platform packages such as contracts, platform catalog, daemon,
+  runtime layers, shell state, node IR, TUI framework, widgets, and devtools
+- `sites/*`
+  built-in site adapters; today that is `site_local`
+- `apps/*`
+  runnable entrypoints for the TUI shell, headless CLI, and daemon
+- `guides/*` and `docs/*`
+  workspace architecture, workflow, and delivery references used for HexDocs
+  and handoff
 
-- [Guide Index](guides/index.md)
-- [Vision](guides/vision.md)
-- [Monorepo Strategy](guides/monorepo_strategy.md)
-- [Package Boundaries](guides/package_boundaries.md)
-- [Runtime Model](guides/runtime_model.md)
-- [Testing And Delivery](guides/testing_and_delivery.md)
-- [Implementation Checklist](docs/implementation_checklist.md)
+## Quick Start
 
-## Planned Monorepo Shape
+From the repo root:
 
-```text
-switchyard/
-  mix.exs
-  build_support/
-  core/
-  sites/
-  apps/
-  guides/
-  docs/
+```bash
+mix deps.get
+mix mr.deps.get
+mix ci
 ```
 
-The repo root is a workspace and documentation layer. It is not a true umbrella
-application.
+Run the daemon:
 
-## Package Families
+```bash
+cd apps/terminal_workbenchd
+iex -S mix
+```
 
-### `core/*`
+Inspect the platform headlessly:
 
-Reusable platform internals:
+```bash
+cd apps/terminal_workbench_cli
+mix escript.build
+./switchyard_cli sites
+./switchyard_cli apps local
+./switchyard_cli local snapshot
+```
 
-- `workbench_contracts`
-- `workbench_platform`
-- `workbench_daemon`
-- `workbench_transport_local`
-- `workbench_process_runtime`
-- `workbench_log_runtime`
-- `workbench_job_runtime`
-- `workbench_store_local`
-- `workbench_shell_core`
-- `workbench_node_ir`
-- `workbench_tui_framework`
-- `workbench_widgets`
-- `workbench_devtools`
+Run the TUI:
 
-### `sites/*`
-
-Pluggable site adapters:
-
-- `site_local`
-
-### `apps/*`
-
-Runnable entrypoints:
-
-- `terminal_workbench_tui`
-- `terminal_workbench_cli`
-- `terminal_workbenchd`
-
-## Principles
-
-- the daemon owns long-lived local operational state
-- the shell owns navigation and presentation
-- the Workbench runtime owns terminal rendering, actions, focus, and effects
-- site packages own domain mapping and actions
-- meaningful operator behavior must exist headlessly beneath the TUI
-- external product integrations must remain outside Switchyard core
+```bash
+cd apps/terminal_workbench_tui
+mix escript.build
+./switchyard --debug
+```
 
 ## Workspace Commands
 
-The repo root uses Blitz to run child Mix projects as one workspace:
+The repo root is authoritative for workspace-wide quality gates:
 
 - `mix mr.deps.get`
-- `mix mr.format`
+- `mix mr.format --check-formatted`
 - `mix mr.compile`
 - `mix mr.test`
 - `mix mr.credo --strict`
 - `mix mr.dialyzer`
 - `mix mr.docs --warnings-as-errors`
+- `mix weld.verify`
 - `mix ci`
+
+## Documentation
+
+Start here if you are orienting yourself in the codebase:
+
+- [Guide Index](guides/index.md)
+- [Current State](guides/current_state.md)
+- [Vision](guides/vision.md)
+- [Monorepo Strategy](guides/monorepo_strategy.md)
+- [Package Boundaries](guides/package_boundaries.md)
+- [Runtime Model](guides/runtime_model.md)
+- [Workspace Workflow](guides/workspace_workflow.md)
+- [Testing And Delivery](guides/testing_and_delivery.md)
+- [Implementation Checklist](docs/implementation_checklist.md)
 
 ## License
 

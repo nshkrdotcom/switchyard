@@ -1,8 +1,8 @@
 # Switchyard Implementation Checklist
 
-Status: complete
-Scope: greenfield Workbench framework extraction, Switchyard TUI rewrite,
-integration migration, and delivery verification
+Status: baseline delivered
+Scope: current workspace architecture, Workbench framework extraction,
+Switchyard TUI rewrite, integration migration, and delivery verification
 
 ## Required Reading
 
@@ -10,25 +10,27 @@ Read these before making structural changes:
 
 1. `README.md`
 2. `guides/index.md`
-3. `guides/vision.md`
-4. `guides/monorepo_strategy.md`
-5. `guides/package_boundaries.md`
-6. `guides/runtime_model.md`
-7. `guides/testing_and_delivery.md`
-8. `build_support/workspace_contract.exs`
-9. `build_support/dependency_resolver.exs`
-10. `build_support/weld_contract.exs`
-11. `core/workbench_node_ir/README.md`
-12. `core/workbench_tui_framework/README.md`
-13. `core/workbench_widgets/README.md`
-14. `core/workbench_devtools/README.md`
-15. `apps/terminal_workbench_tui/README.md`
-16. `apps/terminal_workbench_tui/lib/switchyard/tui/root.ex`
-17. `apps/terminal_workbench_tui/lib/switchyard/tui/state.ex`
-18. `core/workbench_tui_framework/lib/workbench/runtime.ex`
-19. `core/workbench_tui_framework/lib/workbench/effects.ex`
-20. `../ex_ratatui/lib/ex_ratatui/command.ex`
-21. `../ex_ratatui/lib/ex_ratatui/subscription.ex`
+3. `guides/current_state.md`
+4. `guides/vision.md`
+5. `guides/monorepo_strategy.md`
+6. `guides/package_boundaries.md`
+7. `guides/runtime_model.md`
+8. `guides/workspace_workflow.md`
+9. `guides/testing_and_delivery.md`
+10. `build_support/workspace_contract.exs`
+11. `build_support/dependency_resolver.exs`
+12. `build_support/weld_contract.exs`
+13. `core/workbench_node_ir/README.md`
+14. `core/workbench_tui_framework/README.md`
+15. `core/workbench_widgets/README.md`
+16. `core/workbench_devtools/README.md`
+17. `apps/terminal_workbench_tui/README.md`
+18. `apps/terminal_workbench_tui/lib/switchyard/tui/root.ex`
+19. `apps/terminal_workbench_tui/lib/switchyard/tui/state.ex`
+20. `core/workbench_tui_framework/lib/workbench/runtime.ex`
+21. `core/workbench_tui_framework/lib/workbench/effects.ex`
+22. `../ex_ratatui/lib/ex_ratatui/command.ex`
+23. `../ex_ratatui/lib/ex_ratatui/subscription.ex`
 
 ## Invariants
 
@@ -112,8 +114,9 @@ The welded `switchyard_foundation` monolith intentionally sets
 Reason:
 
 1. the runtime is designed against the reducer-runtime API in the forked
-   `ex_ratatui` checkout at `~/p/g/n/ex_ratatui`
-2. that API is currently consumed as a git dependency pinned by commit
+   `ex_ratatui` dependency
+2. that API is currently consumed as a git-pinned dependency by default, with
+   `EX_RATATUI_PATH` available as a local override
 3. Hex packages cannot depend on git dependencies
 4. the monolith is therefore verified as an internal artifact with full
    `deps.get`, compile, test, and docs gates, while `hex.build` is explicitly

@@ -2,11 +2,11 @@
 
 Switchyard follows a non-umbrella monorepo model.
 
-The top-level `mix.exs` is a workspace root that coordinates child Mix
-projects with Blitz. Packaging and future publication shaping will be handled
-through Weld.
+The top-level `mix.exs` is a workspace root that coordinates 17 child Mix
+projects with Blitz. Weld already describes the internal
+`switchyard_foundation` projection used for artifact shaping and verification.
 
-The target package families are:
+The active package families are:
 
 - `core/*` for contracts and reusable platform internals
 - `sites/*` for built-in site adapters
@@ -19,9 +19,6 @@ This split keeps the dependency graph honest:
 - sites map domain systems onto those seams
 - apps host runnable entrypoints
 
-That structure is intentionally similar to the `jido_integration` workspace
-pattern rather than an umbrella application.
-
 ## Why This Is Not An Umbrella
 
 Umbrellas are useful when all children are fundamentally one application with a
@@ -32,8 +29,9 @@ shared build and release story. Switchyard needs a different posture:
 - workspace orchestration should not erase package boundaries
 - publication and artifact shaping should be possible package-by-package later
 
-Blitz provides the workspace task execution, and Weld is reserved for future
-artifact shaping once the package boundaries stabilize.
+Blitz provides the workspace task execution. Weld handles the current internal
+projection. Neither tool should be treated as permission to blur boundaries
+between packages.
 
 ## Dependency Direction
 
@@ -49,4 +47,5 @@ the shell needs to invent behavior that does not exist beneath it, the seam is
 wrong.
 
 External product integrations should live outside this repo and consume the
-published Switchyard seams instead of being baked into the workspace itself.
+published or projected Switchyard seams instead of being baked into the
+workspace itself.

@@ -69,13 +69,21 @@ The intended flow is:
 5. the daemon updates local runtime state and persists snapshots as needed
 6. site providers remap snapshots into typed resources and details
 
-For the TUI path specifically:
+For the built-in TUI path specifically:
 
 1. the product app boots a root Workbench component
-2. the component tree renders Workbench nodes
+2. the root shows sites, then site apps, then either a generic list/detail app
+   or a framework-native custom component
 3. the runtime resolves layout and derives focus and mouse indexes
 4. effects are lowered onto `ex_ratatui` commands
 5. site or integration components route requests back through the daemon seam
+
+For the built-in local site today:
+
+1. the daemon snapshot carries process, job, and log-oriented runtime state
+2. `site_local` maps process and job data into generic resources and details
+3. the product TUI renders those resources through reusable Workbench widgets
+4. the CLI can inspect the same site and snapshot data without rendering
 
 ## Why The Daemon Matters
 

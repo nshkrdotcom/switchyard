@@ -1,6 +1,8 @@
 # Testing And Delivery
 
-Switchyard should grow by proving its seams first.
+Switchyard should continue to grow by proving its seams first. The baseline
+workspace is already in place, so delivery work now means extending behavior
+without weakening the package boundaries that have already been established.
 
 ## TDD / RGR
 
@@ -10,7 +12,7 @@ When introducing behavior:
 2. implement the smallest coherent behavior that makes it pass
 3. refactor names, boundaries, and docs without weakening the seam
 
-The monorepo foundation in this repository follows that rule:
+The current workspace follows that rule:
 
 - contracts are covered with constructor and validation tests
 - the registry is covered with provider-driven catalog tests
@@ -60,14 +62,17 @@ If work resumes after a pause or compaction:
 
 1. read `README.md`
 2. read `guides/index.md`
-3. read `guides/package_boundaries.md`
-4. read `guides/runtime_model.md`
-5. read `docs/implementation_checklist.md`
-6. inspect `git status --short --branch`
-7. resume from the earliest unchecked checklist item
+3. read `guides/current_state.md`
+4. read `guides/package_boundaries.md`
+5. read `guides/runtime_model.md`
+6. read `guides/workspace_workflow.md`
+7. read `docs/implementation_checklist.md`
+8. inspect `git status --short --branch`
+9. resume from the earliest unchecked checklist item
 
 ## Documentation Standard
 
 Repository docs should be self-contained, repo-relative, and written to survive
-handoff. Local-machine-specific notes belong outside the repo, not in the repo
-docs.
+handoff. HexDocs extras, README content, and package READMEs should describe the
+delivered architecture in present tense. Local-machine-specific notes belong
+outside the repo, not in the repo docs.

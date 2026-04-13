@@ -1,14 +1,15 @@
 # Package Boundaries
 
 Switchyard is intentionally split into three package families under one
-workspace root.
+workspace root. The current repo shape is already the intended baseline shape
+for the platform.
 
 ## Root Workspace
 
 The repository root owns:
 
 - workspace orchestration with Blitz
-- future artifact shaping entrypoints with Weld
+- internal artifact shaping entrypoints with Weld
 - shared docs, branding, and delivery tracking
 - cross-workspace quality aliases such as `mix ci`
 
@@ -37,7 +38,8 @@ Every higher layer depends on these contracts.
 ### `core/workbench_platform`
 
 Registry and catalog helpers that load site providers and derive the global
-platform view from them.
+platform view from them. This package stays small on purpose; it is the typed
+catalog seam, not a second runtime.
 
 ### `core/workbench_daemon`
 
@@ -53,7 +55,7 @@ the durable local runtime seam for:
 ### `core/workbench_transport_local`
 
 The in-process transport seam used by headless clients and tests to speak to the
-daemon without inventing a UI-specific protocol too early.
+daemon without inventing a UI-specific protocol.
 
 ### `core/workbench_process_runtime`
 
@@ -86,7 +88,7 @@ The backend-neutral Workbench node vocabulary. This package owns:
 
 ### `core/workbench_tui_framework`
 
-The greenfield BEAM-native TUI runtime. This package owns:
+The reusable BEAM-native TUI runtime. This package owns:
 
 - the component behaviour
 - render tree and runtime index structures
@@ -95,9 +97,7 @@ The greenfield BEAM-native TUI runtime. This package owns:
 - the runtime and `ex_ratatui` renderer boundary
 
 It depends on `core/workbench_node_ir` for the node vocabulary instead of
-owning that IR directly.
-
-This package must stay product-agnostic.
+owning that IR directly. This package is infrastructure, not product UI.
 
 ### `core/workbench_widgets`
 
@@ -108,16 +108,17 @@ integrations. It must not depend on the `ex_ratatui`-bearing framework package.
 ### `core/workbench_devtools`
 
 Optional inspection and development tooling for the Workbench runtime, including
-overlay, tree, focus, region, and hot-reload oriented surfaces.
-This package should inspect runtime data as data, not by taking a compile-time
-dependency on the renderer-bearing framework package unless it truly needs it.
+overlay, tree, focus, region, and hot-reload oriented surfaces. This package
+should inspect runtime data as data, not by taking a compile-time dependency on
+the renderer-bearing framework package unless it truly needs it.
 
 ## Site Packages
 
 ### `sites/site_local`
 
 The built-in local operations site. It maps daemon-owned process and job state
-into generic resources, details, and actions.
+into generic resources, details, and actions. The logs app descriptor already
+exists on the same seam.
 
 ## Application Packages
 
@@ -135,7 +136,8 @@ The Switchyard product TUI. It should stay thin:
 - composition of site catalog data into Switchyard views
 
 Generic rendering, effects, focus, and widget behavior belong in the Workbench
-packages, not here.
+packages, not here. Generic list/detail behavior should stay reusable; richer
+site-specific flows should arrive through framework-native app components.
 
 ### `apps/terminal_workbenchd`
 

@@ -1,16 +1,17 @@
 # Vision
 
-Switchyard is intended to be a terminal workbench rather than a larger
-single-purpose console.
+Switchyard is a terminal workbench rather than a single-purpose console. The
+project now has the baseline architecture needed to pursue that vision without
+collapsing back into one oversized TUI application.
 
-The platform should combine:
+The platform combines:
 
 - a local daemon that owns jobs, processes, logs, and sessions
 - a generic terminal shell that owns routing, panes, and command UX
 - a typed SDK for pluggable sites and apps
 - external domain sites built on that SDK
 
-The system should let an operator:
+The operator model remains straightforward:
 
 - log into different sites
 - launch or stop local process stacks
@@ -18,11 +19,11 @@ The system should let an operator:
 - inspect job state
 - switch between domain apps without abandoning operational context
 
-The intended user experience is not "one TUI per product." It is one durable
+The target user experience is not "one TUI per product." It is one durable
 terminal shell that can host multiple operator-facing sites with shared global
 UX for routing, search, command execution, notifications, jobs, and logs.
 
-That leads to a few hard architectural requirements:
+That requires a few hard architectural constraints:
 
 - the shell cannot be the authority for long-lived operational state
 - site packages cannot own generic process and log management
@@ -32,8 +33,15 @@ That leads to a few hard architectural requirements:
   beneath the TUI
 
 Switchyard therefore centers on one local control-plane daemon plus a shell,
-site SDK, and app packages layered above it.
+site SDK, reusable TUI framework, and app packages layered above it.
 
-This repository will grow toward that model in phases, with the implementation
-checklist in `docs/implementation_checklist.md` acting as the live execution
-record.
+That foundation already exists in this repository:
+
+- the daemon seam is implemented
+- the shell state is separated from the product TUI
+- the Workbench runtime, widgets, and node IR are split into reusable packages
+- the built-in local site maps daemon state into shared contracts
+- the CLI and TUI both consume behavior beneath the rendering layer
+
+The next phase is not to invent the architecture. It is to widen the useful
+surface area while preserving these boundaries.
