@@ -105,12 +105,12 @@
       "priv",
       "projection.lock.json"
     ],
-    "git_revision": "cf715e841b43f3c8f81ca9973f2dc49953049a87",
-    "tree_digest": "51513dd52738700987c097a6534587d8c19240295f9983eabb72d5f1f4e0da3e"
+    "git_revision": "de59f0d0e5b3d5642fcedea33fad92f26e37602e",
+    "tree_digest": "1b0138c83ddff708f6a61e924e75b141fd8cbf313447b46d794e0c8fcefb1ad3"
   },
   "manifest": {
     "path": "/home/home/p/g/n/switchyard/build_support/weld.exs",
-    "digest": "b4c27191e58be188785cf1f1c772b59d7bd379cdfb1b7b0b4510ef4c5e2f4d4e"
+    "digest": "8cd714409d8a73b1ce009dc751edbf3a4e84dde9308647b073ac653669c731ec"
   },
   "verification": [
     {

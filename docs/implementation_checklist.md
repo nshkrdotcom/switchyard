@@ -19,7 +19,7 @@ Read these before making structural changes:
 9. `guides/testing_and_delivery.md`
 10. `build_support/workspace_contract.exs`
 11. `build_support/dependency_resolver.exs`
-12. `build_support/weld_contract.exs`
+12. `build_support/weld.exs`
 13. `core/workbench_node_ir/README.md`
 14. `core/workbench_tui_framework/README.md`
 15. `core/workbench_widgets/README.md`
@@ -108,9 +108,8 @@ Read these before making structural changes:
 
 ## Packaging Note
 
-The welded `switchyard_foundation` monolith remains an internal artifact, but
-the current release flow keeps `hex.build` enabled so `mix release.prepare`
-can produce a deterministic tarball inside the prepared bundle.
+The welded `switchyard_foundation` monolith remains an internal artifact and
+keeps `hex_build: false` in the Weld manifest.
 
 That does not change the repo's publication posture:
 
@@ -124,6 +123,10 @@ Current internal artifact operations therefore run through:
 1. `mix release.prepare`
 2. `mix release.track`
 3. `mix release.archive`
+
+`mix release.track` updates the orphan-backed
+`projection/switchyard_foundation` branch so downstream repos can pin a real
+generated-source ref before any formal release boundary exists.
 
 Keep the committed workspace dependency on the released Hex Weld line. If a
 coordinated prerelease Weld validation run is needed, do it through a normal

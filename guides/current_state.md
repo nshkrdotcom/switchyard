@@ -80,8 +80,10 @@ That posture is explicit:
 
 - the Workbench runtime depends on `ex_ratatui` from Hex
 - Weld projects the internal `switchyard_foundation` artifact
-- `mix release.prepare` still builds a deterministic tarball for bundle and
-  projection tracking, but `release.publish` remains out of scope
+- `mix release.prepare` builds the prepared bundle,
+  `mix release.track` updates `projection/switchyard_foundation`,
+  and `mix release.archive` preserves the validated bundle
+- `release.publish` remains out of scope
 
 ## What The Next Phase Should Mean
 
