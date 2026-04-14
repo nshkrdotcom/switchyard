@@ -17,7 +17,7 @@ defmodule Switchyard.Build.WeldContract do
 
   @dependencies [
     blitz: [requirement: "~> 0.2.0"],
-    weld: [requirement: "~> 0.7.0"],
+    weld: [requirement: "~> 0.7.1"],
     ex_ratatui: [requirement: "~> 0.7.0"]
   ]
 
