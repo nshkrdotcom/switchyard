@@ -4,7 +4,9 @@ defmodule Switchyard.ReleaseDocsTest do
   @docs [
     Path.expand("../README.md", __DIR__),
     Path.expand("../guides/workspace_workflow.md", __DIR__),
-    Path.expand("../guides/testing_and_delivery.md", __DIR__)
+    Path.expand("../guides/testing_and_delivery.md", __DIR__),
+    Path.expand("../guides/current_state.md", __DIR__),
+    Path.expand("../docs/implementation_checklist.md", __DIR__)
   ]
 
   test "delivery docs describe the internal welded projection flow" do
@@ -28,6 +30,12 @@ defmodule Switchyard.ReleaseDocsTest do
 
       refute doc =~ "WELD_GIT_REF",
              "#{path} must not describe committed Weld git-ref overrides anymore"
+
+      refute doc =~ "keeps `hex.build` enabled",
+             "#{path} must not describe the removed pre-0.7.0 tarball workaround"
+
+      refute doc =~ "deterministic tarball for bundle and projection tracking",
+             "#{path} must not describe tarball-backed tracking as required anymore"
     end)
   end
 
