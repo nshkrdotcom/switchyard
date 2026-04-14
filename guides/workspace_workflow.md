@@ -96,7 +96,7 @@ When you add or rename guides:
 
 1. update the guide file under `guides/` or `docs/`
 2. add it to root `mix.exs` `docs.extras`
-3. add it to `build_support/weld_contract.exs` if it belongs in the projected
+3. add it to `build_support/weld.exs` if it belongs in the projected
    internal docs set
 4. run `mix docs --warnings-as-errors`
 

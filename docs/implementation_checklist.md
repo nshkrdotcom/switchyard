@@ -19,7 +19,7 @@ Read these before making structural changes:
 9. `guides/testing_and_delivery.md`
 10. `build_support/workspace_contract.exs`
 11. `build_support/dependency_resolver.exs`
-12. `build_support/weld_contract.exs`
+12. `build_support/weld.exs`
 13. `core/workbench_node_ir/README.md`
 14. `core/workbench_tui_framework/README.md`
 15. `core/workbench_widgets/README.md`
