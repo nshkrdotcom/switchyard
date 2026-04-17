@@ -1659,6 +1659,10 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
     Data.dashboard_payload(refresh_count)
   end
 
+  defp request_handler(:local_snapshot, _opts) do
+    Data.base_snapshot()
+  end
+
   defp request_handler({:deploy_service, service_id, refresh_count}, _opts) do
     Data.deploy_payload(service_id, refresh_count)
   end

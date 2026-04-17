@@ -29,7 +29,8 @@ defmodule Switchyard.TUI do
 
   @spec run(keyword()) :: :ok | {:error, term()}
   def run(opts \\ []) do
-    with {:ok, opts} <- runtime_opts(opts),
+    with :ok <- ensure_operator_terminal_runtime(),
+         {:ok, opts} <- runtime_opts(opts),
          {:ok, pid} <- start_operator_terminal(opts) do
       ref = Process.monitor(pid)
 
@@ -39,6 +40,13 @@ defmodule Switchyard.TUI do
     else
       {:error, reason} ->
         {:error, reason}
+    end
+  end
+
+  defp ensure_operator_terminal_runtime do
+    case Application.ensure_all_started(:execution_plane_operator_terminal) do
+      {:ok, _started_apps} -> :ok
+      {:error, reason} -> {:error, {:operator_terminal_boot_failed, reason}}
     end
   end
 
