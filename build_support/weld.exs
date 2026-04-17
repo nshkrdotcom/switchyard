@@ -18,7 +18,7 @@ defmodule Switchyard.Build.WeldContract do
   @dependencies [
     blitz: [requirement: "~> 0.2.0"],
     weld: [requirement: "~> 0.7.1"],
-    ex_ratatui: [requirement: "~> 0.7.0"]
+    ex_ratatui: [requirement: "~> 0.7.1"]
   ]
 
   def manifest do
@@ -55,7 +55,9 @@ defmodule Switchyard.Build.WeldContract do
         "core/workbench_tui_framework",
         "core/workbench_widgets",
         "core/workbench_devtools",
-        "sites/site_local"
+        "sites/site_local",
+        "sites/site_execution_plane",
+        "sites/site_jido"
       ],
       package: [
         name: "switchyard_foundation",

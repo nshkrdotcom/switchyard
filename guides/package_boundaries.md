@@ -47,6 +47,7 @@ The local control-plane daemon API and server implementation. This package owns
 the durable local runtime seam for:
 
 - process supervision
+- execution-surface and sandbox metadata persistence
 - job tracking
 - log buffering
 - snapshot persistence
@@ -59,7 +60,15 @@ daemon without inventing a UI-specific protocol.
 
 ### `core/workbench_process_runtime`
 
-Managed local subprocess execution and output capture.
+The unified execution-plane package for Switchyard managed processes. It owns:
+
+- process spec validation
+- execution-surface normalization
+- sandbox normalization and capability checks
+- transport routing
+- local subprocess execution
+- SSH exec command planning and execution
+- output capture and exit reporting
 
 ### `core/workbench_log_runtime`
 
@@ -114,18 +123,37 @@ the renderer-bearing framework package unless it truly needs it.
 
 ## Site Packages
 
+### `sites/site_execution_plane`
+
+The raw substrate/admin site. It maps daemon-owned live runtime state into
+generic resources, details, and actions for:
+
+- processes
+- operator terminals
+- jobs
+
+### `sites/site_jido`
+
+The durable operator/control-plane site. It maps daemon-exposed
+`jido_integration_v2` state into resources for:
+
+- runs
+- boundary sessions
+- attach grants
+
 ### `sites/site_local`
 
-The built-in local operations site. It maps daemon-owned process and job state
-into generic resources, details, and actions. The logs app descriptor already
-exists on the same seam.
+The retained local reference site. It still maps daemon-owned process and job
+state into generic resources and details, but it is no longer the active
+first-party operator catalog for the product shell.
 
 ## Application Packages
 
 ### `apps/terminal_workbench_cli`
 
 Minimal headless CLI over the daemon and local transport. This package proves
-that meaningful behavior exists beneath the TUI.
+that meaningful behavior exists beneath the TUI and exposes a structured
+process-start seam without depending on rendering.
 
 ### `apps/terminal_workbench_tui`
 
@@ -133,7 +161,10 @@ The Switchyard product TUI. It should stay thin:
 
 - product-specific root components
 - package-local startup and CLI wiring
+- daemon request handling and bootstrapped snapshot loading
 - composition of site catalog data into Switchyard views
+- operator-access transport configuration for local, SSH, and distributed TUI
+  modes through `execution_plane_operator_terminal`
 
 Generic rendering, effects, focus, and widget behavior belong in the Workbench
 packages, not here. Generic list/detail behavior should stay reusable; richer
@@ -155,3 +186,5 @@ The runnable daemon application that wires together the configured site modules.
    product TUI app.
 7. External integrations should plug in through `AppDescriptor.tui_component`
    or other generic framework seams, not through compatibility layers.
+8. `ex_ratatui` transport serves operator access to the TUI, not managed
+   process execution.

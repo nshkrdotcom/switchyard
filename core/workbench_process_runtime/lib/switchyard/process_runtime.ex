@@ -1,90 +1,344 @@
 defmodule Switchyard.ProcessRuntime do
   @moduledoc """
-  Minimal managed local process runtime built on ports.
+  Switchyard broker layer over Execution Plane managed processes.
+
+  Switchyard no longer owns the subprocess implementation. It normalizes
+  product-facing process requests, projects them onto Execution Plane transport
+  surfaces, and relays lifecycle output back to the daemon.
   """
 
-  defmodule Spec do
-    @moduledoc "Specification for a managed process."
+  alias __MODULE__.Transport
+  alias ExecutionPlane.Process.Transport.Surface, as: EPSurface
 
-    @enforce_keys [:id, :command]
-    defstruct id: nil, command: nil, cwd: nil, env: %{}
+  @modes [:inherit, :danger_full_access, :read_only, :workspace_write, :external]
+  @forbidden_transport_option_keys [:command, :args, :cwd, :env, :clear_env?]
 
-    @type t :: %__MODULE__{
-            id: String.t(),
-            command: String.t(),
-            cwd: String.t() | nil,
-            env: %{optional(String.t()) => String.t()}
-          }
+  @type spec_error ::
+          {:invalid_command, term()}
+          | {:invalid_args, term()}
+          | {:invalid_env, term()}
+          | {:invalid_cwd, term()}
+          | {:invalid_user, term()}
+          | {:invalid_shell, term()}
+          | {:invalid_clear_env, term()}
+          | {:invalid_pty, term()}
+          | term()
+
+  @type sandbox_mode :: :inherit | :danger_full_access | :read_only | :workspace_write | :external
+
+  @type sandbox_policy :: %{
+          optional(:writable_roots) => [String.t()],
+          optional(:network_access) => boolean() | :enabled | :restricted,
+          optional(:exclude_tmpdir_env_var) => boolean(),
+          optional(:exclude_slash_tmp) => boolean(),
+          optional(:command_prefix) => [String.t()]
+        }
+
+  @type sandbox :: %{
+          mode: sandbox_mode(),
+          policy: sandbox_policy()
+        }
+
+  @type t :: %{
+          id: String.t(),
+          command: String.t(),
+          args: [String.t()],
+          shell?: boolean(),
+          cwd: String.t() | nil,
+          env: %{optional(String.t()) => String.t()},
+          clear_env?: boolean(),
+          user: String.t() | nil,
+          pty?: boolean(),
+          execution_surface: EPSurface.t(),
+          sandbox: sandbox()
+        }
+
+  @spec spec(map() | keyword()) :: {:ok, t()} | {:error, spec_error()}
+  def spec(attrs) when is_map(attrs) or is_list(attrs) do
+    attrs = Map.new(attrs)
+
+    with {:ok, command} <- normalize_command(fetch(attrs, :command)),
+         {:ok, args} <- normalize_args(fetch(attrs, :args, [])),
+         {:ok, shell?} <- normalize_boolean(fetch(attrs, :shell?, true), :shell),
+         {:ok, env} <- normalize_env(fetch(attrs, :env, %{})),
+         {:ok, clear_env?} <- normalize_boolean(fetch(attrs, :clear_env?, false), :clear_env),
+         {:ok, pty?} <- normalize_boolean(fetch(attrs, :pty?, false), :pty),
+         :ok <- validate_optional_binary(fetch(attrs, :cwd), :cwd),
+         :ok <- validate_optional_binary(fetch(attrs, :user), :user),
+         {:ok, execution_surface} <- normalize_execution_surface(fetch(attrs, :execution_surface)),
+         {:ok, sandbox} <-
+           normalize_sandbox(fetch(attrs, :sandbox), fetch(attrs, :sandbox_policy)) do
+      {:ok,
+       %{
+         id: fetch(attrs, :id, "proc-#{System.unique_integer([:positive])}") |> to_string(),
+         command: command,
+         args: args,
+         shell?: shell?,
+         cwd: fetch(attrs, :cwd),
+         env: env,
+         clear_env?: clear_env?,
+         user: fetch(attrs, :user),
+         pty?: pty?,
+         execution_surface: execution_surface,
+         sandbox: sandbox
+       }}
+    end
   end
 
-  defmodule ManagedProcess do
-    @moduledoc false
-    use GenServer
-
-    alias Switchyard.ProcessRuntime.Spec
-
-    @spec start_link({Spec.t(), pid()}) :: GenServer.on_start()
-    def start_link({%Spec{} = spec, sink_pid}) when is_pid(sink_pid) do
-      GenServer.start_link(__MODULE__, {spec, sink_pid})
+  @spec spec!(map() | keyword()) :: t()
+  def spec!(attrs) do
+    case spec(attrs) do
+      {:ok, spec} -> spec
+      {:error, reason} -> raise ArgumentError, "invalid process spec: #{inspect(reason)}"
     end
+  end
 
-    @impl true
-    def init({%Spec{} = spec, sink_pid}) do
-      executable = System.find_executable("sh") || "/bin/sh"
-
-      port =
-        Port.open({:spawn_executable, executable}, [
-          :binary,
-          :exit_status,
-          :stderr_to_stdout,
-          args: ["-lc", spec.command],
-          cd: spec.cwd || File.cwd!(),
-          env: Enum.into(spec.env, [])
-        ])
-
-      {:ok, %{buffer: "", port: port, sink_pid: sink_pid, spec: spec}}
+  @spec start_managed(t() | map() | keyword(), pid()) :: GenServer.on_start()
+  def start_managed(spec_or_attrs, sink_pid) when is_pid(sink_pid) do
+    with {:ok, spec} <- ensure_spec(spec_or_attrs) do
+      Transport.start_managed(spec, sink_pid)
     end
+  end
 
-    @impl true
-    def handle_info({port, {:data, data}}, %{port: port} = state) do
-      {lines, buffer} = split_lines(state.buffer <> data)
+  @spec preview_command(t() | map() | keyword()) :: String.t()
+  def preview_command(spec_or_attrs) do
+    case ensure_spec(spec_or_attrs) do
+      {:ok, spec} -> Transport.preview_command(spec)
+      {:error, reason} -> "invalid command: #{inspect(reason)}"
+    end
+  end
 
-      Enum.each(lines, fn line ->
-        send(state.sink_pid, {:process_output, state.spec.id, line})
+  @spec requires_external_runner?(sandbox()) :: boolean()
+  def requires_external_runner?(%{mode: mode})
+      when mode in [:read_only, :workspace_write, :external],
+      do: true
+
+  def requires_external_runner?(%{}), do: false
+
+  @spec external_command_prefix(sandbox()) :: [String.t()]
+  def external_command_prefix(%{policy: policy}) when is_map(policy) do
+    policy
+    |> Map.get(:command_prefix, [])
+    |> List.wrap()
+  end
+
+  defp ensure_spec(
+         %{execution_surface: %EPSurface{}, sandbox: %{mode: mode, policy: policy}} = spec
+       )
+       when is_atom(mode) and is_map(policy),
+       do: {:ok, spec}
+
+  defp ensure_spec(attrs) when is_map(attrs) or is_list(attrs), do: spec(attrs)
+
+  defp fetch(attrs, key, default \\ nil) do
+    Map.get(attrs, key, Map.get(attrs, Atom.to_string(key), default))
+  end
+
+  defp normalize_command(command) when is_binary(command) and command != "", do: {:ok, command}
+  defp normalize_command(command), do: {:error, {:invalid_command, command}}
+
+  defp normalize_args(args) when is_list(args) do
+    if Enum.all?(args, &is_binary/1) do
+      {:ok, args}
+    else
+      {:error, {:invalid_args, args}}
+    end
+  end
+
+  defp normalize_args(args), do: {:error, {:invalid_args, args}}
+
+  defp normalize_env(env) when is_map(env) do
+    {:ok, Enum.into(env, %{}, fn {key, value} -> {to_string(key), to_string(value)} end)}
+  rescue
+    Protocol.UndefinedError ->
+      {:error, {:invalid_env, env}}
+  end
+
+  defp normalize_env(env), do: {:error, {:invalid_env, env}}
+
+  defp normalize_boolean(value, _field) when is_boolean(value), do: {:ok, value}
+  defp normalize_boolean(value, field), do: {:error, {:"invalid_#{field}", value}}
+
+  defp validate_optional_binary(nil, _field), do: :ok
+  defp validate_optional_binary(value, _field) when is_binary(value), do: :ok
+  defp validate_optional_binary(value, field), do: {:error, {:"invalid_#{field}", value}}
+
+  defp normalize_execution_surface(nil), do: EPSurface.new([])
+  defp normalize_execution_surface(%EPSurface{} = surface), do: {:ok, surface}
+
+  defp normalize_execution_surface(attrs) when is_list(attrs) do
+    if Keyword.keyword?(attrs) do
+      build_execution_surface(Map.new(attrs))
+    else
+      {:error, {:invalid_execution_surface, attrs}}
+    end
+  end
+
+  defp normalize_execution_surface(%{} = attrs), do: build_execution_surface(attrs)
+  defp normalize_execution_surface(other), do: {:error, {:invalid_execution_surface, other}}
+
+  defp build_execution_surface(attrs) do
+    transport_options = fetch(attrs, :transport_options)
+
+    with :ok <- reject_forbidden_transport_options(transport_options),
+         {:ok, surface_kind} <- normalize_surface_kind(fetch(attrs, :surface_kind)),
+         {:ok, transport_options} <- EPSurface.normalize_transport_options(transport_options) do
+      [
+        surface_kind: surface_kind,
+        transport_options: normalize_transport_options_for_surface(transport_options),
+        target_id: fetch(attrs, :target_id),
+        lease_ref: fetch(attrs, :lease_ref),
+        surface_ref: fetch(attrs, :surface_ref),
+        boundary_class: fetch(attrs, :boundary_class),
+        observability: fetch(attrs, :observability, %{})
+      ]
+      |> Enum.reject(fn
+        {:observability, _value} -> false
+        {_key, value} -> is_nil(value)
       end)
-
-      {:noreply, %{state | buffer: buffer}}
-    end
-
-    @impl true
-    def handle_info({port, {:exit_status, status}}, %{port: port} = state) do
-      if state.buffer != "" do
-        send(state.sink_pid, {:process_output, state.spec.id, state.buffer})
-      end
-
-      send(state.sink_pid, {:process_exit, state.spec.id, status})
-      {:stop, :normal, %{state | buffer: ""}}
-    end
-
-    defp split_lines(data) do
-      parts = String.split(data, "\n", trim: false)
-
-      case List.pop_at(parts, -1) do
-        {buffer, lines} -> {Enum.reject(lines, &(&1 == "")), buffer}
-      end
+      |> EPSurface.new()
     end
   end
 
-  @spec spec!(map()) :: Spec.t()
-  def spec!(attrs) when is_map(attrs) do
-    struct!(Spec, attrs)
+  defp normalize_surface_kind(nil), do: {:ok, EPSurface.default_surface_kind()}
+
+  defp normalize_surface_kind(surface_kind) when is_atom(surface_kind),
+    do: EPSurface.normalize_surface_kind(surface_kind)
+
+  defp normalize_surface_kind(surface_kind) when is_binary(surface_kind) do
+    case safe_existing_atom(surface_kind) do
+      {:ok, atom} -> EPSurface.normalize_surface_kind(atom)
+      :error -> {:error, {:invalid_surface_kind, surface_kind}}
+    end
   end
 
-  @spec start_managed(Spec.t(), pid()) :: GenServer.on_start()
-  def start_managed(%Spec{} = spec, sink_pid) when is_pid(sink_pid) do
-    ManagedProcess.start_link({spec, sink_pid})
+  defp normalize_surface_kind(surface_kind), do: {:error, {:invalid_surface_kind, surface_kind}}
+
+  defp reject_forbidden_transport_options(nil), do: :ok
+
+  defp reject_forbidden_transport_options(options) when is_list(options) do
+    if Keyword.keyword?(options) do
+      find_forbidden_transport_option(options)
+    else
+      :ok
+    end
   end
 
-  @spec preview_command(Spec.t()) :: String.t()
-  def preview_command(%Spec{} = spec), do: spec.command
+  defp reject_forbidden_transport_options(options) when is_map(options),
+    do: find_forbidden_transport_option(options)
+
+  defp reject_forbidden_transport_options(_other), do: :ok
+
+  defp find_forbidden_transport_option(options) do
+    case Enum.find(options, fn {key, _value} -> forbidden_transport_option_key?(key) end) do
+      nil ->
+        :ok
+
+      {key, _value} ->
+        {:error, {:forbidden_transport_option, normalize_transport_option_key(key)}}
+    end
+  end
+
+  defp forbidden_transport_option_key?(key) when is_atom(key),
+    do: key in @forbidden_transport_option_keys
+
+  defp forbidden_transport_option_key?(key) when is_binary(key),
+    do: key in Enum.map(@forbidden_transport_option_keys, &Atom.to_string/1)
+
+  defp forbidden_transport_option_key?(_key), do: false
+
+  defp normalize_transport_option_key(key) when is_atom(key), do: key
+
+  defp normalize_transport_option_key(key) when is_binary(key) do
+    case safe_existing_atom(key) do
+      {:ok, atom} -> atom
+      :error -> key
+    end
+  end
+
+  defp normalize_transport_option_key(key), do: key
+
+  defp normalize_transport_options_for_surface(options) do
+    ssh_user = Keyword.get(options, :ssh_user, Keyword.get(options, :user))
+
+    options =
+      options
+      |> Keyword.delete(:user)
+
+    if is_nil(ssh_user) do
+      options
+    else
+      Keyword.put(options, :ssh_user, ssh_user)
+    end
+  end
+
+  defp normalize_sandbox(mode, policy) do
+    with {:ok, sandbox_mode} <- normalize_sandbox_mode(mode, policy),
+         {:ok, sandbox_policy} <- normalize_sandbox_policy(policy) do
+      {:ok, %{mode: sandbox_mode, policy: sandbox_policy}}
+    end
+  end
+
+  defp normalize_sandbox_mode(nil, %{} = policy) do
+    case fetch(policy, :type) do
+      nil -> {:ok, :inherit}
+      type -> normalize_sandbox_mode(type, nil)
+    end
+  end
+
+  defp normalize_sandbox_mode(nil, _policy), do: {:ok, :inherit}
+  defp normalize_sandbox_mode(mode, _policy) when mode in @modes, do: {:ok, mode}
+
+  defp normalize_sandbox_mode(mode, _policy) when is_binary(mode) do
+    case safe_existing_atom(mode) do
+      {:ok, atom} when atom in @modes -> {:ok, atom}
+      _other -> {:error, {:invalid_sandbox_mode, mode}}
+    end
+  end
+
+  defp normalize_sandbox_mode(mode, _policy), do: {:error, {:invalid_sandbox_mode, mode}}
+
+  defp normalize_sandbox_policy(nil), do: {:ok, %{}}
+
+  defp normalize_sandbox_policy(policy) when is_map(policy) do
+    policy =
+      Enum.into(policy, %{}, fn {key, value} -> {normalize_sandbox_key(key), value} end)
+
+    case Map.get(policy, :command_prefix) do
+      nil ->
+        {:ok, Map.delete(policy, :type)}
+
+      prefix when is_list(prefix) ->
+        if Enum.all?(prefix, &is_binary/1) do
+          {:ok, Map.delete(policy, :type)}
+        else
+          {:error, {:invalid_command_prefix, prefix}}
+        end
+
+      prefix ->
+        {:error, {:invalid_command_prefix, prefix}}
+    end
+  end
+
+  defp normalize_sandbox_policy(policy), do: {:error, {:invalid_sandbox_policy, policy}}
+
+  defp normalize_sandbox_key(key) when is_atom(key), do: key
+
+  defp normalize_sandbox_key(key) when is_binary(key) do
+    case key do
+      "type" -> :type
+      "writable_roots" -> :writable_roots
+      "network_access" -> :network_access
+      "exclude_tmpdir_env_var" -> :exclude_tmpdir_env_var
+      "exclude_slash_tmp" -> :exclude_slash_tmp
+      "command_prefix" -> :command_prefix
+      other -> String.to_atom(other)
+    end
+  end
+
+  defp safe_existing_atom(value) when is_binary(value) do
+    {:ok, String.to_existing_atom(value)}
+  rescue
+    ArgumentError -> :error
+  end
 end

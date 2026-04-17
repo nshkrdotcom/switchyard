@@ -15,7 +15,7 @@ defmodule Switchyard.ProcessRuntime.MixProject do
     [
       app: :switchyard_process_runtime,
       name: "Switchyard Process Runtime",
-      description: "Managed local process execution for the Switchyard daemon",
+      description: "Switchyard broker layer over Execution Plane process transport",
       version: "0.1.0",
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
@@ -38,6 +38,7 @@ defmodule Switchyard.ProcessRuntime.MixProject do
   defp deps do
     [
       DependencyResolver.switchyard_contracts(),
+      DependencyResolver.execution_plane(),
       {:credo, "~> 1.7.18", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4.7", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.40.1", only: :dev, runtime: false}

@@ -5,15 +5,15 @@ defmodule Switchyard.TUI.Root do
 
   alias Switchyard.Platform
   alias Switchyard.Shell
-  alias Switchyard.Site.Local
+  alias Switchyard.Site.ExecutionPlane
   alias Switchyard.TUI.State
-  alias Workbench.{Context, Keymap, Layout, Node, Style}
+  alias Workbench.{Cmd, Context, Keymap, Layout, Node, Style}
   alias Workbench.Devtools.Overlay
   alias Workbench.Widgets.{Detail, Help, List, Pane, StatusBar}
 
   @impl true
   def init(props, %Context{} = ctx) do
-    catalog = Platform.catalog(Map.get(props, :site_modules, [Local]))
+    catalog = Platform.catalog(Map.get(props, :site_modules, [ExecutionPlane]))
 
     state =
       State.new(
@@ -31,7 +31,7 @@ defmodule Switchyard.TUI.Root do
         open_app(state, app_id, ctx)
 
       _other ->
-        {:ok, state, []}
+        {:ok, state, startup_commands(ctx)}
     end
   end
 
@@ -113,6 +113,24 @@ defmodule Switchyard.TUI.Root do
     end
   end
 
+  def update(:refresh_snapshot, %State{} = state, _props, %Context{} = ctx) do
+    if is_nil(ctx.request_handler) do
+      {:ok, State.set_status(state, "No runtime request handler configured.", :warn), []}
+    else
+      {:ok, State.set_status(state, "Refreshing snapshot...", :info),
+       [refresh_snapshot_command()]}
+    end
+  end
+
+  def update(:start_demo_process, %State{} = state, _props, %Context{} = ctx) do
+    if execution_plane_processes_app?(state) and not is_nil(ctx.request_handler) do
+      {:ok, State.set_status(state, "Starting demo process...", :info),
+       [start_demo_process_command()]}
+    else
+      :unhandled
+    end
+  end
+
   def update(msg, %State{} = state, _props, %Context{} = ctx) do
     _ = ctx
     _ = msg
@@ -122,10 +140,23 @@ defmodule Switchyard.TUI.Root do
 
   @impl true
   def handle_info(msg, %State{} = state, _props, %Context{} = ctx) do
-    _ = msg
-    _ = state
-    _ = ctx
-    :unhandled
+    case msg do
+      {:snapshot_loaded, snapshot} when is_map(snapshot) ->
+        {:ok, %{state | snapshot: snapshot} |> State.set_status("Snapshot refreshed.", :info), []}
+
+      {:snapshot_refresh_failed, reason} ->
+        {:ok, State.set_status(state, "Snapshot refresh failed: #{inspect(reason)}", :error), []}
+
+      {:process_started, {:ok, _result}} ->
+        {:ok, State.set_status(state, "Process started.", :info), [refresh_snapshot_command()]}
+
+      {:process_started, {:error, reason}} ->
+        {:ok, State.set_status(state, "Process start failed: #{inspect(reason)}", :error), []}
+
+      _other ->
+        _ = ctx
+        :unhandled
+    end
   end
 
   @impl true
@@ -137,7 +168,7 @@ defmodule Switchyard.TUI.Root do
           Pane.new(
             id: :header,
             title: "Switchyard",
-            lines: ["Terminal workbench for sites, jobs, logs, and processes"]
+            lines: ["Terminal workbench for execution-plane and Jido operator surfaces"]
           )
           |> Style.border_fg(:accent),
           List.new(
@@ -261,8 +292,9 @@ defmodule Switchyard.TUI.Root do
           [
             binding(:prev, "up", [], "Select previous", :select_prev),
             binding(:next, "down", [], "Select next", :select_next),
+            binding(:refresh_snapshot, "r", [], "Refresh snapshot", :refresh_snapshot),
             binding(:back, "esc", [], "Back", :back)
-          ]
+          ] ++ maybe_local_process_bindings(state)
 
       _module ->
         _ = ctx
@@ -335,7 +367,7 @@ defmodule Switchyard.TUI.Root do
         Help.new(
           id: :help,
           title: "Keys",
-          lines: generic_app_help_lines(ctx)
+          lines: generic_app_help_lines(state, ctx)
         )
         |> Style.border_fg(:muted),
         status_node(state)
@@ -405,13 +437,22 @@ defmodule Switchyard.TUI.Root do
     ["Up/Down select app  ·  Enter open  ·  Esc home  ·  Ctrl+Q quit"] ++ debug_help_suffix(ctx)
   end
 
-  defp generic_app_help_lines(%Context{} = ctx) do
-    ["Up/Down select resource  ·  Esc back  ·  Ctrl+Q quit"] ++ debug_help_suffix(ctx)
+  defp generic_app_help_lines(%State{} = state, %Context{} = ctx) do
+    ["Up/Down select resource  ·  R refresh  ·  Esc back  ·  Ctrl+Q quit"] ++
+      local_process_help_suffix(state) ++ debug_help_suffix(ctx)
   end
 
   defp debug_help_suffix(%Context{} = ctx) do
     if debug_enabled?(ctx) do
       ["F12 toggle debug rail"]
+    else
+      []
+    end
+  end
+
+  defp local_process_help_suffix(%State{} = state) do
+    if execution_plane_processes_app?(state) do
+      ["N start demo process"]
     else
       []
     end
@@ -461,5 +502,43 @@ defmodule Switchyard.TUI.Root do
       end
 
     body ++ recommendations
+  end
+
+  defp startup_commands(%Context{} = ctx) do
+    if is_nil(ctx.request_handler), do: [], else: [refresh_snapshot_command()]
+  end
+
+  defp refresh_snapshot_command do
+    Cmd.request(:local_snapshot, [], fn
+      snapshot when is_map(snapshot) -> {:snapshot_loaded, snapshot}
+      other -> {:snapshot_refresh_failed, other}
+    end)
+  end
+
+  defp start_demo_process_command do
+    Cmd.request(
+      {:start_process,
+       %{
+         label: "Switchyard Demo",
+         command: "printf 'switchyard demo process\\n'"
+       }},
+      [],
+      &{:process_started, &1}
+    )
+  end
+
+  defp execution_plane_processes_app?(%State{} = state) do
+    case State.current_app(state) do
+      %{id: "execution_plane.processes"} -> true
+      _other -> false
+    end
+  end
+
+  defp maybe_local_process_bindings(%State{} = state) do
+    if execution_plane_processes_app?(state) do
+      [binding(:start_demo_process, "n", [], "Start demo process", :start_demo_process)]
+    else
+      []
+    end
   end
 end

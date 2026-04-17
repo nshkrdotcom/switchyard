@@ -43,7 +43,8 @@ defmodule Switchyard.DaemonApp.MixProject do
   defp deps do
     [
       DependencyResolver.switchyard_daemon(),
-      DependencyResolver.switchyard_site_local(),
+      DependencyResolver.switchyard_site_execution_plane(),
+      DependencyResolver.switchyard_site_jido(),
       {:credo, "~> 1.7.18", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4.7", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.40.1", only: :dev, runtime: false}

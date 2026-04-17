@@ -1,12 +1,22 @@
 #!/usr/bin/env elixir
 
 repo_root = Path.expand("..", __DIR__)
+project_path = Path.join(repo_root, "apps/terminal_workbench_tui")
+hex_home = Path.join(repo_root, ".tmp/example_hex")
+mix_home = Path.join(repo_root, ".tmp/example_mix")
 
-Mix.install([
-  {:ex_ratatui, "~> 0.7.0"},
-  {:switchyard_tui, path: Path.join(repo_root, "apps/terminal_workbench_tui")},
-  {:workbench_devtools, path: Path.join(repo_root, "core/workbench_devtools")}
-])
+File.mkdir_p!(hex_home)
+File.mkdir_p!(mix_home)
+
+System.put_env("HEX_HOME", hex_home)
+System.put_env("MIX_HOME", mix_home)
+
+Mix.start()
+
+Mix.Project.in_project(:switchyard_tui, project_path, fn _module ->
+  Mix.Task.run("deps.get")
+  Mix.Task.run("compile")
+end)
 
 defmodule Switchyard.Examples.FullFeatured.Data do
   @moduledoc false
@@ -459,7 +469,7 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
       queue_depth: 0,
       throughput_rps: 0,
       recommended_action: "Awaiting the first request handler response.",
-      snapshot_summary: "profiling local snapshot",
+      snapshot_summary: "profiling workspace snapshot",
       services: [],
       jobs: [],
       incidents: [],
@@ -467,7 +477,7 @@ defmodule Switchyard.Examples.FullFeatured.ControlRoom do
       acknowledged_incidents: MapSet.new(),
       logs: [
         "[boot] control room mounted",
-        "[boot] local snapshot captured with #{length(Map.get(snapshot, :processes, []))} processes",
+        "[boot] workspace snapshot captured with #{length(Map.get(snapshot, :processes, []))} processes",
         "[boot] quiet runtime polling will refresh the observability tab without forcing a repaint",
         "[boot] mounted control-loop actor will own its own spinner pulse"
       ],
@@ -1341,7 +1351,7 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
 
   alias ExRatatui.{Distributed, Event, Runtime}
   alias Switchyard.Examples.FullFeatured.{Data, DemoSite}
-  alias Switchyard.Site.Local
+  alias Switchyard.Site.{ExecutionPlane, Jido}
   alias Switchyard.TUI
   alias Switchyard.TUI.App
   alias Workbench.Devtools.Driver
@@ -1599,7 +1609,8 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
 
     Sites
     - Fleet Demo: custom Control Room component plus generic Runbooks and Incidents apps
-    - Local: built-in Processes and Jobs list/detail views
+    - Execution Plane: substrate Processes, Operator Terminals, and Jobs views
+    - Jido: durable Runs, Boundary Sessions, and Attach Grants views
 
     Control Room features
     - provider-driven site and app catalog
@@ -1626,7 +1637,7 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
   defp base_opts(open_app, debug_opts) do
     [
       name: nil,
-      site_modules: [DemoSite, Local],
+      site_modules: [DemoSite, ExecutionPlane, Jido],
       snapshot: Data.base_snapshot(),
       request_handler: &request_handler/2,
       initial_trace?: true
@@ -1663,7 +1674,8 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
   defp normalize_open_app("control-room"), do: "fleet_demo.control_room"
   defp normalize_open_app("runbooks"), do: "fleet_demo.runbooks"
   defp normalize_open_app("incidents"), do: "fleet_demo.incidents"
-  defp normalize_open_app("local-processes"), do: "local.processes"
+  defp normalize_open_app("local-processes"), do: "execution_plane.processes"
+  defp normalize_open_app("execution-plane-processes"), do: "execution_plane.processes"
   defp normalize_open_app(open_app), do: open_app
 
   defp ensure_distributed!(mode) do

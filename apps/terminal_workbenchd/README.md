@@ -25,7 +25,7 @@ headless CLI:
 ```bash
 cd ../terminal_workbench_cli
 mix escript.build
-./switchyard_cli local snapshot
+./switchyard_cli snapshot
 ```
 
 ## Developer Workflow
@@ -50,7 +50,7 @@ mix ci
 
 ## Examples
 
-- [test/switchyard/daemon_app_test.exs](test/switchyard/daemon_app_test.exs) verifies that the app wires in the built-in site set correctly.
+- [test/switchyard/daemon_app_test.exs](test/switchyard/daemon_app_test.exs) verifies that the app wires in the first-party Execution Plane and Jido site set correctly.
 
 ## Related Reading
 

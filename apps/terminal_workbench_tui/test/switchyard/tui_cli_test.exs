@@ -77,6 +77,22 @@ defmodule Switchyard.TUICLITest do
     assert Keyword.get(opts, :debug_dir) == "/tmp/switchyard-debug"
   end
 
+  test "parse_run_opts enables ssh transport defaults" do
+    opts = CLI.parse_run_opts(["--ssh", "--ssh-port", "3022", "--ssh-user", "admin"])
+
+    assert Keyword.get(opts, :transport) == :ssh
+    assert Keyword.get(opts, :port) == 3022
+    assert Keyword.get(opts, :auto_host_key) == true
+    assert Keyword.get(opts, :auth_methods) == ~c"password"
+    assert Keyword.get(opts, :user_passwords) == [{~c"admin", ~c"demo"}]
+  end
+
+  test "parse_run_opts enables distributed transport" do
+    opts = CLI.parse_run_opts(["--distributed"])
+
+    assert Keyword.get(opts, :transport) == :distributed
+  end
+
   test "escript bootstrap is a no-op outside escript runtime" do
     assert :ok = EscriptBootstrap.start_tui_dependencies()
   end

@@ -7,6 +7,7 @@
 - expose local apps such as processes, jobs, and logs
 - map daemon snapshots into generic Switchyard resources
 - expose recommended actions and resource details for local runtime state
+- surface execution-surface and sandbox metadata for managed processes
 
 ## Quick Start
 
@@ -25,6 +26,15 @@ The site currently maps:
 
 The logs app already exists in the catalog, and richer log-stream resource
 mapping can grow on the same seam.
+
+Process resources now summarize the command preview emitted by the daemon and
+their detail view includes:
+
+- command preview
+- process status
+- execution surface kind
+- execution target
+- sandbox mode
 
 ## Developer Workflow
 
@@ -48,7 +58,7 @@ mix ci
 
 ## Examples
 
-- [test/switchyard/site/local_test.exs](test/switchyard/site/local_test.exs) shows site/app descriptors, snapshot-to-resource mapping, and detail rendering.
+- [test/switchyard/site/local_test.exs](test/switchyard/site/local_test.exs) shows site/app descriptors, snapshot-to-resource mapping, and detail rendering with execution metadata.
 
 ## Related Reading
 

@@ -44,6 +44,12 @@ defmodule Switchyard.Build.DependencyResolver do
   def switchyard_site_local(opts \\ []),
     do: resolve_internal(:switchyard_site_local, "sites/site_local", opts)
 
+  def switchyard_site_execution_plane(opts \\ []),
+    do: resolve_internal(:switchyard_site_execution_plane, "sites/site_execution_plane", opts)
+
+  def switchyard_site_jido(opts \\ []),
+    do: resolve_internal(:switchyard_site_jido, "sites/site_jido", opts)
+
   def switchyard_tui(opts \\ []),
     do: resolve_internal(:switchyard_tui, "apps/terminal_workbench_tui", opts)
 
@@ -62,7 +68,37 @@ defmodule Switchyard.Build.DependencyResolver do
     )
   end
 
-  def ex_ratatui(opts \\ []), do: {:ex_ratatui, "~> 0.7.0", opts}
+  def ex_ratatui(opts \\ []), do: {:ex_ratatui, "~> 0.7.1", opts}
+
+  def execution_plane(opts \\ []) do
+    resolve_external(
+      :execution_plane,
+      local_root_path("EXECUTION_PLANE_PATH", "../execution_plane"),
+      [],
+      Keyword.put_new(opts, :override, true)
+    )
+  end
+
+  def execution_plane_operator_terminal(opts \\ []) do
+    resolve_external(
+      :execution_plane_operator_terminal,
+      local_root_path(
+        "EXECUTION_PLANE_OPERATOR_TERMINAL_PATH",
+        "../execution_plane/runtimes/execution_plane_operator_terminal"
+      ),
+      [],
+      Keyword.put_new(opts, :override, true)
+    )
+  end
+
+  def jido_integration_v2(opts \\ []) do
+    resolve_external(
+      :jido_integration_v2,
+      local_root_path("JIDO_INTEGRATION_V2_PATH", "../jido_integration/core/platform"),
+      [],
+      opts
+    )
+  end
 
   def jason(opts \\ []) do
     {:jason, "~> 1.4", opts}

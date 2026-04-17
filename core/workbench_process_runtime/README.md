@@ -1,11 +1,17 @@
 # Switchyard Process Runtime
 
-`switchyard_process_runtime` manages local subprocess execution for the daemon.
+`switchyard_process_runtime` is the thin execution-plane broker package for
+Switchyard managed processes.
 
 ## Responsibilities
 
 - validate managed process specs
+- normalize execution-surface placement metadata onto the real
+  `execution_plane` transport surface
+- normalize sandbox requests and reject unsupported capability claims
+- route specs to concrete transport adapters
 - spawn local OS processes through ports
+- execute remote commands through the local `ssh` client
 - capture stdout and stderr lines
 - expose exit status back to the daemon seam
 
@@ -25,6 +31,27 @@ The core interactive seam is:
 spec = Switchyard.ProcessRuntime.spec!(%{id: "echo", command: "printf 'hello\\n'"})
 {:ok, _pid} = Switchyard.ProcessRuntime.start_managed(spec, self())
 ```
+
+The public request map now carries explicit execution metadata:
+
+- `execution_surface`
+- `sandbox`
+- `args`
+- `shell?`
+- `cwd`
+- `env`
+- `clear_env?`
+- `user`
+- `pty?`
+
+Supported execution surfaces today:
+
+- `:local_subprocess`
+- `:ssh_exec`
+
+Sandbox posture is explicit. Restricted modes such as `:read_only` or
+`:workspace_write` are only accepted when an external runner is provided
+through sandbox policy, typically via `command_prefix`.
 
 ## Developer Workflow
 
@@ -48,7 +75,7 @@ mix ci
 
 ## Examples
 
-- [test/switchyard/process_runtime_test.exs](test/switchyard/process_runtime_test.exs) demonstrates command preview, process startup, output forwarding, and exit reporting.
+- [test/switchyard/process_runtime_test.exs](test/switchyard/process_runtime_test.exs) demonstrates spec normalization, command preview, transport routing, sandbox validation, process startup, output forwarding, and exit reporting.
 
 ## Related Reading
 

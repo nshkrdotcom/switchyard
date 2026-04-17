@@ -100,7 +100,16 @@ defmodule Switchyard.Site.Local do
     ResourceDetail.new!(%{
       resource: resource,
       sections: [
-        %{title: "Process", lines: ["command: #{process.command}", "status: #{process.status}"]}
+        %{
+          title: "Process",
+          lines: [
+            "command: #{process.command_preview || process.command}",
+            "status: #{process.status}",
+            "surface: #{surface_kind(process)}",
+            "target: #{surface_target(process)}",
+            "sandbox: #{sandbox_mode(process)}"
+          ]
+        }
       ],
       recommended_actions: ["Stop process"]
     })
@@ -136,7 +145,7 @@ defmodule Switchyard.Site.Local do
       subtitle: process.status,
       status: String.to_atom(process.status),
       capabilities: [:inspect, :stop],
-      summary: process.command
+      summary: process.command_preview || process.command
     })
   end
 
@@ -151,5 +160,23 @@ defmodule Switchyard.Site.Local do
       capabilities: [:inspect],
       summary: "#{job.progress.current}/#{job.progress.total}"
     })
+  end
+
+  defp surface_kind(process) do
+    process
+    |> Map.get(:execution_surface, %{})
+    |> Map.get("surface_kind", "local_subprocess")
+  end
+
+  defp surface_target(process) do
+    process
+    |> Map.get(:execution_surface, %{})
+    |> Map.get("target_id", "local")
+  end
+
+  defp sandbox_mode(process) do
+    process
+    |> Map.get(:sandbox, %{})
+    |> Map.get("mode", "inherit")
   end
 end

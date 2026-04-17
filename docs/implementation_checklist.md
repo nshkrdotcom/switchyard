@@ -1,8 +1,9 @@
 # Switchyard Implementation Checklist
 
-Status: baseline delivered
+Status: baseline delivered; execution-plane unification delivered on 2026-04-16
 Scope: current workspace architecture, Workbench framework extraction,
-Switchyard TUI rewrite, integration migration, and delivery verification
+execution-plane unification, Switchyard TUI rewrite, integration migration,
+and delivery verification
 
 ## Required Reading
 
@@ -29,17 +30,35 @@ Read these before making structural changes:
 19. `apps/terminal_workbench_tui/lib/switchyard/tui/state.ex`
 20. `core/workbench_tui_framework/lib/workbench/runtime.ex`
 21. `core/workbench_tui_framework/lib/workbench/effects.ex`
-22. `../ex_ratatui/lib/ex_ratatui/command.ex`
-23. `../ex_ratatui/lib/ex_ratatui/subscription.ex`
+22. `core/workbench_process_runtime/README.md`
+23. `core/workbench_process_runtime/lib/switchyard/process_runtime.ex`
+24. `core/workbench_daemon/README.md`
+25. `core/workbench_daemon/lib/switchyard/daemon/server.ex`
+26. `apps/terminal_workbench_cli/README.md`
+27. `apps/terminal_workbench_cli/lib/switchyard/cli.ex`
+28. `apps/terminal_workbench_tui/README.md`
+29. `apps/terminal_workbench_tui/lib/switchyard/tui.ex`
+30. `apps/terminal_workbench_tui/lib/switchyard/tui/cli.ex`
+31. `apps/terminal_workbench_tui/lib/switchyard/tui/root.ex`
+32. `sites/site_local/README.md`
+33. `sites/site_local/lib/switchyard/site/local.ex`
+34. `sites/site_execution_plane/README.md`
+35. `sites/site_execution_plane/lib/switchyard/site/execution_plane.ex`
+36. `sites/site_jido/README.md`
+37. `sites/site_jido/lib/switchyard/site/jido.ex`
+38. `../ex_ratatui/lib/ex_ratatui/command.ex`
+39. `../ex_ratatui/lib/ex_ratatui/subscription.ex`
 
 ## Invariants
 
 1. The root is a workspace and docs layer, not a true umbrella.
 2. The daemon owns durable local operational state.
-3. The shell owns pure product navigation state.
-4. The Workbench runtime owns generic terminal execution concerns.
-5. Sites own domain mapping and actions.
-6. Greenfield solutions only: no workarounds, no compatibility shims, no
+3. The execution plane owns command placement and sandbox honesty.
+4. The shell owns pure product navigation state.
+5. The Workbench runtime owns generic terminal execution concerns.
+6. Sites own domain mapping and actions.
+7. `ex_ratatui` transport serves the UI layer, not managed process execution.
+8. Greenfield solutions only: no workarounds, no compatibility shims, no
    backwards-compatibility layers.
 
 ## Live Checklist

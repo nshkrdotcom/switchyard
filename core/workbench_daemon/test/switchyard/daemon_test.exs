@@ -67,4 +67,46 @@ defmodule Switchyard.DaemonTest do
     assert Enum.any?(logs, &(&1.message == "hello"))
     assert File.exists?(Path.join([store_root, "daemon", "local_snapshot.json"]))
   end
+
+  test "preserves execution surface and sandbox metadata in snapshots", %{daemon: daemon} do
+    shell = System.find_executable("sh") || "/bin/sh"
+
+    assert {:ok, _result} =
+             Daemon.start_process(daemon, %{
+               id: "sandboxed",
+               label: "Sandboxed Echo",
+               command: "printf 'hello\\n'",
+               cwd: "/tmp",
+               execution_surface: %{
+                 surface_kind: :local_subprocess,
+                 boundary_class: :operator
+               },
+               sandbox: :read_only,
+               sandbox_policy: %{command_prefix: [shell, "-lc", "exec \"$@\"", "sandbox"]}
+             })
+
+    Process.sleep(150)
+
+    snapshot = Daemon.snapshot(daemon)
+    process = Enum.find(snapshot.processes, &(&1.id == "sandboxed"))
+
+    assert process.command == "printf 'hello\\n'"
+    assert process.command_preview =~ "printf"
+    assert process.cwd == "/tmp"
+    assert process.execution_surface["surface_kind"] == "local_subprocess"
+    assert process.execution_surface["boundary_class"] == "operator"
+    assert process.sandbox["mode"] == "read_only"
+    assert process.sandbox["policy"]["has_command_prefix"] == true
+  end
+
+  test "returns a rich error payload when process start validation fails", %{daemon: daemon} do
+    assert {:error, %{reason: {:invalid_pty, "yes"}, command_preview: preview}} =
+             Daemon.start_process(daemon, %{
+               id: "bad",
+               command: "printf 'hello\\n'",
+               pty?: "yes"
+             })
+
+    assert preview =~ "invalid_pty"
+  end
 end

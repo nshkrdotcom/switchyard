@@ -5,9 +5,10 @@ proves the main platform seams and ships a coherent internal operator stack.
 
 ## Workspace Snapshot
 
-- 18 Mix projects in one non-umbrella workspace
+- 20 Mix projects in one non-umbrella workspace
 - 13 reusable `core/*` packages
-- 1 built-in site package: `sites/site_local`
+- 3 site packages: `sites/site_execution_plane`, `sites/site_jido`, and
+  `sites/site_local`
 - 3 runnable apps: TUI, CLI, and daemon
 - root workspace orchestration with Blitz and internal artifact shaping through
   Weld
@@ -27,8 +28,11 @@ proves the main platform seams and ships a coherent internal operator stack.
 - `core/workbench_transport_local` gives the CLI, tests, and in-process clients
   a UI-agnostic transport path.
 - `core/workbench_process_runtime`, `core/workbench_job_runtime`,
-  `core/workbench_log_runtime`, and `core/workbench_store_local` hold the local
+  `core/workbench_log_runtime`, and `core/workbench_store_local` hold the
   runtime primitives under that daemon boundary.
+- `core/workbench_process_runtime` now acts as the unified execution plane with
+  explicit execution surfaces for local subprocesses and SSH exec plus honest
+  sandbox policy handling.
 
 ### Shell And TUI Infrastructure
 
@@ -45,8 +49,11 @@ proves the main platform seams and ships a coherent internal operator stack.
 
 ### Built-In Product Surfaces
 
-- `sites/site_local` maps local runtime state into generic Switchyard apps,
-  resources, and details.
+- `sites/site_execution_plane` maps live runtime substrate state into process,
+  operator-terminal, and job resources.
+- `sites/site_jido` maps durable Jido runs, boundary sessions, and attach
+  grants into the same contract surface.
+- `sites/site_local` remains in the repo as a focused local reference site.
 - `apps/terminal_workbenchd` starts the daemon with the first-party site set.
 - `apps/terminal_workbench_cli` exposes headless JSON inspection commands.
 - `apps/terminal_workbench_tui` hosts the product shell on top of the reusable
@@ -59,17 +66,31 @@ The built-in Switchyard shell already supports:
 - a home screen listing available sites
 - per-site app selection
 - generic list/detail screens for resource-backed apps
+- daemon-backed snapshot refresh from the product shell
+- a minimal process-start action on the Execution Plane processes app
 - custom framework-native app components through `AppDescriptor.tui_component`
 
-The built-in local site currently exposes app descriptors for processes, jobs,
-and logs. Process and job resources are mapped end-to-end today. The logs app
-descriptor is already in place and can grow on the same seam.
+The TUI can now be run in three operator-access modes:
+
+- local terminal mode
+- SSH-served mode through `ex_ratatui`
+- distributed mode through `ex_ratatui`
+
+The active first-party site catalog now splits live and durable truth
+explicitly:
+
+- `site_execution_plane` exposes processes, operator terminals, and jobs
+- `site_jido` exposes runs, boundary sessions, and attach grants
+
+Process details still surface command preview, execution surface, target, and
+sandbox mode through the daemon snapshot seam.
 
 The CLI currently supports:
 
 - `switchyard_cli sites`
 - `switchyard_cli apps <site-id>`
-- `switchyard_cli local snapshot`
+- `switchyard_cli snapshot`
+- `switchyard_cli process start ...`
 
 ## Packaging Posture
 
@@ -79,6 +100,7 @@ projection, not as a Hex-first published product suite.
 That posture is explicit:
 
 - the Workbench runtime depends on `ex_ratatui` from Hex
+- the current workspace tracks `ex_ratatui` `0.7.1`
 - Weld projects the internal `switchyard_foundation` artifact
 - `mix release.prepare` builds the prepared bundle,
   `mix release.track` updates `projection/switchyard_foundation`,
@@ -91,6 +113,9 @@ Future work should extend breadth and depth without re-litigating the existing
 architecture:
 
 - broaden the built-in site and app catalog
-- deepen resource/detail/action coverage, especially around logs
+- deepen resource/detail/action coverage, especially around logs and process
+  control
 - harden the current operator flows
 - keep the daemon, shell, framework, and site boundaries explicit
+- keep adding execution surfaces and sandbox capabilities through the unified
+  execution-plane seam instead of bypassing the daemon

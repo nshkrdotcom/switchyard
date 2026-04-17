@@ -5,6 +5,6 @@ defmodule Switchyard.DaemonApp do
 
   @spec site_modules() :: [module()]
   def site_modules do
-    [Switchyard.Site.Local]
+    [Switchyard.Site.ExecutionPlane, Switchyard.Site.Jido]
   end
 end

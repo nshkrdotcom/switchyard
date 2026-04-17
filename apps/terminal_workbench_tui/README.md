@@ -7,7 +7,9 @@ thin and runs on top of the reusable Workbench runtime.
 
 - start the terminal-facing product application
 - boot the Switchyard root component
+- bootstrap a daemon-backed request handler when one is not supplied
 - compose site catalog data into Switchyard-specific views
+- configure operator-access transport for local, SSH, or distributed TUI modes
 - keep product workflow state out of the generic framework packages
 
 It must not re-own generic rendering, effect, focus, mouse, or widget
@@ -45,6 +47,8 @@ The current startup path opens the generic home screen. From there you can:
 - inspect registered sites
 - open a site app
 - use list/detail views for generic resource-backed apps
+- refresh the daemon snapshot from the product shell
+- trigger a demo process start from the Execution Plane processes app
 - hand off to framework-native app components for richer product-specific flows
 
 With `--debug` enabled, the app now also:
@@ -55,6 +59,33 @@ With `--debug` enabled, the app now also:
 
 On active app routes, `Esc` now reliably returns to the app list even when the
 current app is a mounted custom component.
+
+If no `request_handler` is supplied, `Switchyard.TUI` now starts or reuses a
+daemon, loads the initial snapshot, and wires a default daemon-backed request
+handler for snapshot refresh, process start, and log fetch requests.
+
+The product TUI can run in three operator modes:
+
+- local terminal mode
+
+```bash
+./switchyard --debug
+```
+
+- SSH-served mode over `ex_ratatui`
+
+```bash
+./switchyard --ssh --ssh-user demo --ssh-password demo
+```
+
+- distributed mode over `ex_ratatui`
+
+```bash
+./switchyard --distributed
+```
+
+These are UI transports served through `execution_plane_operator_terminal`.
+They do not replace the execution surface used for managed processes.
 
 ## Developer Workflow
 
@@ -80,7 +111,7 @@ mix ci
 
 - [test/switchyard/tui_cli_test.exs](test/switchyard/tui_cli_test.exs) exercises the escript CLI surface.
 - [test/switchyard/tui_test.exs](test/switchyard/tui_test.exs) covers the public `Switchyard.TUI` startup seam.
-- [test/switchyard/tui/controller_test.exs](test/switchyard/tui/controller_test.exs) is the best entry point for understanding root-component routing and custom app component flow.
+- [test/switchyard/tui/controller_test.exs](test/switchyard/tui/controller_test.exs) is the best entry point for understanding root-component routing, daemon-backed refresh, and custom app component flow.
 - [test/full_featured_workbench_example_test.exs](test/full_featured_workbench_example_test.exs) proves the example’s local and distributed smoke paths.
 
 ## Related Reading

@@ -3,7 +3,7 @@ defmodule Switchyard.TUI.RootTest do
 
   alias Switchyard.Contracts.{AppDescriptor, Resource, ResourceDetail, SiteDescriptor}
   alias Switchyard.TUI.{Root, State}
-  alias Workbench.{Context, Node}
+  alias Workbench.{Cmd, Context, Node}
   alias Workbench.Widgets.Pane
 
   defmodule ExampleSite do
@@ -120,6 +120,13 @@ defmodule Switchyard.TUI.RootTest do
     assert next_state.shell.route == :site_apps
     assert next_state.shell.selected_site_id == "example"
     assert next_state.site_app_cursor == 0
+  end
+
+  test "init requests an initial snapshot when a request handler is configured" do
+    assert {:ok, _state, [%Cmd{kind: :request, payload: {:local_snapshot, [], mapper}}]} =
+             Root.init(%{}, %Context{request_handler: fn _request, _opts -> :ok end, app_env: %{}})
+
+    assert mapper.(%{processes: [], jobs: []}) == {:snapshot_loaded, %{processes: [], jobs: []}}
   end
 
   test "home route emits normalized node styles and layout padding" do
@@ -244,5 +251,45 @@ defmodule Switchyard.TUI.RootTest do
 
     assert commands == []
     assert next_state.resource_cursor == 0
+  end
+
+  test "generic app route exposes refresh and local process actions" do
+    state =
+      base_state()
+      |> Map.put(:apps, [
+        AppDescriptor.new!(%{
+          id: "execution_plane.processes",
+          site_id: "execution_plane",
+          title: "Processes",
+          provider: ExampleSite,
+          resource_kinds: [:note],
+          route_kind: :list_detail
+        })
+      ])
+      |> Map.put(:shell, %{
+        base_state().shell
+        | route: :app,
+          selected_app_id: "execution_plane.processes"
+      })
+
+    bindings = Root.keymap(state, %{}, %Context{app_env: %{}})
+
+    assert Enum.any?(bindings, &(&1.message == :refresh_snapshot))
+    assert Enum.any?(bindings, &(&1.message == :start_demo_process))
+  end
+
+  test "handle_info updates snapshot state after a refresh" do
+    snapshot = %{processes: [%{id: "echo"}], jobs: []}
+
+    assert {:ok, next_state, []} =
+             Root.handle_info(
+               {:snapshot_loaded, snapshot},
+               base_state(),
+               %{},
+               %Context{app_env: %{}}
+             )
+
+    assert next_state.snapshot == snapshot
+    assert next_state.status_line == "Snapshot refreshed."
   end
 end

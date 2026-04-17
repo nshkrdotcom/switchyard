@@ -10,20 +10,27 @@
 Switchyard is a terminal-native operator workbench workspace for local
 operations and multi-site terminal applications. The repository already
 contains the platform contracts, daemon/runtime layers, reusable Workbench TUI
-stack, built-in local site, and runnable daemon, CLI, and TUI entrypoints.
+stack, first-party Execution Plane and Jido site surfaces, and runnable
+daemon, CLI, and TUI entrypoints.
 
 ## Current State
 
-- non-umbrella Elixir workspace with 18 Mix projects:
-  root workspace, 13 `core/*` packages, 1 built-in site, and 3 runnable apps
-- typed contracts, site catalog derivation, daemon transport, and local runtime
+- non-umbrella Elixir workspace with 20 Mix projects:
+  root workspace, 13 `core/*` packages, 3 site packages, and 3 runnable apps
+- typed contracts, site catalog derivation, daemon transport, and runtime
   packages for processes, jobs, logs, and snapshot storage
+- a unified execution plane in `core/workbench_process_runtime` that brokers
+  managed processes onto the real `execution_plane` transport surface with
+  explicit placement and sandbox metadata
+- first-party operator sites for raw Execution Plane state and durable Jido
+  state, plus a retained `site_local` reference package for focused local flows
 - backend-neutral Workbench node IR, reusable widgets, and a BEAM-native TUI
   runtime bridged onto `ex_ratatui`
 - Switchyard product TUI that already supports site navigation, app routing,
-  generic list/detail flows, and custom framework-native app components
+  generic list/detail flows, live daemon-backed refresh/actions, and custom
+  framework-native app components
 - headless CLI and daemon entrypoints that prove meaningful behavior exists
-  beneath the UI
+  beneath the UI, including structured process start requests
 - Weld projection metadata and tracked projection flow for the internal
   `switchyard_foundation` artifact
 
@@ -35,13 +42,15 @@ hardening those seams rather than inventing them.
 
 - `apps/terminal_workbenchd` starts the local daemon with the first-party site
   catalog.
-- `apps/terminal_workbench_cli` exposes a small JSON-oriented control surface:
-  `sites`, `apps <site-id>`, and `local snapshot`.
+- `apps/terminal_workbench_cli` exposes a JSON-oriented control surface:
+  `sites`, `apps <site-id>`, `snapshot`, and `process start`.
 - `apps/terminal_workbench_tui` boots the Switchyard shell on top of the
-  reusable Workbench runtime.
-- `sites/site_local` currently provides the built-in local site with app
-  descriptors for processes, jobs, and logs; processes and jobs are already
-  mapped into resources and details.
+  reusable Workbench runtime and serves operators locally or through the
+  `execution_plane_operator_terminal` ingress package.
+- `sites/site_execution_plane` maps live runtime substrate state into generic
+  processes, operator-terminal, and job views.
+- `sites/site_jido` maps durable Jido runs, boundary sessions, and attach
+  grants into the same product shell.
 
 ## Repository Layout
 
@@ -49,7 +58,9 @@ hardening those seams rather than inventing them.
   reusable platform packages such as contracts, platform catalog, daemon,
   runtime layers, shell state, node IR, TUI framework, widgets, and devtools
 - `sites/*`
-  built-in site adapters; today that is `site_local`
+  built-in site adapters; the active first-party operator catalog is
+  `site_execution_plane` plus `site_jido`, with `site_local` retained as a
+  focused local reference site
 - `apps/*`
   runnable entrypoints for the TUI shell, headless CLI, and daemon
 - `guides/*` and `docs/*`
@@ -79,8 +90,9 @@ Inspect the platform headlessly:
 cd apps/terminal_workbench_cli
 mix escript.build
 ./switchyard_cli sites
-./switchyard_cli apps local
-./switchyard_cli local snapshot
+./switchyard_cli apps execution_plane
+./switchyard_cli snapshot
+./switchyard_cli process start --id echo --command "printf 'hello\n'"
 ```
 
 Run the TUI:
@@ -90,6 +102,24 @@ cd apps/terminal_workbench_tui
 mix escript.build
 ./switchyard --debug
 ```
+
+Serve the same TUI over SSH for remote operators:
+
+```bash
+./switchyard --ssh --ssh-user demo --ssh-password demo
+```
+
+Run the TUI over the distributed `ex_ratatui` transport in a trusted BEAM
+environment:
+
+```bash
+./switchyard --distributed
+```
+
+`ex_ratatui` transport is only the operator-access layer for the UI. Managed
+process execution still goes through Switchyard's execution plane using
+execution surfaces such as `:local_subprocess` and `:ssh_exec`, while remote
+operator serving flows through `execution_plane_operator_terminal`.
 
 ## Workspace Commands
 
