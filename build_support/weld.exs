@@ -1,6 +1,10 @@
 defmodule Switchyard.Build.WeldContract do
   @moduledoc false
 
+  @repo_root Path.expand("..", __DIR__)
+  @execution_plane_repo_path Path.expand("../execution_plane", @repo_root)
+  @jido_integration_repo_path Path.expand("../jido_integration", @repo_root)
+
   @artifact_docs [
     "README.md",
     "guides/index.md",
@@ -17,8 +21,46 @@ defmodule Switchyard.Build.WeldContract do
 
   @dependencies [
     blitz: [requirement: "~> 0.2.0"],
-    weld: [requirement: "~> 0.7.1"],
-    ex_ratatui: [requirement: "~> 0.7.1"]
+    execution_plane: [
+      opts:
+        if File.dir?(@execution_plane_repo_path) do
+          [git: @execution_plane_repo_path]
+        else
+          [github: "nshkrdotcom/execution_plane", branch: "main"]
+        end
+    ],
+    execution_plane_operator_terminal: [
+      opts:
+        if File.dir?(@execution_plane_repo_path) do
+          [
+            git: @execution_plane_repo_path,
+            sparse: "runtimes/execution_plane_operator_terminal"
+          ]
+        else
+          [
+            github: "nshkrdotcom/execution_plane",
+            branch: "main",
+            sparse: "runtimes/execution_plane_operator_terminal"
+          ]
+        end
+    ],
+    jido_integration_v2: [
+      opts:
+        if File.dir?(@jido_integration_repo_path) do
+          [
+            git: @jido_integration_repo_path,
+            sparse: "core/platform"
+          ]
+        else
+          [
+            github: "nshkrdotcom/jido_integration",
+            branch: "main",
+            sparse: "core/platform"
+          ]
+        end
+    ],
+    weld: [requirement: "~> 0.7.2"],
+    ex_ratatui: [requirement: "~> 0.8.0"]
   ]
 
   def manifest do

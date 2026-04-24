@@ -35,11 +35,42 @@ defmodule Switchyard.ProcessRuntime.Transport.ManagedProcess do
 
   @impl true
   def handle_info({:transport_message, line}, state) when is_binary(line) do
+    handle_transport_event({:message, line}, state)
+  end
+
+  def handle_info({:transport_data, data}, state) when is_binary(data) do
+    handle_transport_event({:data, data}, state)
+  end
+
+  def handle_info({:transport_stderr, data}, state) when is_binary(data) do
+    handle_transport_event({:stderr, data}, state)
+  end
+
+  def handle_info({:transport_error, %Error{} = error}, state) do
+    handle_transport_event({:error, error}, state)
+  end
+
+  def handle_info({:transport_exit, %ProcessExit{} = exit}, state) do
+    handle_transport_event({:exit, exit}, state)
+  end
+
+  def handle_info({:EXIT, transport, _reason}, %{transport: transport} = state) do
+    {:stop, :normal, state}
+  end
+
+  def handle_info({_event_tag, _tag, _event} = message, state) do
+    case Transport.extract_event(message, self()) do
+      {:ok, event} -> handle_transport_event(event, state)
+      :error -> {:noreply, state}
+    end
+  end
+
+  defp handle_transport_event({:message, line}, state) when is_binary(line) do
     send(state.sink_pid, {:process_output, state.spec.id, line})
     {:noreply, state}
   end
 
-  def handle_info({:transport_data, data}, state) when is_binary(data) do
+  defp handle_transport_event({:data, data}, state) when is_binary(data) do
     {lines, buffer} = split_lines(state.buffer <> data)
 
     Enum.each(lines, fn line ->
@@ -49,7 +80,7 @@ defmodule Switchyard.ProcessRuntime.Transport.ManagedProcess do
     {:noreply, %{state | buffer: buffer}}
   end
 
-  def handle_info({:transport_stderr, data}, state) when is_binary(data) do
+  defp handle_transport_event({:stderr, data}, state) when is_binary(data) do
     {lines, stderr_buffer} = split_lines(state.stderr_buffer <> data)
 
     Enum.each(lines, fn line ->
@@ -59,19 +90,15 @@ defmodule Switchyard.ProcessRuntime.Transport.ManagedProcess do
     {:noreply, %{state | stderr_buffer: stderr_buffer}}
   end
 
-  def handle_info({:transport_error, %Error{} = error}, state) do
+  defp handle_transport_event({:error, %Error{} = error}, state) do
     send(state.sink_pid, {:process_output, state.spec.id, error.message})
     {:noreply, state}
   end
 
-  def handle_info({:transport_exit, %ProcessExit{} = exit}, state) do
+  defp handle_transport_event({:exit, %ProcessExit{} = exit}, state) do
     flush_buffers(state)
     send(state.sink_pid, {:process_exit, state.spec.id, exit.code || 1})
     {:stop, :normal, clear_buffers(state)}
-  end
-
-  def handle_info({:EXIT, transport, _reason}, %{transport: transport} = state) do
-    {:stop, :normal, state}
   end
 
   @impl true

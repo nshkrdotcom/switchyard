@@ -31,7 +31,8 @@ That sequence does three different jobs:
   bumps, not through committed path/git override logic
 
 If you need deterministic "no local checkout" behavior on a machine that
-happens to have those sibling repos, disable the overrides explicitly:
+happens to have those sibling repos, disable local sibling resolution
+explicitly:
 
 ```bash
 BLITZ_PATH=disabled mix deps.get

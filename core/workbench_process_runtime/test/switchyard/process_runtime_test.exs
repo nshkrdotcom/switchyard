@@ -30,6 +30,17 @@ defmodule Switchyard.ProcessRuntimeTest do
     assert spec.execution_surface.transport_options[:ssh_user] == "deploy"
   end
 
+  test "normalizes local execution surface strings from CLI specs" do
+    assert {:ok, spec} =
+             ProcessRuntime.spec(%{
+               id: "local",
+               command: "hostname",
+               execution_surface: %{"surface_kind" => "local_subprocess"}
+             })
+
+    assert spec.execution_surface.surface_kind == :local_subprocess
+  end
+
   test "rejects forbidden transport options on the execution surface" do
     assert {:error, {:forbidden_transport_option, :cwd}} =
              ProcessRuntime.spec(%{

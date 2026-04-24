@@ -112,7 +112,7 @@ defmodule Switchyard.TUIBootstrapTest do
         )
       end)
 
-    assert_receive {:bootstrap_ssh_daemon_started, 4122, daemon_opts}
+    assert_receive {:bootstrap_ssh_daemon_started, 4122, daemon_opts}, 2_000
     assert daemon_opts[:auth_methods] == ~c"password"
 
     assert %{surface_kind: :ssh_terminal} = info = OperatorTerminal.info(terminal_id)
@@ -120,7 +120,7 @@ defmodule Switchyard.TUIBootstrapTest do
     assert info.adapter_metadata[:port] == 4122
     assert Process.whereis(ExecutionPlane.OperatorTerminal.Supervisor)
     assert :ok = OperatorTerminal.stop(terminal_id)
-    assert_receive {:bootstrap_ssh_daemon_stopped, {:bootstrap_fake_daemon, 4122}}
+    assert_receive {:bootstrap_ssh_daemon_stopped, {:bootstrap_fake_daemon, 4122}}, 2_000
     assert :ok = Task.await(task, 5_000)
   end
 

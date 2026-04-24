@@ -2,6 +2,9 @@ defmodule Switchyard.Build.DependencyResolver do
   @moduledoc false
 
   @repo_root Path.expand("..", __DIR__)
+  @execution_plane_version "~> 0.1.0"
+  @execution_plane_operator_terminal_version "~> 0.1.0"
+
   def switchyard_contracts(opts \\ []),
     do: resolve_internal(:switchyard_contracts, "core/workbench_contracts", opts)
 
@@ -68,14 +71,14 @@ defmodule Switchyard.Build.DependencyResolver do
     )
   end
 
-  def ex_ratatui(opts \\ []), do: {:ex_ratatui, "~> 0.7.1", opts}
+  def ex_ratatui(opts \\ []), do: {:ex_ratatui, "~> 0.8.0", opts}
 
   def execution_plane(opts \\ []) do
     resolve_external(
       :execution_plane,
       local_root_path("EXECUTION_PLANE_PATH", "../execution_plane"),
-      [],
-      Keyword.put_new(opts, :override, true)
+      @execution_plane_version,
+      opts
     )
   end
 
@@ -86,8 +89,8 @@ defmodule Switchyard.Build.DependencyResolver do
         "EXECUTION_PLANE_OPERATOR_TERMINAL_PATH",
         "../execution_plane/runtimes/execution_plane_operator_terminal"
       ),
-      [],
-      Keyword.put_new(opts, :override, true)
+      @execution_plane_operator_terminal_version,
+      opts
     )
   end
 

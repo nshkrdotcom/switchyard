@@ -141,7 +141,7 @@ defmodule Switchyard.TUITest do
         )
       end)
 
-    assert_receive {:ssh_daemon_started, 4022, daemon_opts}
+    assert_receive {:ssh_daemon_started, 4022, daemon_opts}, 2_000
     assert daemon_opts[:auth_methods] == ~c"password"
 
     assert %OperatorTerminal.Info{} = info = wait_for_operator_terminal(terminal_id)
@@ -152,7 +152,7 @@ defmodule Switchyard.TUITest do
     assert info.transport_options[:auth_methods] == ~c"password"
 
     assert :ok = OperatorTerminal.stop(terminal_id)
-    assert_receive {:ssh_daemon_stopped, {:fake_daemon, 4022}}
+    assert_receive {:ssh_daemon_stopped, {:fake_daemon, 4022}}, 2_000
     assert :ok = Task.await(task, 5_000)
   end
 

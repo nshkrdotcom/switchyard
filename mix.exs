@@ -52,7 +52,7 @@ defmodule Switchyard.Workspace.MixProject do
   defp deps do
     [
       DependencyResolver.blitz(runtime: false),
-      {:weld, "~> 0.7.1", runtime: false},
+      {:weld, "~> 0.7.2", runtime: false},
       {:credo, "~> 1.7.11", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.40.1", only: :dev, runtime: false}

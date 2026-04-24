@@ -12,6 +12,10 @@ defmodule Switchyard.ProcessRuntime do
 
   @modes [:inherit, :danger_full_access, :read_only, :workspace_write, :external]
   @forbidden_transport_option_keys [:command, :args, :cwd, :env, :clear_env?]
+  @surface_kind_strings %{
+    "local_subprocess" => :local_subprocess,
+    "ssh_exec" => :ssh_exec
+  }
 
   @type spec_error ::
           {:invalid_command, term()}
@@ -206,9 +210,12 @@ defmodule Switchyard.ProcessRuntime do
     do: EPSurface.normalize_surface_kind(surface_kind)
 
   defp normalize_surface_kind(surface_kind) when is_binary(surface_kind) do
-    case safe_existing_atom(surface_kind) do
-      {:ok, atom} -> EPSurface.normalize_surface_kind(atom)
-      :error -> {:error, {:invalid_surface_kind, surface_kind}}
+    case Map.fetch(@surface_kind_strings, surface_kind) do
+      {:ok, atom} ->
+        EPSurface.normalize_surface_kind(atom)
+
+      :error ->
+        {:error, {:invalid_surface_kind, surface_kind}}
     end
   end
 

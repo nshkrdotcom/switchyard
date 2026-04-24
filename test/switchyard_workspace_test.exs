@@ -23,11 +23,11 @@ defmodule Switchyard.WorkspaceTest do
           :"release.archive"
         ] do
       refute Keyword.has_key?(aliases, alias_name),
-             "expected #{inspect(alias_name)} to be unnecessary on Weld 0.7.1"
+             "expected #{inspect(alias_name)} to be unnecessary on Weld 0.7.2"
     end
   end
 
-  test "uses the released Weld 0.7.1 line directly" do
-    assert {:weld, "~> 0.7.1", runtime: false} in MixProject.project()[:deps]
+  test "uses the released Weld 0.7.2 line directly" do
+    assert {:weld, "~> 0.7.2", runtime: false} in MixProject.project()[:deps]
   end
 end
