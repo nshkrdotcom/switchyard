@@ -2,7 +2,7 @@ defmodule Switchyard.Build.DependencyResolver do
   @moduledoc false
 
   @repo_root Path.expand("..", __DIR__)
-  @execution_plane_version "~> 0.1.0"
+  @execution_plane_process_version "~> 0.1.0"
   @execution_plane_operator_terminal_version "~> 0.1.0"
 
   def switchyard_contracts(opts \\ []),
@@ -65,7 +65,7 @@ defmodule Switchyard.Build.DependencyResolver do
   def blitz(opts \\ []) do
     resolve_external(
       :blitz,
-      local_root_path("BLITZ_PATH", "../blitz"),
+      local_root_path("../blitz"),
       "~> 0.2.0",
       opts
     )
@@ -73,11 +73,11 @@ defmodule Switchyard.Build.DependencyResolver do
 
   def ex_ratatui(opts \\ []), do: {:ex_ratatui, "~> 0.8.0", opts}
 
-  def execution_plane(opts \\ []) do
+  def execution_plane_process(opts \\ []) do
     resolve_external(
-      :execution_plane,
-      local_root_path("EXECUTION_PLANE_PATH", "../execution_plane"),
-      @execution_plane_version,
+      :execution_plane_process,
+      local_root_path("../execution_plane/runtimes/execution_plane_process"),
+      @execution_plane_process_version,
       opts
     )
   end
@@ -85,10 +85,7 @@ defmodule Switchyard.Build.DependencyResolver do
   def execution_plane_operator_terminal(opts \\ []) do
     resolve_external(
       :execution_plane_operator_terminal,
-      local_root_path(
-        "EXECUTION_PLANE_OPERATOR_TERMINAL_PATH",
-        "../execution_plane/runtimes/execution_plane_operator_terminal"
-      ),
+      local_root_path("../execution_plane/runtimes/execution_plane_operator_terminal"),
       @execution_plane_operator_terminal_version,
       opts
     )
@@ -97,7 +94,7 @@ defmodule Switchyard.Build.DependencyResolver do
   def jido_integration_v2(opts \\ []) do
     resolve_external(
       :jido_integration_v2,
-      local_root_path("JIDO_INTEGRATION_V2_PATH", "../jido_integration/core/platform"),
+      local_root_path("../jido_integration/core/platform"),
       [],
       opts
     )
@@ -147,28 +144,15 @@ defmodule Switchyard.Build.DependencyResolver do
     |> existing_path()
   end
 
-  defp local_root_path(env_var, default_relative_path) do
-    case System.get_env(env_var) do
-      nil ->
-        case default_relative_path do
-          nil ->
-            nil
-
-          path ->
-            path
-            |> Path.expand(@repo_root)
-            |> existing_path()
-        end
-
-      value when value in ["", "0", "false", "disabled"] ->
-        nil
-
-      value ->
-        value
-        |> Path.expand(@repo_root)
-        |> existing_path()
+  defp local_root_path(default_relative_path) do
+    if local_workspace_deps?() do
+      default_relative_path
+      |> Path.expand(@repo_root)
+      |> existing_path()
     end
   end
+
+  defp local_workspace_deps?, do: not Enum.member?(Path.split(@repo_root), "deps")
 
   defp existing_path(nil), do: nil
 

@@ -44,7 +44,6 @@ defmodule Switchyard.Daemon.MixProject do
       DependencyResolver.switchyard_log_runtime(),
       DependencyResolver.switchyard_job_runtime(),
       DependencyResolver.switchyard_store_local(),
-      DependencyResolver.execution_plane(),
       DependencyResolver.execution_plane_operator_terminal(),
       DependencyResolver.jido_integration_v2(),
       {:credo, "~> 1.7.18", only: [:dev, :test], runtime: false},

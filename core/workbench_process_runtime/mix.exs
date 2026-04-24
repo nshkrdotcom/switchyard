@@ -38,7 +38,7 @@ defmodule Switchyard.ProcessRuntime.MixProject do
   defp deps do
     [
       DependencyResolver.switchyard_contracts(),
-      DependencyResolver.execution_plane(),
+      DependencyResolver.execution_plane_process(),
       {:credo, "~> 1.7.18", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4.7", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.40.1", only: :dev, runtime: false}

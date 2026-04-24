@@ -58,7 +58,6 @@ defmodule Switchyard.TUI.MixProject do
       DependencyResolver.switchyard_transport_local(),
       DependencyResolver.switchyard_site_execution_plane(),
       DependencyResolver.switchyard_site_jido(),
-      DependencyResolver.execution_plane(),
       DependencyResolver.execution_plane_operator_terminal(),
       DependencyResolver.ex_ratatui(),
       {:credo, "~> 1.7.18", only: [:dev, :test], runtime: false},

@@ -38,7 +38,6 @@ defmodule Switchyard.Site.Jido.MixProject do
   defp deps do
     [
       DependencyResolver.switchyard_contracts(),
-      DependencyResolver.execution_plane(),
       DependencyResolver.jido_integration_v2(),
       {:credo, "~> 1.7.18", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4.7", only: [:dev, :test], runtime: false},

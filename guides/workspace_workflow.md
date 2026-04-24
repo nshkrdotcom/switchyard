@@ -22,22 +22,17 @@ That sequence does three different jobs:
 
 ## Dependency Policy
 
-- `BLITZ_PATH`
-  defaults to `../blitz` if that sibling checkout exists; otherwise the root
-  workspace uses the Hex package
+- `blitz`
+  resolves from `../blitz` if that sibling checkout exists outside `deps`;
+  otherwise the root workspace uses the Hex package
 - `weld`
   stays on the committed Hex dependency line in the repo root
 - prerelease Weld validation should happen through normal prerelease version
   bumps, not through committed path/git override logic
 
-If you need deterministic "no local checkout" behavior on a machine that
-happens to have those sibling repos, disable local sibling resolution
-explicitly:
-
-```bash
-BLITZ_PATH=disabled mix deps.get
-BLITZ_PATH=disabled mix mr.deps.get
-```
+Do not add dependency-selector environment variables. Local development uses
+the deterministic sibling checkout when present; release or isolated validation
+uses the package fallback by running without that sibling checkout.
 
 ## Day-To-Day Commands
 
