@@ -11,13 +11,22 @@ defmodule Switchyard.Contracts.Action do
             input_schema: %{},
             confirmation: :never
 
+  @type scope ::
+          {:global, atom() | String.t()}
+          | {:site, String.t()}
+          | {:app, String.t()}
+          | {:resource, atom()}
+          | {:resource_instance, String.t(), atom(), String.t()}
+
+  @type confirmation :: :never | :if_destructive | :always
+
   @type t :: %__MODULE__{
           id: String.t(),
           title: String.t(),
-          scope: term(),
+          scope: scope(),
           provider: module(),
           input_schema: map(),
-          confirmation: atom()
+          confirmation: confirmation()
         }
 
   @spec new!(map()) :: t()

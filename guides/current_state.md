@@ -68,6 +68,7 @@ The built-in Switchyard shell already supports:
 - generic list/detail screens for resource-backed apps
 - daemon-backed snapshot refresh from the product shell
 - a minimal process-start action on the Execution Plane processes app
+- recent process log preview through the daemon log request path
 - custom framework-native app components through `AppDescriptor.tui_component`
 
 The TUI can now be run in three operator-access modes:
@@ -83,14 +84,27 @@ explicitly:
 - `site_jido` exposes runs, boundary sessions, and attach grants
 
 Process details still surface command preview, execution surface, target, and
-sandbox mode through the daemon snapshot seam.
+sandbox mode through the daemon snapshot seam. They now also carry typed
+lifecycle status, status reason, exit status, lifecycle timestamps, related job
+IDs, and related stream IDs.
 
 The CLI currently supports:
 
 - `switchyard_cli sites`
 - `switchyard_cli apps <site-id>`
+- `switchyard_cli actions [site-id]`
 - `switchyard_cli snapshot`
 - `switchyard_cli process start ...`
+- `switchyard_cli process list`
+- `switchyard_cli process inspect <process-id>`
+- `switchyard_cli process stop <process-id>`
+- `switchyard_cli streams`
+- `switchyard_cli logs <stream-id> --tail <n>`
+- `switchyard_cli process logs <process-id> --after-seq <n>`
+- `switchyard_cli process restart <process-id>` with explicit unsupported/retry
+  guidance until restart support is backed by safe restart specs
+- `switchyard_cli process signal <process-id> <signal>` with explicit
+  unsupported guidance until transport support exists
 
 ## Packaging Posture
 

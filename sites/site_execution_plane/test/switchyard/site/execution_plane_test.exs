@@ -21,7 +21,11 @@ defmodule Switchyard.Site.ExecutionPlaneTest do
         %{
           id: "proc-1",
           label: "Example Proc",
-          status: "running",
+          status: :running,
+          status_reason: :runtime_started,
+          exit_status: nil,
+          job_ids: ["job-proc-1"],
+          stream_ids: ["logs/proc-1"],
           command: "echo hi",
           command_preview: "echo hi",
           execution_surface: %{"surface_kind" => "ssh_exec", "target_id" => "demo.internal"},
@@ -58,5 +62,12 @@ defmodule Switchyard.Site.ExecutionPlaneTest do
       |> then(&ExecutionPlane.detail(&1, snapshot))
 
     assert Enum.any?(List.flatten(Enum.map(detail.sections, & &1.lines)), &(&1 =~ "ssh_exec"))
+
+    assert Enum.any?(
+             List.flatten(Enum.map(detail.sections, & &1.lines)),
+             &(&1 =~ "runtime_started")
+           )
+
+    assert Enum.any?(List.flatten(Enum.map(detail.sections, & &1.lines)), &(&1 =~ "logs/proc-1"))
   end
 end

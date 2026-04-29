@@ -8,8 +8,9 @@ available to automation.
 
 - inspect configured sites
 - inspect site apps
+- inspect registered actions
 - fetch the daemon snapshot
-- start managed processes through a structured daemon request seam
+- start managed processes through the daemon action request seam
 - keep core platform behavior usable without terminal rendering
 
 ## Quick Start
@@ -22,8 +23,15 @@ mix deps.get
 mix escript.build
 ./switchyard_cli sites
 ./switchyard_cli apps execution_plane
+./switchyard_cli actions
 ./switchyard_cli snapshot
 ./switchyard_cli process start --id echo --command "printf 'hello\n'"
+./switchyard_cli process list
+./switchyard_cli process inspect echo
+./switchyard_cli streams
+./switchyard_cli logs logs/echo --tail 20
+./switchyard_cli process logs echo --after-seq 10
+./switchyard_cli process stop echo
 ```
 
 The current CLI surface is intentionally small and JSON-oriented. It is the
@@ -46,6 +54,12 @@ does not treat it as a flag. For example:
   --sandbox-prefix=sh --sandbox-prefix=-lc --sandbox-prefix='exec "$@"' \
   --sandbox-prefix=sandbox
 ```
+
+Lifecycle and log commands use the same daemon request seam. `process stop` is
+supported for managed local processes. `process restart` and `process signal`
+return machine-readable unsupported or retry guidance until the underlying
+transport can honestly provide those capabilities. Log commands return stable
+JSON `LogEvent` objects with per-stream sequence numbers and output metadata.
 
 ## Developer Workflow
 
@@ -70,7 +84,7 @@ mix ci
 ## Examples
 
 - [test/switchyard/cli_test.exs](test/switchyard/cli_test.exs) covers the supported command surface and expected JSON payloads.
-- The current usage string is `switchyard_cli sites | apps <site-id> | snapshot | process start [--command CMD | --spec-json JSON]`.
+- The current usage string is `switchyard_cli sites | apps <site-id> | actions [site-id] | snapshot | streams | logs <stream-id> | process start|list|inspect|stop|restart|signal|logs`.
 
 ## Related Reading
 

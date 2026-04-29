@@ -1,7 +1,7 @@
 defmodule Switchyard.PlatformTest do
   use ExUnit.Case, async: true
 
-  alias Switchyard.Contracts.{Action, AppDescriptor, SiteDescriptor}
+  alias Switchyard.Contracts.{Action, AppDescriptor, Resource, SiteDescriptor}
   alias Switchyard.Platform
   alias Switchyard.Platform.Registry
 
@@ -27,6 +27,18 @@ defmodule Switchyard.PlatformTest do
           id: "local.process.start",
           title: "Start process",
           scope: {:site, "local"},
+          provider: __MODULE__
+        }),
+        Action.new!(%{
+          id: "shared.process.stop",
+          title: "Stop process",
+          scope: {:resource, :process},
+          provider: __MODULE__
+        }),
+        Action.new!(%{
+          id: "local.process.inspect-special",
+          title: "Inspect special process",
+          scope: {:resource_instance, "local", :process, "proc-special"},
           provider: __MODULE__
         })
       ]
@@ -61,6 +73,35 @@ defmodule Switchyard.PlatformTest do
     end
   end
 
+  defmodule FakeMalformedActionSite do
+    def site_definition do
+      SiteDescriptor.new!(%{id: "malformed", title: "Malformed", provider: __MODULE__})
+    end
+
+    def apps, do: []
+
+    def actions, do: [%{id: "malformed.action"}]
+  end
+
+  defmodule FakeDuplicateActionSite do
+    def site_definition do
+      SiteDescriptor.new!(%{id: "duplicate", title: "Duplicate", provider: __MODULE__})
+    end
+
+    def apps, do: []
+
+    def actions do
+      [
+        Action.new!(%{
+          id: "local.process.start",
+          title: "Duplicate start process",
+          scope: {:site, "duplicate"},
+          provider: __MODULE__
+        })
+      ]
+    end
+  end
+
   @providers [FakeLocalSite, FakeRemoteSite]
 
   test "lists sites and provider lookups" do
@@ -73,7 +114,69 @@ defmodule Switchyard.PlatformTest do
 
   test "lists apps and actions by site id" do
     assert [%AppDescriptor{id: "local.processes"}] = Registry.apps("local", @providers)
-    assert [%Action{id: "remote.workspace.open"}] = Registry.actions("remote", @providers)
+
+    assert [
+             %Action{id: "local.process.start"},
+             %Action{id: "shared.process.stop"},
+             %Action{id: "local.process.inspect-special"}
+           ] = Registry.actions("local", @providers)
+  end
+
+  test "lists all actions across providers" do
+    assert [
+             "local.process.inspect-special",
+             "local.process.start",
+             "remote.workspace.open",
+             "shared.process.stop"
+           ] = @providers |> Registry.actions() |> Enum.map(& &1.id) |> Enum.sort()
+  end
+
+  test "fetches an action by id" do
+    assert {:ok, %Action{id: "remote.workspace.open", provider: FakeRemoteSite}} =
+             Registry.fetch_action("remote.workspace.open", @providers)
+
+    assert :error = Registry.fetch_action("missing.action", @providers)
+  end
+
+  test "filters actions by resource kind and resource instance" do
+    process =
+      Resource.new!(%{
+        site_id: "local",
+        kind: :process,
+        id: "proc-special",
+        title: "Special process"
+      })
+
+    workspace =
+      Resource.new!(%{
+        site_id: "remote",
+        kind: :workspace,
+        id: "workspace-1",
+        title: "Workspace"
+      })
+
+    assert [
+             "local.process.inspect-special",
+             "shared.process.stop"
+           ] =
+             process
+             |> Registry.actions_for_resource(@providers)
+             |> Enum.map(& &1.id)
+             |> Enum.sort()
+
+    assert [] = Registry.actions_for_resource(workspace, @providers)
+  end
+
+  test "rejects malformed action definitions" do
+    assert_raise ArgumentError, ~r/action definitions/, fn ->
+      Registry.actions([FakeMalformedActionSite])
+    end
+  end
+
+  test "rejects duplicate action ids" do
+    assert_raise ArgumentError, ~r/duplicate action id/, fn ->
+      Registry.actions([FakeLocalSite, FakeDuplicateActionSite])
+    end
   end
 
   test "builds a flat catalog" do

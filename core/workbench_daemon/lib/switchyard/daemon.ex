@@ -26,6 +26,15 @@ defmodule Switchyard.Daemon do
   @spec list_apps(GenServer.server(), String.t()) :: [Switchyard.Contracts.AppDescriptor.t()]
   def list_apps(server, site_id), do: GenServer.call(server, {:list_apps, site_id})
 
+  @spec actions(GenServer.server()) :: [Switchyard.Contracts.Action.t()]
+  def actions(server), do: GenServer.call(server, {:switchyard_request, %{kind: :actions}})
+
+  @spec execute_action(GenServer.server(), map()) ::
+          {:ok, Switchyard.Contracts.ActionResult.t()} | {:error, term()}
+  def execute_action(server, attrs) when is_map(attrs) do
+    GenServer.call(server, {:switchyard_request, Map.put(attrs, :kind, :execute_action)})
+  end
+
   @spec snapshot(GenServer.server()) :: map()
   def snapshot(server), do: GenServer.call(server, :snapshot)
 

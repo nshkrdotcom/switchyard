@@ -32,6 +32,12 @@ defmodule Switchyard.CLITest do
     assert Enum.any?(apps, &(&1.id == "execution_plane.processes"))
   end
 
+  test "lists actions", %{daemon: daemon} do
+    assert {:ok, actions} = CLI.run(["actions"], daemon: daemon)
+    assert Enum.any?(actions, &(&1.id == "execution_plane.process.start"))
+    assert Enum.any?(actions, &(&1.id == "jido.review.refresh"))
+  end
+
   test "returns the workspace snapshot", %{daemon: daemon} do
     assert {:ok, snapshot} = CLI.run(["snapshot"], daemon: daemon)
 
@@ -41,7 +47,8 @@ defmodule Switchyard.CLITest do
              jobs: [],
              operator_terminals: [],
              processes: [],
-             runs: []
+             runs: [],
+             streams: []
            }
   end
 
@@ -104,6 +111,77 @@ defmodule Switchyard.CLITest do
     Process.sleep(150)
     assert {:ok, snapshot} = CLI.run(["snapshot"], daemon: daemon)
     assert Enum.any?(snapshot.processes, &(&1.id == "echo"))
+  end
+
+  test "lists, inspects, and stops processes through daemon actions", %{daemon: daemon} do
+    assert {:ok, _result} =
+             CLI.run(
+               ["process", "start", "--id", "cli-long", "--command", "sleep 5"],
+               daemon: daemon
+             )
+
+    assert {:ok, processes} = CLI.run(["process", "list"], daemon: daemon)
+    assert Enum.any?(processes, &(&1.id == "cli-long"))
+
+    assert {:ok, process} = CLI.run(["process", "inspect", "cli-long"], daemon: daemon)
+    assert process.status == :running
+    assert process.stream_ids == ["logs/cli-long", "jobs/job-cli-long"]
+
+    assert {:ok, stop_result} = CLI.run(["process", "stop", "cli-long"], daemon: daemon)
+    assert stop_result.status == :accepted
+    assert stop_result.job_id == "job-stop-cli-long"
+  end
+
+  test "lists streams and tails logs", %{daemon: daemon} do
+    assert {:ok, _result} =
+             CLI.run(
+               ["process", "start", "--id", "cli-logs", "--command", "sleep 5"],
+               daemon: daemon
+             )
+
+    send(daemon, {:process_output, "cli-logs", "first", %{fd: :stdout}})
+    send(daemon, {:process_output, "cli-logs", "second", %{fd: :stderr}})
+    Process.sleep(50)
+
+    assert {:ok, streams} = CLI.run(["streams"], daemon: daemon)
+    assert Enum.any?(streams, &(&1.id == "logs/cli-logs"))
+
+    assert {:ok, [event]} = CLI.run(["logs", "logs/cli-logs", "--tail", "1"], daemon: daemon)
+    assert event.message == "second"
+    assert event.fields[:fd] == :stderr
+
+    assert {:ok, [event]} =
+             CLI.run(
+               ["process", "logs", "cli-logs", "--after-seq", "1", "--process-id", "cli-logs"],
+               daemon: daemon
+             )
+
+    assert event.message == "second"
+
+    assert {:ok, []} =
+             CLI.run(["logs", "logs/cli-logs", "--process-id", "other"], daemon: daemon)
+
+    assert {:ok, _stop_result} = CLI.run(["process", "stop", "cli-logs"], daemon: daemon)
+  end
+
+  test "reports unsupported restart and signal process actions", %{daemon: daemon} do
+    assert {:ok, _result} =
+             CLI.run(
+               ["process", "start", "--id", "cli-unsupported", "--command", "sleep 5"],
+               daemon: daemon
+             )
+
+    assert {:error, restart_message} =
+             CLI.run(["process", "restart", "cli-unsupported"], daemon: daemon)
+
+    assert restart_message =~ "restart_requires_explicit_spec"
+
+    assert {:error, signal_message} =
+             CLI.run(["process", "signal", "cli-unsupported", "TERM"], daemon: daemon)
+
+    assert signal_message =~ "unsupported_capability"
+
+    assert {:ok, _stop_result} = CLI.run(["process", "stop", "cli-unsupported"], daemon: daemon)
   end
 
   test "rejects unknown commands", %{daemon: daemon} do

@@ -66,7 +66,7 @@ defmodule Switchyard.ProcessRuntime.Transport.ManagedProcess do
   end
 
   defp handle_transport_event({:message, line}, state) when is_binary(line) do
-    send(state.sink_pid, {:process_output, state.spec.id, line})
+    send(state.sink_pid, {:process_output, state.spec.id, line, %{fd: :stdout}})
     {:noreply, state}
   end
 
@@ -74,7 +74,7 @@ defmodule Switchyard.ProcessRuntime.Transport.ManagedProcess do
     {lines, buffer} = split_lines(state.buffer <> data)
 
     Enum.each(lines, fn line ->
-      send(state.sink_pid, {:process_output, state.spec.id, line})
+      send(state.sink_pid, {:process_output, state.spec.id, line, %{fd: :stdout}})
     end)
 
     {:noreply, %{state | buffer: buffer}}
@@ -84,14 +84,14 @@ defmodule Switchyard.ProcessRuntime.Transport.ManagedProcess do
     {lines, stderr_buffer} = split_lines(state.stderr_buffer <> data)
 
     Enum.each(lines, fn line ->
-      send(state.sink_pid, {:process_output, state.spec.id, line})
+      send(state.sink_pid, {:process_output, state.spec.id, line, %{fd: :stderr}})
     end)
 
     {:noreply, %{state | stderr_buffer: stderr_buffer}}
   end
 
   defp handle_transport_event({:error, %Error{} = error}, state) do
-    send(state.sink_pid, {:process_output, state.spec.id, error.message})
+    send(state.sink_pid, {:process_output, state.spec.id, error.message, %{fd: :stderr}})
     {:noreply, state}
   end
 
@@ -126,11 +126,11 @@ defmodule Switchyard.ProcessRuntime.Transport.ManagedProcess do
 
   defp flush_buffers(state) do
     if state.buffer != "" do
-      send(state.sink_pid, {:process_output, state.spec.id, state.buffer})
+      send(state.sink_pid, {:process_output, state.spec.id, state.buffer, %{fd: :stdout}})
     end
 
     if state.stderr_buffer != "" do
-      send(state.sink_pid, {:process_output, state.spec.id, state.stderr_buffer})
+      send(state.sink_pid, {:process_output, state.spec.id, state.stderr_buffer, %{fd: :stderr}})
     end
   end
 

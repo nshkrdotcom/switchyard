@@ -1,7 +1,7 @@
 defmodule Switchyard.DaemonTest do
   use ExUnit.Case, async: false
 
-  alias Switchyard.Contracts.{Action, AppDescriptor, SiteDescriptor}
+  alias Switchyard.Contracts.{Action, ActionResult, AppDescriptor, SiteDescriptor}
   alias Switchyard.Daemon
 
   defmodule FakeLocalSite do
@@ -26,9 +26,56 @@ defmodule Switchyard.DaemonTest do
           id: "local.process.start",
           title: "Start process",
           scope: {:site, "local"},
+          provider: __MODULE__,
+          input_schema: %{
+            "type" => "object",
+            "required" => ["command"],
+            "properties" => %{"command" => %{"type" => "string"}}
+          }
+        }),
+        Action.new!(%{
+          id: "local.process.stop",
+          title: "Stop process",
+          scope: {:resource, :process},
+          provider: __MODULE__,
+          confirmation: :if_destructive
+        }),
+        Action.new!(%{
+          id: "local.process.force_stop",
+          title: "Force stop process",
+          scope: {:resource, :process},
+          provider: __MODULE__,
+          confirmation: :if_destructive
+        }),
+        Action.new!(%{
+          id: "local.process.signal",
+          title: "Signal process",
+          scope: {:resource, :process},
+          provider: __MODULE__
+        }),
+        Action.new!(%{
+          id: "local.process.restart",
+          title: "Restart process",
+          scope: {:resource, :process},
+          provider: __MODULE__,
+          confirmation: :if_destructive
+        }),
+        Action.new!(%{
+          id: "local.status.refresh",
+          title: "Refresh status",
+          scope: {:site, "local"},
           provider: __MODULE__
         })
       ]
+    end
+
+    def execute_action("local.status.refresh", input, context) do
+      {:ok,
+       ActionResult.new!(%{
+         status: :succeeded,
+         message: "status refreshed",
+         output: %{input: input, site_id: context.site_id}
+       })}
     end
   end
 
@@ -49,6 +96,131 @@ defmodule Switchyard.DaemonTest do
     assert [%AppDescriptor{id: "local.processes"}] = Daemon.list_apps(daemon, "local")
   end
 
+  test "lists actions through daemon request envelope", %{daemon: daemon} do
+    assert [
+             %Action{id: "local.process.start"},
+             %Action{id: "local.process.stop"},
+             %Action{id: "local.process.force_stop"},
+             %Action{id: "local.process.signal"},
+             %Action{id: "local.process.restart"},
+             %Action{id: "local.status.refresh"}
+           ] = request(daemon, %{kind: :actions})
+  end
+
+  test "lists actions for one site through daemon request envelope", %{daemon: daemon} do
+    assert [
+             %Action{id: "local.process.start"},
+             %Action{id: "local.process.stop"},
+             %Action{id: "local.process.force_stop"},
+             %Action{id: "local.process.signal"},
+             %Action{id: "local.process.restart"},
+             %Action{id: "local.status.refresh"}
+           ] = request(daemon, %{kind: :actions, site_id: "local"})
+  end
+
+  test "lists resource-scoped actions through daemon request envelope", %{daemon: daemon} do
+    assert [
+             %Action{id: "local.process.stop"},
+             %Action{id: "local.process.force_stop"},
+             %Action{id: "local.process.signal"},
+             %Action{id: "local.process.restart"}
+           ] =
+             request(daemon, %{
+               kind: :actions,
+               resource: %{site_id: "local", kind: :process, id: "echo"}
+             })
+  end
+
+  test "rejects unknown actions", %{daemon: daemon} do
+    assert {:error,
+            %{
+              reason: :unknown_action,
+              action_id: "missing.action",
+              message: "unknown action"
+            }} =
+             request(daemon, %{
+               kind: :execute_action,
+               action_id: "missing.action",
+               input: %{}
+             })
+  end
+
+  test "rejects action scope mismatches", %{daemon: daemon} do
+    assert {:error,
+            %{
+              reason: :scope_mismatch,
+              action_id: "local.process.stop"
+            }} =
+             request(daemon, %{
+               kind: :execute_action,
+               action_id: "local.process.stop",
+               site_id: "local",
+               input: %{}
+             })
+  end
+
+  test "validates required action input", %{daemon: daemon} do
+    assert {:error,
+            %{
+              reason: :invalid_input,
+              action_id: "local.process.start",
+              missing: ["command"]
+            }} =
+             request(daemon, %{
+               kind: :execute_action,
+               action_id: "local.process.start",
+               site_id: "local",
+               input: %{"id" => "missing-command"}
+             })
+  end
+
+  test "enforces destructive confirmation", %{daemon: daemon} do
+    assert {:ok, %ActionResult{status: :accepted}} =
+             request(daemon, %{
+               kind: :execute_action,
+               action_id: "local.process.start",
+               site_id: "local",
+               input: %{id: "long", label: "Long", command: "sleep 5"}
+             })
+
+    assert {:error,
+            %{
+              reason: :confirmation_required,
+              action_id: "local.process.stop",
+              retryable?: true
+            }} =
+             request(daemon, %{
+               kind: :execute_action,
+               action_id: "local.process.stop",
+               resource: %{site_id: "local", kind: :process, id: "long"},
+               input: %{}
+             })
+
+    assert {:ok, %ActionResult{status: :accepted, message: "process stopped"}} =
+             request(daemon, %{
+               kind: :execute_action,
+               action_id: "local.process.stop",
+               resource: %{site_id: "local", kind: :process, id: "long"},
+               input: %{},
+               confirmed?: true
+             })
+  end
+
+  test "returns action result shape for site-level provider dispatch", %{daemon: daemon} do
+    assert {:ok,
+            %ActionResult{
+              status: :succeeded,
+              message: "status refreshed",
+              output: %{input: %{"force" => true}, site_id: "local"}
+            }} =
+             request(daemon, %{
+               kind: :execute_action,
+               action_id: "local.status.refresh",
+               site_id: "local",
+               input: %{"force" => true}
+             })
+  end
+
   test "starts a managed process and captures logs", %{daemon: daemon, store_root: store_root} do
     assert {:ok, _result} =
              Daemon.start_process(daemon, %{
@@ -64,8 +236,230 @@ defmodule Switchyard.DaemonTest do
 
     assert Enum.any?(snapshot.processes, &(&1.id == "echo"))
     assert Enum.any?(snapshot.jobs, &(&1.id == "job-echo"))
+    assert Enum.any?(snapshot.streams, &(&1.id == "logs/echo"))
     assert Enum.any?(logs, &(&1.message == "hello"))
     assert File.exists?(Path.join([store_root, "daemon", "local_snapshot.json"]))
+  end
+
+  test "uses typed lifecycle states and creates job and stream metadata", %{daemon: daemon} do
+    assert {:ok, %ActionResult{status: :accepted, job_id: "job-lifecycle"}} =
+             Daemon.start_process(daemon, %{
+               id: "lifecycle",
+               label: "Lifecycle",
+               command: "sleep 5"
+             })
+
+    snapshot = Daemon.snapshot(daemon)
+    process = Enum.find(snapshot.processes, &(&1.id == "lifecycle"))
+
+    assert process.status == :running
+    assert process.status_reason == :runtime_started
+    assert is_struct(process.started_at, DateTime)
+    assert is_struct(process.last_seen_at, DateTime)
+    assert process.exit_status == nil
+    assert process.job_ids == ["job-lifecycle"]
+    assert process.stream_ids == ["logs/lifecycle", "jobs/job-lifecycle"]
+    assert process.env_summary == %{keys: [], count: 0, clear_env?: false}
+    assert Enum.any?(snapshot.jobs, &(&1.id == "job-lifecycle" and &1.status == :running))
+    assert Enum.any?(snapshot.streams, &(&1.id == "logs/lifecycle"))
+    assert Enum.any?(snapshot.streams, &(&1.id == "jobs/job-lifecycle"))
+
+    assert {:ok, %ActionResult{status: :accepted}} = Daemon.stop_process(daemon, "lifecycle")
+  end
+
+  test "lists streams and filters streams by resource", %{daemon: daemon} do
+    assert {:ok, %ActionResult{status: :accepted}} =
+             Daemon.start_process(daemon, %{id: "streamed", command: "sleep 5"})
+
+    assert streams = request(daemon, %{kind: :streams})
+    assert Enum.any?(streams, &(&1.id == "logs/streamed" and &1.kind == :process_combined))
+    assert Enum.any?(streams, &(&1.id == "jobs/job-streamed" and &1.kind == :job_events))
+
+    assert [%{id: "logs/streamed"}] =
+             request(daemon, %{
+               kind: :streams,
+               resource: %{site_id: "execution_plane", kind: :process, id: "streamed"}
+             })
+
+    assert {:ok, %ActionResult{status: :accepted}} = Daemon.stop_process(daemon, "streamed")
+  end
+
+  test "tails and filters sequenced log events with stream metadata", %{daemon: daemon} do
+    assert {:ok, %ActionResult{status: :accepted}} =
+             Daemon.start_process(daemon, %{id: "loggy", command: "sleep 5"})
+
+    send(daemon, {:process_output, "loggy", "one", %{fd: :stdout}})
+    send(daemon, {:process_output, "loggy", "two", %{fd: :stderr}})
+    send(daemon, {:process_output, "loggy", "three", %{fd: :stdout}})
+
+    Process.sleep(50)
+
+    assert [one, two, three] = request(daemon, %{kind: :logs, stream_id: "logs/loggy"})
+    assert Enum.map([one, two, three], & &1.fields[:seq]) == [1, 2, 3]
+    assert one.fields[:fd] == :stdout
+    assert one.fields[:process_id] == "loggy"
+    assert two.fields[:fd] == :stderr
+
+    assert ["two", "three"] =
+             daemon
+             |> request(%{kind: :logs, stream_id: "logs/loggy", tail: 2})
+             |> Enum.map(& &1.message)
+
+    assert ["three"] =
+             daemon
+             |> request(%{kind: :logs, stream_id: "logs/loggy", after_seq: 2})
+             |> Enum.map(& &1.message)
+
+    assert ["one", "two", "three"] =
+             daemon
+             |> request(%{
+               kind: :logs,
+               stream_id: "logs/loggy",
+               level: :info,
+               source_kind: :process,
+               process_id: "loggy"
+             })
+             |> Enum.map(& &1.message)
+
+    assert [] =
+             request(daemon, %{
+               kind: :logs,
+               stream_id: "logs/loggy",
+               source_kind: :process,
+               process_id: "other"
+             })
+
+    assert [] = request(daemon, %{kind: :logs, stream_id: "logs/loggy", level: :error})
+    assert {:ok, %ActionResult{status: :accepted}} = Daemon.stop_process(daemon, "loggy")
+  end
+
+  test "emits job event streams", %{daemon: daemon} do
+    assert {:ok, %ActionResult{status: :accepted}} =
+             Daemon.start_process(daemon, %{id: "job-events", command: "sleep 5"})
+
+    assert [event] = request(daemon, %{kind: :logs, stream_id: "jobs/job-job-events"})
+    assert event.source_kind == :job
+    assert event.fields[:job_id] == "job-job-events"
+    assert event.fields[:event_kind] == :running
+
+    assert [^event] =
+             request(daemon, %{
+               kind: :logs,
+               stream_id: "jobs/job-job-events",
+               job_id: "job-job-events"
+             })
+
+    assert [] =
+             request(daemon, %{
+               kind: :logs,
+               stream_id: "jobs/job-job-events",
+               job_id: "other"
+             })
+
+    assert {:ok, %ActionResult{status: :accepted}} = Daemon.stop_process(daemon, "job-events")
+  end
+
+  test "redacts env values before persistence", %{daemon: daemon, store_root: store_root} do
+    assert {:ok, %ActionResult{status: :accepted}} =
+             Daemon.start_process(daemon, %{
+               id: "redacted",
+               command: "sleep 5",
+               env: %{"SECRET_TOKEN" => "supersecret", "VISIBLE_KEY" => "public"}
+             })
+
+    persisted = File.read!(Path.join([store_root, "daemon", "local_snapshot.json"]))
+
+    assert persisted =~ "SECRET_TOKEN"
+    refute persisted =~ "supersecret"
+    refute persisted =~ "public"
+
+    assert {:ok, %ActionResult{status: :accepted}} = Daemon.stop_process(daemon, "redacted")
+  end
+
+  test "records successful and failed process exits", %{daemon: daemon} do
+    assert {:ok, %ActionResult{status: :accepted}} =
+             Daemon.start_process(daemon, %{id: "success", command: "exit 0"})
+
+    assert {:ok, %ActionResult{status: :accepted}} =
+             Daemon.start_process(daemon, %{id: "failure", command: "exit 3"})
+
+    Process.sleep(200)
+
+    snapshot = Daemon.snapshot(daemon)
+    success = Enum.find(snapshot.processes, &(&1.id == "success"))
+    failure = Enum.find(snapshot.processes, &(&1.id == "failure"))
+
+    assert success.status == :succeeded
+    assert success.status_reason == :exit_zero
+    assert success.exit_status == 0
+    assert is_struct(success.stopped_at, DateTime)
+
+    assert failure.status == :failed
+    assert failure.status_reason == :exit_nonzero
+    assert failure.exit_status == 3
+    assert is_struct(failure.stopped_at, DateTime)
+  end
+
+  test "records graceful stop transition", %{daemon: daemon} do
+    assert {:ok, %ActionResult{status: :accepted}} =
+             Daemon.start_process(daemon, %{id: "stop-me", command: "sleep 5"})
+
+    assert {:ok, %ActionResult{status: :accepted, job_id: "job-stop-stop-me"}} =
+             Daemon.stop_process(daemon, "stop-me")
+
+    snapshot = Daemon.snapshot(daemon)
+    process = Enum.find(snapshot.processes, &(&1.id == "stop-me"))
+
+    assert process.status == :stopped
+    assert process.status_reason == :operator_requested
+    assert process.exit_status == nil
+    assert is_struct(process.stopped_at, DateTime)
+    assert "job-stop-stop-me" in process.job_ids
+    assert Enum.any?(snapshot.jobs, &(&1.id == "job-stop-stop-me" and &1.status == :succeeded))
+  end
+
+  test "rejects unsupported force stop and signal actions", %{daemon: daemon} do
+    assert {:ok, %ActionResult{status: :accepted}} =
+             Daemon.start_process(daemon, %{id: "unsupported", command: "sleep 5"})
+
+    resource = %{site_id: "local", kind: :process, id: "unsupported"}
+
+    assert {:error, %{reason: :unsupported_capability, action_id: "local.process.force_stop"}} =
+             request(daemon, %{
+               kind: :execute_action,
+               action_id: "local.process.force_stop",
+               resource: resource,
+               confirmed?: true
+             })
+
+    assert {:error, %{reason: :unsupported_capability, action_id: "local.process.signal"}} =
+             request(daemon, %{
+               kind: :execute_action,
+               action_id: "local.process.signal",
+               resource: resource,
+               input: %{"signal" => "TERM"}
+             })
+
+    assert {:ok, %ActionResult{status: :accepted}} = Daemon.stop_process(daemon, "unsupported")
+  end
+
+  test "rejects restart when safe restart spec is not persisted", %{daemon: daemon} do
+    assert {:ok, %ActionResult{status: :accepted}} =
+             Daemon.start_process(daemon, %{id: "restart-me", command: "sleep 5"})
+
+    assert {:error,
+            %{
+              reason: :restart_requires_explicit_spec,
+              action_id: "local.process.restart"
+            }} =
+             request(daemon, %{
+               kind: :execute_action,
+               action_id: "local.process.restart",
+               resource: %{site_id: "local", kind: :process, id: "restart-me"},
+               confirmed?: true
+             })
+
+    assert {:ok, %ActionResult{status: :accepted}} = Daemon.stop_process(daemon, "restart-me")
   end
 
   test "preserves execution surface and sandbox metadata in snapshots", %{daemon: daemon} do
@@ -96,7 +490,10 @@ defmodule Switchyard.DaemonTest do
     assert process.execution_surface["surface_kind"] == "local_subprocess"
     assert process.execution_surface["boundary_class"] == "operator"
     assert process.sandbox["mode"] == "read_only"
+    assert process.sandbox["enforced"] == true
+    assert process.sandbox["enforcement_surface"] == "command_prefix"
     assert process.sandbox["policy"]["has_command_prefix"] == true
+    assert "command_prefix" in process.sandbox["policy"]["keys"]
   end
 
   test "returns a rich error payload when process start validation fails", %{daemon: daemon} do
@@ -109,4 +506,6 @@ defmodule Switchyard.DaemonTest do
 
     assert preview =~ "invalid_pty"
   end
+
+  defp request(daemon, payload), do: GenServer.call(daemon, {:switchyard_request, payload})
 end

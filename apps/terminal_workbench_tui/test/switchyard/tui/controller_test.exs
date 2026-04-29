@@ -101,6 +101,63 @@ defmodule Switchyard.TUI.RootTest do
     def handle_info(_msg, _state, _props, _ctx), do: :unhandled
   end
 
+  defmodule ProcessSite do
+    @behaviour Switchyard.Contracts.SiteProvider
+
+    @impl true
+    def site_definition do
+      SiteDescriptor.new!(%{
+        id: "execution_plane",
+        title: "Execution Plane",
+        provider: __MODULE__,
+        kind: :local
+      })
+    end
+
+    @impl true
+    def apps do
+      [
+        AppDescriptor.new!(%{
+          id: "execution_plane.processes",
+          site_id: "execution_plane",
+          title: "Processes",
+          provider: __MODULE__,
+          resource_kinds: [:process],
+          route_kind: :list_detail
+        })
+      ]
+    end
+
+    @impl true
+    def actions, do: []
+
+    @impl true
+    def resources(_snapshot) do
+      [
+        Resource.new!(%{
+          site_id: "execution_plane",
+          kind: :process,
+          id: "proc-1",
+          title: "Process proc-1",
+          subtitle: "running",
+          status: :running,
+          summary: "sleep 5"
+        })
+      ]
+    end
+
+    @impl true
+    def detail(resource, _snapshot) do
+      ResourceDetail.new!(%{
+        resource: resource,
+        sections: [
+          %{title: "Process", lines: ["id: #{resource.id}", "stream: logs/#{resource.id}"]}
+        ],
+        recommended_actions: []
+      })
+    end
+  end
+
   defp base_state do
     State.new(
       sites: [
@@ -109,6 +166,22 @@ defmodule Switchyard.TUI.RootTest do
       ],
       apps: ExampleSite.apps(),
       home_cursor: 1
+    )
+  end
+
+  defp process_state do
+    state = State.new().shell
+
+    State.new(
+      sites: [%{id: "execution_plane", title: "Execution Plane"}],
+      apps: ProcessSite.apps(),
+      snapshot: %{processes: [%{id: "proc-1"}], jobs: [], streams: []},
+      shell: %{
+        state
+        | route: :app,
+          selected_site_id: "execution_plane",
+          selected_app_id: "execution_plane.processes"
+      }
     )
   end
 
@@ -278,6 +351,33 @@ defmodule Switchyard.TUI.RootTest do
     assert Enum.any?(bindings, &(&1.message == :start_demo_process))
   end
 
+  test "generic process route requests and renders recent log preview through request path" do
+    ctx = %Context{request_handler: fn _request, _opts -> :ok end, app_env: %{}}
+
+    assert {:ok, loading_state,
+            [%Cmd{kind: :request, payload: {{:logs, "logs/proc-1", [tail: 5]}, [], mapper}}]} =
+             Root.update(:load_selected_logs, process_state(), %{}, ctx)
+
+    assert loading_state.status_line == "Loading recent logs..."
+
+    events = [%{fields: %{seq: 1}, level: :info, message: "hello"}]
+    assert mapper.(events) == {:logs_loaded, "logs/proc-1", events}
+
+    assert {:ok, loaded_state, []} =
+             Root.handle_info({:logs_loaded, "logs/proc-1", events}, process_state(), %{}, ctx)
+
+    assert loaded_state.log_previews["logs/proc-1"] == events
+
+    rendered = Root.render(loaded_state, %{}, ctx)
+    lines = node_lines(rendered)
+
+    assert "Recent Logs" in lines
+    assert "  #1 info: hello" in lines
+
+    bindings = Root.keymap(loaded_state, %{}, ctx)
+    assert Enum.any?(bindings, &(&1.message == :load_selected_logs))
+  end
+
   test "handle_info updates snapshot state after a refresh" do
     snapshot = %{processes: [%{id: "echo"}], jobs: []}
 
@@ -292,4 +392,10 @@ defmodule Switchyard.TUI.RootTest do
     assert next_state.snapshot == snapshot
     assert next_state.status_line == "Snapshot refreshed."
   end
+
+  defp node_lines(%Node{props: props, children: children}) do
+    Map.get(props, :lines, []) ++ Enum.flat_map(children, &node_lines/1)
+  end
+
+  defp node_lines(_other), do: []
 end

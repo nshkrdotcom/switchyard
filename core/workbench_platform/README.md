@@ -6,6 +6,7 @@
 
 - load site definitions from provider modules
 - enumerate apps and actions for a site
+- enumerate, fetch, validate, and resource-filter action definitions
 - provide a global catalog view across all configured sites
 
 ## Quick Start
@@ -19,7 +20,8 @@ mix test
 ```
 
 Its job is intentionally small: provider-driven registry helpers and catalog
-derivation. It should stay a seam, not become a framework.
+derivation. The registry validates action definitions and duplicate action IDs,
+but it does not execute actions or mutate daemon state.
 
 ## Developer Workflow
 

@@ -11,6 +11,7 @@ platform.
 - actions and action results
 - streams, jobs, logs, and search results
 - provider behaviours for sites, apps, actions, and search
+- optional site-level `execute_action/3` callbacks for provider-owned actions
 
 ## Quick Start
 
@@ -30,6 +31,11 @@ alias Switchyard.Contracts.{AppDescriptor, SiteDescriptor}
 site = SiteDescriptor.new!(%{id: "local", title: "Local", provider: MySite})
 AppDescriptor.new!(%{id: "local.processes", site_id: site.id, title: "Processes", provider: MySite})
 ```
+
+Action scopes are typed as global, site, app, resource, or exact resource
+instance scopes. Site providers may optionally implement `execute_action/3`;
+the daemon remains responsible for action lookup, scope validation, input
+validation, and confirmation before invoking provider-owned execution.
 
 ## Developer Workflow
 

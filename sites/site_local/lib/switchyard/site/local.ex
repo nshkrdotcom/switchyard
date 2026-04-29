@@ -63,11 +63,40 @@ defmodule Switchyard.Site.Local do
         id: "local.process.start",
         title: "Start process",
         scope: {:site, @site_id},
-        provider: __MODULE__
+        provider: __MODULE__,
+        input_schema: %{
+          "type" => "object",
+          "required" => ["command"],
+          "properties" => %{
+            "command" => %{"type" => "string", "description" => "Command to run"},
+            "cwd" => %{"type" => "string", "description" => "Working directory"},
+            "shell?" => %{"type" => "boolean", "default" => true}
+          }
+        }
       }),
       Action.new!(%{
         id: "local.process.stop",
         title: "Stop process",
+        scope: {:resource, :process},
+        provider: __MODULE__,
+        confirmation: :if_destructive
+      }),
+      Action.new!(%{
+        id: "local.process.force_stop",
+        title: "Force stop process",
+        scope: {:resource, :process},
+        provider: __MODULE__,
+        confirmation: :if_destructive
+      }),
+      Action.new!(%{
+        id: "local.process.signal",
+        title: "Signal process",
+        scope: {:resource, :process},
+        provider: __MODULE__
+      }),
+      Action.new!(%{
+        id: "local.process.restart",
+        title: "Restart process",
         scope: {:resource, :process},
         provider: __MODULE__,
         confirmation: :if_destructive
@@ -91,6 +120,11 @@ defmodule Switchyard.Site.Local do
   end
 
   @impl true
+  def execute_action(action_id, _input, _context) do
+    {:error, {:daemon_owned_action, action_id}}
+  end
+
+  @impl true
   def detail(%Resource{kind: :process} = resource, snapshot) do
     process =
       snapshot
@@ -105,6 +139,10 @@ defmodule Switchyard.Site.Local do
           lines: [
             "command: #{process.command_preview || process.command}",
             "status: #{process.status}",
+            "status_reason: #{Map.get(process, :status_reason, "unknown")}",
+            "exit_status: #{Map.get(process, :exit_status, "none")}",
+            "jobs: #{Enum.join(Map.get(process, :job_ids, []), ", ")}",
+            "streams: #{Enum.join(Map.get(process, :stream_ids, []), ", ")}",
             "surface: #{surface_kind(process)}",
             "target: #{surface_target(process)}",
             "sandbox: #{sandbox_mode(process)}"
@@ -142,8 +180,8 @@ defmodule Switchyard.Site.Local do
       kind: :process,
       id: process.id,
       title: process.label,
-      subtitle: process.status,
-      status: String.to_atom(process.status),
+      subtitle: to_string(process.status),
+      status: status_atom(process.status),
       capabilities: [:inspect, :stop],
       summary: process.command_preview || process.command
     })
@@ -179,4 +217,7 @@ defmodule Switchyard.Site.Local do
     |> Map.get(:sandbox, %{})
     |> Map.get("mode", "inherit")
   end
+
+  defp status_atom(status) when is_atom(status), do: status
+  defp status_atom(status) when is_binary(status), do: String.to_atom(status)
 end

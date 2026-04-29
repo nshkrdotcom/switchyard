@@ -49,6 +49,8 @@ The current startup path opens the generic home screen. From there you can:
 - use list/detail views for generic resource-backed apps
 - refresh the daemon snapshot from the product shell
 - trigger a demo process start from the Execution Plane processes app
+- load a recent log preview for a selected process through the daemon request
+  path
 - hand off to framework-native app components for richer product-specific flows
 
 With `--debug` enabled, the app now also:
@@ -62,7 +64,11 @@ current app is a mounted custom component.
 
 If no `request_handler` is supplied, `Switchyard.TUI` now starts or reuses a
 daemon, loads the initial snapshot, and wires a default daemon-backed request
-handler for snapshot refresh, process start, and log fetch requests.
+handler for snapshot refresh, action-backed process start, stream listing, and
+log fetch requests.
+
+The default request handler also exposes stream listing and log tail/filter
+requests so future TUI log views use the same daemon path as the CLI.
 
 The product TUI can run in three operator modes:
 

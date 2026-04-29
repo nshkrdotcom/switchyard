@@ -115,14 +115,23 @@ The intended flow is:
 
 For managed processes specifically:
 
-1. a client submits a process spec through the daemon seam
+1. a client submits a process lifecycle request through the daemon action seam
 2. the daemon validates and normalizes that spec through the execution plane
 3. the selected execution-surface adapter starts the command or rejects the
    request honestly
 4. stdout/stderr lines and exit status flow back to the daemon
-5. the daemon persists snapshot records that include command preview,
-   execution-surface summary, and sandbox summary
+5. the daemon persists snapshot records that include typed status, status
+   reason, exit status, lifecycle timestamps, related jobs, related streams,
+   command preview, execution-surface summary, and sandbox summary
 6. sites map that metadata into list/detail views and other operator surfaces
+
+Unsupported force-stop, restart, and signal requests return explicit
+machine-readable errors instead of claiming transport support that does not
+exist.
+
+Process output and job lifecycle events are exposed through daemon stream
+descriptors. Log requests support tailing, `after_seq`, and simple level/source
+filters while keeping buffers bounded in memory by default.
 
 For the built-in TUI path specifically:
 
@@ -131,7 +140,8 @@ For the built-in TUI path specifically:
    or a framework-native custom component
 3. the runtime resolves layout and derives focus and mouse indexes
 4. effects are lowered onto `ex_ratatui` commands
-5. site or integration components route requests back through the daemon seam
+5. site or integration components route requests back through the daemon seam,
+   including process log preview requests
 6. the product shell remains a client; it does not become the source of
    process truth
 

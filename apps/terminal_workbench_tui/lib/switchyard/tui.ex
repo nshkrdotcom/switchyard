@@ -135,11 +135,27 @@ defmodule Switchyard.TUI do
   end
 
   defp request_handler(daemon, {:start_process, attrs}, _opts) when is_map(attrs) do
-    Local.request(daemon, %{kind: :start_process, spec: attrs})
+    Local.request(daemon, %{
+      kind: :execute_action,
+      action_id: "execution_plane.process.start",
+      site_id: "execution_plane",
+      input: attrs
+    })
   end
 
   defp request_handler(daemon, {:logs, stream_id}, _opts) when is_binary(stream_id) do
     Local.request(daemon, %{kind: :logs, stream_id: stream_id})
+  end
+
+  defp request_handler(daemon, {:logs, stream_id, log_opts}, _opts) when is_binary(stream_id) do
+    Local.request(daemon, Map.merge(%{kind: :logs, stream_id: stream_id}, Map.new(log_opts)))
+  end
+
+  defp request_handler(daemon, :streams, opts) do
+    case Keyword.get(opts, :resource) do
+      nil -> Local.request(daemon, %{kind: :streams})
+      resource -> Local.request(daemon, %{kind: :streams, resource: resource})
+    end
   end
 
   defp request_handler(_daemon, request, _opts) do

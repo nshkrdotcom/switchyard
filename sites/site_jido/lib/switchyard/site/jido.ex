@@ -7,6 +7,7 @@ defmodule Switchyard.Site.Jido do
 
   alias Switchyard.Contracts.{
     Action,
+    ActionResult,
     AppDescriptor,
     Resource,
     ResourceDetail,
@@ -72,6 +73,16 @@ defmodule Switchyard.Site.Jido do
   def resources(snapshot) when is_map(snapshot) do
     run_resources(snapshot) ++
       boundary_session_resources(snapshot) ++ attach_grant_resources(snapshot)
+  end
+
+  @impl true
+  def execute_action("jido.review.refresh", input, _context) do
+    {:ok,
+     ActionResult.new!(%{
+       status: :succeeded,
+       message: "durable state refreshed",
+       output: %{input: input}
+     })}
   end
 
   @impl true

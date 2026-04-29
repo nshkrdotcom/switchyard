@@ -66,8 +66,8 @@ defmodule Switchyard.ProcessRuntimeTest do
     assert {:ok, pid} = ProcessRuntime.start_managed(spec, self())
     assert is_pid(pid)
 
-    assert_receive {:process_output, "echo", "hello"}
-    assert_receive {:process_output, "echo", "world"}
+    assert_receive {:process_output, "echo", "hello", %{fd: :stdout}}
+    assert_receive {:process_output, "echo", "world", %{fd: :stdout}}
     assert_receive {:process_exit, "echo", 0}
   end
 
@@ -76,7 +76,7 @@ defmodule Switchyard.ProcessRuntimeTest do
 
     assert {:ok, pid} = ProcessRuntime.start_managed(spec, self())
     assert is_pid(pid)
-    assert_receive {:process_output, "pty", "hello"}
+    assert_receive {:process_output, "pty", "hello", %{fd: :stdout}}
     assert_receive {:process_exit, "pty", 0}
   end
 
@@ -106,7 +106,7 @@ defmodule Switchyard.ProcessRuntimeTest do
     assert {:ok, pid} = ProcessRuntime.start_managed(spec, self())
     assert is_pid(pid)
 
-    assert_receive {:process_output, "sandboxed", "sandboxed"}
+    assert_receive {:process_output, "sandboxed", "sandboxed", %{fd: :stdout}}
     assert_receive {:process_exit, "sandboxed", 0}
   end
 

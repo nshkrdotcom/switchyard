@@ -12,7 +12,7 @@ defmodule Switchyard.Platform do
     %{
       sites: sites,
       apps: Enum.flat_map(sites, fn site -> Registry.apps(site.id, site_modules) end),
-      actions: Enum.flat_map(sites, fn site -> Registry.actions(site.id, site_modules) end)
+      actions: Registry.actions(site_modules)
     }
   end
 end

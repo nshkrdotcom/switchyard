@@ -131,6 +131,17 @@ defmodule Switchyard.TUI.Root do
     end
   end
 
+  def update(:load_selected_logs, %State{} = state, _props, %Context{} = ctx) do
+    case {selected_process_stream_id(state), ctx.request_handler} do
+      {stream_id, request_handler} when is_binary(stream_id) and not is_nil(request_handler) ->
+        {:ok, State.set_status(state, "Loading recent logs...", :info),
+         [load_logs_command(stream_id)]}
+
+      _other ->
+        :unhandled
+    end
+  end
+
   def update(msg, %State{} = state, _props, %Context{} = ctx) do
     _ = ctx
     _ = msg
@@ -152,6 +163,13 @@ defmodule Switchyard.TUI.Root do
 
       {:process_started, {:error, reason}} ->
         {:ok, State.set_status(state, "Process start failed: #{inspect(reason)}", :error), []}
+
+      {:logs_loaded, stream_id, events} when is_binary(stream_id) and is_list(events) ->
+        next_state = put_in(state.log_previews[stream_id], events)
+        {:ok, State.set_status(next_state, "Recent logs loaded.", :info), []}
+
+      {:logs_load_failed, _stream_id, reason} ->
+        {:ok, State.set_status(state, "Log load failed: #{inspect(reason)}", :error), []}
 
       _other ->
         _ = ctx
@@ -294,7 +312,7 @@ defmodule Switchyard.TUI.Root do
             binding(:next, "down", [], "Select next", :select_next),
             binding(:refresh_snapshot, "r", [], "Refresh snapshot", :refresh_snapshot),
             binding(:back, "esc", [], "Back", :back)
-          ] ++ maybe_local_process_bindings(state)
+          ] ++ maybe_local_process_bindings(state, ctx)
 
       _module ->
         _ = ctx
@@ -358,7 +376,8 @@ defmodule Switchyard.TUI.Root do
             Detail.new(
               id: :detail,
               title: "Detail",
-              lines: detail_lines(State.detail_for_selected_resource(state))
+              lines:
+                detail_lines(State.detail_for_selected_resource(state), log_preview_lines(state))
             )
             |> Style.border_fg(:success)
           ],
@@ -439,7 +458,7 @@ defmodule Switchyard.TUI.Root do
 
   defp generic_app_help_lines(%State{} = state, %Context{} = ctx) do
     ["Up/Down select resource  ·  R refresh  ·  Esc back  ·  Ctrl+Q quit"] ++
-      local_process_help_suffix(state) ++ debug_help_suffix(ctx)
+      local_process_help_suffix(state, ctx) ++ debug_help_suffix(ctx)
   end
 
   defp debug_help_suffix(%Context{} = ctx) do
@@ -450,9 +469,9 @@ defmodule Switchyard.TUI.Root do
     end
   end
 
-  defp local_process_help_suffix(%State{} = state) do
+  defp local_process_help_suffix(%State{} = state, %Context{} = ctx) do
     if execution_plane_processes_app?(state) do
-      ["N start demo process"]
+      ["N start demo process" | selected_process_log_help(state, ctx)]
     else
       []
     end
@@ -485,9 +504,12 @@ defmodule Switchyard.TUI.Root do
   defp resource_subtitle(%{subtitle: nil}), do: ""
   defp resource_subtitle(%{subtitle: subtitle}), do: "  ·  #{subtitle}"
 
-  defp detail_lines(nil), do: ["No detail available."]
+  defp detail_lines(nil, _log_preview_lines), do: ["No detail available."]
 
-  defp detail_lines(%{sections: sections, recommended_actions: recommended_actions}) do
+  defp detail_lines(
+         %{sections: sections, recommended_actions: recommended_actions},
+         log_preview_lines
+       ) do
     body =
       sections
       |> Enum.flat_map(fn section ->
@@ -501,8 +523,25 @@ defmodule Switchyard.TUI.Root do
         ["", "Recommended Actions"] ++ Enum.map(recommended_actions, &"  #{&1}")
       end
 
-    body ++ recommendations
+    body ++ recommendations ++ log_preview_lines
   end
+
+  defp log_preview_lines(%State{} = state) do
+    with stream_id when is_binary(stream_id) <- selected_process_stream_id(state),
+         events when events != [] <- Map.get(state.log_previews, stream_id, []) do
+      ["", "Recent Logs"] ++ Enum.map(events, &log_event_line/1)
+    else
+      _other -> []
+    end
+  end
+
+  defp log_event_line(%{fields: fields, level: level, message: message}) do
+    seq = Map.get(fields, :seq) || Map.get(fields, "seq")
+    seq_prefix = if is_nil(seq), do: "", else: "##{seq} "
+    "  #{seq_prefix}#{level}: #{message}"
+  end
+
+  defp log_event_line(%{message: message}), do: "  #{message}"
 
   defp startup_commands(%Context{} = ctx) do
     if is_nil(ctx.request_handler), do: [], else: [refresh_snapshot_command()]
@@ -527,6 +566,13 @@ defmodule Switchyard.TUI.Root do
     )
   end
 
+  defp load_logs_command(stream_id) do
+    Cmd.request({:logs, stream_id, [tail: 5]}, [], fn
+      events when is_list(events) -> {:logs_loaded, stream_id, events}
+      other -> {:logs_load_failed, stream_id, other}
+    end)
+  end
+
   defp execution_plane_processes_app?(%State{} = state) do
     case State.current_app(state) do
       %{id: "execution_plane.processes"} -> true
@@ -534,11 +580,36 @@ defmodule Switchyard.TUI.Root do
     end
   end
 
-  defp maybe_local_process_bindings(%State{} = state) do
+  defp maybe_local_process_bindings(%State{} = state, %Context{} = ctx) do
     if execution_plane_processes_app?(state) do
-      [binding(:start_demo_process, "n", [], "Start demo process", :start_demo_process)]
+      [binding(:start_demo_process, "n", [], "Start demo process", :start_demo_process)] ++
+        selected_process_log_binding(state, ctx)
     else
       []
+    end
+  end
+
+  defp selected_process_log_binding(%State{} = state, %Context{} = ctx) do
+    case {selected_process_stream_id(state), ctx.request_handler} do
+      {stream_id, request_handler} when is_binary(stream_id) and not is_nil(request_handler) ->
+        [binding(:load_selected_logs, "l", [], "Load logs", :load_selected_logs)]
+
+      _other ->
+        []
+    end
+  end
+
+  defp selected_process_log_help(%State{} = state, %Context{} = ctx) do
+    case selected_process_log_binding(state, ctx) do
+      [] -> []
+      _bindings -> ["L load logs"]
+    end
+  end
+
+  defp selected_process_stream_id(%State{} = state) do
+    case State.selected_resource(state) do
+      %{kind: :process, id: process_id} when is_binary(process_id) -> "logs/#{process_id}"
+      _other -> nil
     end
   end
 end

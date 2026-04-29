@@ -29,6 +29,14 @@ defmodule Switchyard.CLI do
     ssh_arg: :keep,
     sandbox_prefix: :keep
   ]
+  @log_switches [
+    tail: :integer,
+    after_seq: :integer,
+    level: :string,
+    source_kind: :string,
+    process_id: :string,
+    job_id: :string
+  ]
 
   @spec main([String.t()]) :: :ok
   def main(argv) do
@@ -60,9 +68,32 @@ defmodule Switchyard.CLI do
     {:ok, Local.request(daemon, %{kind: :apps, site_id: site_id})}
   end
 
+  def run(["actions"], opts) do
+    daemon = Keyword.fetch!(opts, :daemon)
+    {:ok, Local.request(daemon, %{kind: :actions})}
+  end
+
+  def run(["actions", site_id], opts) do
+    daemon = Keyword.fetch!(opts, :daemon)
+    {:ok, Local.request(daemon, %{kind: :actions, site_id: site_id})}
+  end
+
   def run(["snapshot"], opts) do
     daemon = Keyword.fetch!(opts, :daemon)
     {:ok, Local.request(daemon, %{kind: :local_snapshot})}
+  end
+
+  def run(["streams"], opts) do
+    daemon = Keyword.fetch!(opts, :daemon)
+    {:ok, Local.request(daemon, %{kind: :streams})}
+  end
+
+  def run(["logs", stream_id | argv], opts) do
+    daemon = Keyword.fetch!(opts, :daemon)
+
+    with {:ok, log_opts} <- parse_log_opts(argv) do
+      {:ok, Local.request(daemon, Map.merge(%{kind: :logs, stream_id: stream_id}, log_opts))}
+    end
   end
 
   def run(["process", "start" | argv], opts) do
@@ -70,11 +101,86 @@ defmodule Switchyard.CLI do
 
     case parse_process_start_spec(argv) do
       {:ok, spec} ->
-        normalize_start_process_result(Local.request(daemon, %{kind: :start_process, spec: spec}))
+        normalize_start_process_result(
+          Local.request(daemon, %{
+            kind: :execute_action,
+            action_id: "execution_plane.process.start",
+            site_id: "execution_plane",
+            input: spec
+          })
+        )
 
       {:error, _message} = error ->
         error
     end
+  end
+
+  def run(["process", "list"], opts) do
+    daemon = Keyword.fetch!(opts, :daemon)
+    snapshot = Local.request(daemon, %{kind: :local_snapshot})
+    {:ok, snapshot.processes}
+  end
+
+  def run(["process", "inspect", process_id], opts) do
+    daemon = Keyword.fetch!(opts, :daemon)
+    snapshot = Local.request(daemon, %{kind: :local_snapshot})
+
+    case Enum.find(snapshot.processes, &(&1.id == process_id)) do
+      nil -> {:error, "process not found: #{process_id}"}
+      process -> {:ok, process}
+    end
+  end
+
+  def run(["process", "stop", process_id], opts) do
+    daemon = Keyword.fetch!(opts, :daemon)
+
+    normalize_action_result(
+      Local.request(daemon, %{
+        kind: :execute_action,
+        action_id: "execution_plane.process.stop",
+        resource: %{site_id: "execution_plane", kind: :process, id: process_id},
+        input: %{"process_id" => process_id},
+        confirmed?: true
+      })
+    )
+  end
+
+  def run(["process", "logs", process_id | argv], opts) do
+    daemon = Keyword.fetch!(opts, :daemon)
+
+    with {:ok, log_opts} <- parse_log_opts(argv) do
+      {:ok,
+       Local.request(
+         daemon,
+         Map.merge(%{kind: :logs, stream_id: "logs/#{process_id}"}, log_opts)
+       )}
+    end
+  end
+
+  def run(["process", "restart", process_id], opts) do
+    daemon = Keyword.fetch!(opts, :daemon)
+
+    normalize_action_result(
+      Local.request(daemon, %{
+        kind: :execute_action,
+        action_id: "execution_plane.process.restart",
+        resource: %{site_id: "execution_plane", kind: :process, id: process_id},
+        confirmed?: true
+      })
+    )
+  end
+
+  def run(["process", "signal", process_id, signal], opts) do
+    daemon = Keyword.fetch!(opts, :daemon)
+
+    normalize_action_result(
+      Local.request(daemon, %{
+        kind: :execute_action,
+        action_id: "execution_plane.process.signal",
+        resource: %{site_id: "execution_plane", kind: :process, id: process_id},
+        input: %{"signal" => signal}
+      })
+    )
   end
 
   def run(_argv, _opts) do
@@ -211,12 +317,37 @@ defmodule Switchyard.CLI do
     end
   end
 
+  defp parse_log_opts(argv) do
+    {opts, _args, invalid} = OptionParser.parse(argv, strict: @log_switches)
+
+    if invalid == [] do
+      {:ok,
+       opts
+       |> Enum.map(fn {key, value} -> {key, maybe_existing_atom(value)} end)
+       |> Map.new()}
+    else
+      {:error, "invalid log options: #{inspect(invalid)}"}
+    end
+  end
+
+  defp maybe_existing_atom(value) when is_binary(value) do
+    String.to_existing_atom(value)
+  rescue
+    ArgumentError -> value
+  end
+
+  defp maybe_existing_atom(value), do: value
+
   defp normalize_start_process_result({:ok, payload}), do: {:ok, payload}
   defp normalize_start_process_result({:error, payload}), do: {:error, inspect(payload)}
   defp normalize_start_process_result(other), do: {:error, inspect(other)}
 
+  defp normalize_action_result({:ok, payload}), do: {:ok, payload}
+  defp normalize_action_result({:error, payload}), do: {:error, inspect(payload)}
+  defp normalize_action_result(other), do: {:error, inspect(other)}
+
   defp usage do
-    "usage: switchyard_cli sites | apps <site-id> | snapshot | process start [--command CMD | --spec-json JSON]"
+    "usage: switchyard_cli sites | apps <site-id> | actions [site-id] | snapshot | streams | logs <stream-id> | process start|list|inspect|stop|restart|signal|logs"
   end
 
   defp normalize(payload) when is_list(payload), do: Enum.map(payload, &normalize/1)
