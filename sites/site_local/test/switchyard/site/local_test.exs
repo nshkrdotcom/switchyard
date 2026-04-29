@@ -40,6 +40,7 @@ defmodule Switchyard.Site.LocalTest do
     assert Enum.any?(resources, &(&1.kind == :process and &1.id == "proc-1"))
     assert Enum.any?(resources, &(&1.kind == :job and &1.id == "job-1"))
     assert Enum.any?(resources, &(&1.summary =~ "ssh deploy@app.internal"))
+    refute Enum.any?(resources, &(&1.kind in [:operator_terminal, :run, :attach_grant]))
   end
 
   test "builds detail views from resources and snapshot" do

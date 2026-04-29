@@ -18,8 +18,14 @@ defmodule Switchyard.Daemon.Server do
           logs: %{optional(String.t()) => LogRuntime.Buffer.t()},
           streams: %{optional(String.t()) => StreamDescriptor.t()},
           stream_sequences: %{optional(String.t()) => non_neg_integer()},
+          recovery_status: map(),
+          daemon_instance_id: String.t(),
           store_root: String.t() | nil
         }
+
+  @schema_version 1
+  @current_snapshot "current"
+  @current_journal "journal-current"
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
@@ -33,16 +39,24 @@ defmodule Switchyard.Daemon.Server do
   @impl true
   def init(opts) do
     state = %{
+      daemon_instance_id:
+        Keyword.get_lazy(opts, :daemon_instance_id, fn ->
+          "daemon-#{System.unique_integer([:positive])}"
+        end),
       site_modules: Keyword.get(opts, :site_modules, []),
       processes: %{},
       jobs: %{},
       logs: %{},
       streams: %{},
       stream_sequences: %{},
+      recovery_status: memory_only_recovery_status(),
       store_root: Keyword.get(opts, :store_root)
     }
 
-    {:ok, state}
+    case recover_from_store(state) do
+      {:ok, recovered_state} -> {:ok, recovered_state}
+      {:error, reason} -> {:stop, {:recovery_failed, reason}}
+    end
   end
 
   @impl true
@@ -1023,26 +1037,202 @@ defmodule Switchyard.Daemon.Server do
       operator_terminals: operator_terminal_snapshot(),
       runs: jido_runs_snapshot(),
       boundary_sessions: jido_boundary_sessions_snapshot(),
-      attach_grants: jido_attach_grants_snapshot()
+      attach_grants: jido_attach_grants_snapshot(),
+      recovery_status: state.recovery_status
     }
+  end
+
+  defp recover_from_store(%{store_root: nil} = state), do: {:ok, state}
+
+  defp recover_from_store(%{store_root: root} = state) do
+    case Local.get_manifest(root, "daemon") do
+      :error ->
+        write_manifest(state)
+        {:ok, %{state | recovery_status: initialized_recovery_status()}}
+
+      {:ok, manifest} ->
+        recover_from_manifest(state, manifest)
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp recover_from_manifest(state, manifest) do
+    snapshot_key = manifest["current_snapshot"] || @current_snapshot
+    journal_key = manifest["current_journal"] || @current_journal
+
+    with {:snapshot, {:ok, snapshot}} <-
+           {:snapshot, Local.get_versioned_snapshot(state.store_root, "daemon", snapshot_key)},
+         {:journal, {:ok, journal_events}} <-
+           {:journal, read_recovery_journal(state, journal_key)} do
+      state
+      |> apply_persisted_snapshot(snapshot)
+      |> apply_recovery_journal(journal_events)
+      |> finalize_recovery()
+      |> persist()
+      |> then(&{:ok, &1})
+    else
+      {:snapshot, :error} -> {:ok, %{state | recovery_status: initialized_recovery_status()}}
+      {:snapshot, {:error, reason}} -> {:error, reason}
+      {:journal, {:error, reason}} -> {:error, reason}
+    end
+  end
+
+  defp read_recovery_journal(%{store_root: root}, journal_key) do
+    case Local.read_journal(root, "daemon", journal_key) do
+      {:ok, events} -> {:ok, events}
+      :error -> {:ok, []}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp apply_persisted_snapshot(state, snapshot) do
+    %{
+      state
+      | processes: deserialize_processes(snapshot["processes"] || []),
+        jobs: deserialize_jobs(snapshot["jobs"] || []),
+        streams: deserialize_streams(snapshot["streams"] || []),
+        stream_sequences: recovered_stream_sequences(snapshot["streams"] || [])
+    }
+  end
+
+  defp apply_recovery_journal(state, events) do
+    Enum.reduce(events, state, &apply_recovery_event/2)
+  end
+
+  defp apply_recovery_event(
+         %{"kind" => "process_started", "payload" => %{"process" => process}},
+         state
+       ) do
+    process = deserialize_process(process)
+    put_in(state.processes[process.id], process)
+  end
+
+  defp apply_recovery_event(
+         %{"kind" => "process_stopped", "payload" => %{"process_id" => id}},
+         state
+       ) do
+    update_in(state.processes[id], fn
+      nil -> nil
+      process -> %{process | status: :stopped, status_reason: :operator_requested, pid: nil}
+    end)
+  end
+
+  defp apply_recovery_event(_event, state), do: state
+
+  defp finalize_recovery(state) do
+    {processes, lost_processes, warnings} =
+      state.processes
+      |> Enum.reduce({%{}, [], []}, fn {process_id, process}, {processes, lost, warnings} ->
+        {next_process, next_lost, next_warnings} = recover_process(process, lost, warnings)
+        {Map.put(processes, process_id, next_process), next_lost, next_warnings}
+      end)
+
+    %{
+      state
+      | processes: processes,
+        recovery_status: recovered_status(Enum.reverse(lost_processes), Enum.reverse(warnings))
+    }
+  end
+
+  defp recover_process(%{status: status} = process, lost, warnings)
+       when status in [:running, :starting, :stopping] do
+    now = DateTime.utc_now()
+
+    recovered_process = %{
+      process
+      | status: :lost,
+        status_reason: :daemon_restarted_without_reconnect,
+        last_seen_at: now,
+        pid: nil
+    }
+
+    warning = "process #{process.id} marked lost after daemon restart"
+    {recovered_process, [process.id | lost], [warning | warnings]}
+  end
+
+  defp recover_process(process, lost, warnings), do: {%{process | pid: nil}, lost, warnings}
+
+  defp recovered_status([], []) do
+    %{
+      status: :ok,
+      mode: :recovered,
+      recovered?: true,
+      recovered_at: DateTime.utc_now(),
+      lost_processes: [],
+      warnings: []
+    }
+  end
+
+  defp recovered_status(lost_processes, warnings) do
+    %{
+      status: :degraded,
+      mode: :recovered,
+      recovered?: true,
+      recovered_at: DateTime.utc_now(),
+      lost_processes: lost_processes,
+      warnings: warnings
+    }
+  end
+
+  defp initialized_recovery_status do
+    %{
+      status: :ok,
+      mode: :initialized,
+      recovered?: false,
+      warnings: []
+    }
+  end
+
+  defp memory_only_recovery_status do
+    %{
+      status: :ok,
+      mode: :memory_only,
+      warnings: []
+    }
+  end
+
+  defp write_manifest(%{store_root: nil}), do: :ok
+
+  defp write_manifest(%{store_root: root, daemon_instance_id: daemon_instance_id}) do
+    Local.put_manifest(root, "daemon", %{
+      "schema_version" => @schema_version,
+      "store_created_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "last_written_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "daemon_instance_id" => daemon_instance_id,
+      "current_snapshot" => @current_snapshot,
+      "current_journal" => @current_journal,
+      "retention_policy" => %{"streams" => "memory_only"},
+      "migration_history" => []
+    })
   end
 
   defp persist(%{store_root: nil} = state), do: state
 
   defp persist(%{store_root: root} = state) do
-    Local.put_snapshot(root, "daemon", "local_snapshot", serialize_snapshot(snapshot(state)))
+    serialized_snapshot = serialize_snapshot(snapshot(state), state)
+
+    Local.put_snapshot(root, "daemon", "local_snapshot", serialized_snapshot)
+    Local.put_versioned_snapshot(root, "daemon", @current_snapshot, serialized_snapshot)
+    write_manifest(state)
+
     state
   end
 
-  defp serialize_snapshot(snapshot) do
+  defp serialize_snapshot(snapshot, state) do
     %{
+      "schema_version" => @schema_version,
+      "written_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "daemon_instance_id" => state.daemon_instance_id,
       "processes" => Enum.map(snapshot.processes, &serialize_process/1),
       "jobs" => Enum.map(snapshot.jobs, &serialize_job/1),
       "streams" => Enum.map(snapshot.streams, &serialize_stream/1),
       "operator_terminals" => Enum.map(snapshot.operator_terminals, &serialize_generic_map/1),
       "runs" => Enum.map(snapshot.runs, &serialize_generic_map/1),
       "boundary_sessions" => Enum.map(snapshot.boundary_sessions, &serialize_generic_map/1),
-      "attach_grants" => Enum.map(snapshot.attach_grants, &serialize_generic_map/1)
+      "attach_grants" => Enum.map(snapshot.attach_grants, &serialize_generic_map/1),
+      "recovery_status" => stringify_map(snapshot.recovery_status)
     }
   end
 
@@ -1089,6 +1279,139 @@ defmodule Switchyard.Daemon.Server do
       "retention" => Atom.to_string(stream.retention),
       "capabilities" => Enum.map(stream.capabilities, &Atom.to_string/1)
     }
+  end
+
+  defp deserialize_processes(processes) when is_list(processes) do
+    processes
+    |> Enum.map(&deserialize_process/1)
+    |> Map.new(&{&1.id, &1})
+  end
+
+  defp deserialize_process(%{} = process) do
+    process_id = string_field(process, "id")
+
+    %{
+      id: process_id,
+      label: string_field(process, "label") || process_id,
+      status: atom_field(process, "status", :unknown),
+      status_reason: atom_field(process, "status_reason", :unknown),
+      exit_status: process["exit_status"],
+      started_at: datetime_field(process, "started_at"),
+      stopped_at: datetime_field(process, "stopped_at"),
+      last_seen_at: datetime_field(process, "last_seen_at"),
+      command: string_field(process, "command"),
+      command_preview: string_field(process, "command_preview"),
+      args: List.wrap(process["args"]),
+      shell?: boolean_field(process, "shell?", true),
+      cwd: string_field(process, "cwd"),
+      env_summary: process["env_summary"] || %{},
+      execution_surface: process["execution_surface"] || %{},
+      sandbox: process["sandbox"] || %{},
+      pid: nil,
+      job_ids: List.wrap(process["job_ids"]),
+      stream_ids: List.wrap(process["stream_ids"])
+    }
+  end
+
+  defp deserialize_jobs(jobs) when is_list(jobs) do
+    jobs
+    |> Enum.map(&deserialize_job/1)
+    |> Map.new(&{&1.id, &1})
+  end
+
+  defp deserialize_job(%{} = job) do
+    Job.new!(%{
+      id: string_field(job, "id"),
+      kind: atom_field(job, "kind", :unknown),
+      title: string_field(job, "title") || string_field(job, "id"),
+      status: atom_field(job, "status", :queued),
+      progress: atomized_progress(job["progress"] || %{}),
+      started_at: datetime_field(job, "started_at"),
+      finished_at: datetime_field(job, "finished_at"),
+      related_resources: List.wrap(job["related_resources"])
+    })
+  end
+
+  defp deserialize_streams(streams) when is_list(streams) do
+    streams
+    |> Enum.map(&deserialize_stream/1)
+    |> Map.new(&{&1.id, &1})
+  end
+
+  defp deserialize_stream(%{} = stream) do
+    StreamDescriptor.new!(%{
+      id: string_field(stream, "id"),
+      kind: atom_field(stream, "kind", :unknown),
+      subject: atomized_subject(stream["subject"]),
+      retention: atom_field(stream, "retention", :bounded),
+      capabilities: stream |> Map.get("capabilities", []) |> Enum.map(&atomish/1)
+    })
+  end
+
+  defp recovered_stream_sequences(streams) when is_list(streams) do
+    streams
+    |> Enum.map(fn stream -> {stream["id"], 0} end)
+    |> Enum.reject(fn {stream_id, _sequence} -> is_nil(stream_id) end)
+    |> Map.new()
+  end
+
+  defp string_field(map, key), do: map[key] || map[String.to_atom(key)]
+
+  defp atom_field(map, key, default) do
+    case string_field(map, key) do
+      nil -> default
+      value -> atomish(value)
+    end
+  end
+
+  defp boolean_field(map, key, default) do
+    case string_field(map, key) do
+      value when is_boolean(value) -> value
+      nil -> default
+      _other -> default
+    end
+  end
+
+  defp datetime_field(map, key) do
+    case string_field(map, key) do
+      %DateTime{} = datetime ->
+        datetime
+
+      value when is_binary(value) ->
+        case DateTime.from_iso8601(value) do
+          {:ok, datetime, _offset} -> datetime
+          _other -> nil
+        end
+
+      _other ->
+        nil
+    end
+  end
+
+  defp atomized_progress(%{} = progress) do
+    %{
+      current: progress["current"] || progress[:current] || 0,
+      total: progress["total"] || progress[:total] || 0
+    }
+  end
+
+  defp atomized_subject(%{} = subject) do
+    subject
+    |> Enum.map(fn {key, value} -> {atomish(key), atomized_subject_value(key, value)} end)
+    |> Map.new()
+  end
+
+  defp atomized_subject(subject), do: subject
+
+  defp atomized_subject_value(key, value) when key in ["kind", :kind], do: atomish(value)
+  defp atomized_subject_value(_key, value), do: value
+
+  defp atomish(value) when is_atom(value), do: value
+
+  defp atomish(value) when is_binary(value) do
+    String.to_existing_atom(value)
+  rescue
+    ArgumentError -> :unknown
   end
 
   defp execution_surface_summary(%{execution_surface: execution_surface}) do

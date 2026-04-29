@@ -12,6 +12,10 @@ defmodule Switchyard.TUI.State do
             home_cursor: 0,
             site_app_cursor: 0,
             resource_cursor: 0,
+            action_cursor: 0,
+            action_form: %{},
+            confirming_action: nil,
+            last_action_result: nil,
             status_line: "Ready",
             status_severity: :info,
             log_previews: %{},
@@ -27,6 +31,10 @@ defmodule Switchyard.TUI.State do
           home_cursor: non_neg_integer(),
           site_app_cursor: non_neg_integer(),
           resource_cursor: non_neg_integer(),
+          action_cursor: non_neg_integer(),
+          action_form: %{optional(String.t()) => map()},
+          confirming_action: map() | nil,
+          last_action_result: term(),
           status_line: String.t(),
           status_severity: :info | :warn | :error,
           log_previews: %{optional(String.t()) => [map()]},
@@ -45,13 +53,21 @@ defmodule Switchyard.TUI.State do
       state
       | shell: Shell.reduce(state.shell, {:select_site, site_id}),
         site_app_cursor: 0,
-        resource_cursor: 0
+        resource_cursor: 0,
+        action_cursor: 0,
+        confirming_action: nil
     }
   end
 
   @spec select_app(t(), String.t()) :: t()
   def select_app(%__MODULE__{} = state, app_id) when is_binary(app_id) do
-    %{state | shell: Shell.reduce(state.shell, {:select_app, app_id}), resource_cursor: 0}
+    %{
+      state
+      | shell: Shell.reduce(state.shell, {:select_app, app_id}),
+        resource_cursor: 0,
+        action_cursor: 0,
+        confirming_action: nil
+    }
   end
 
   @spec set_status(t(), String.t(), :info | :warn | :error) :: t()
@@ -78,7 +94,9 @@ defmodule Switchyard.TUI.State do
     %{
       state
       | resource_cursor:
-          clamp_index(state.resource_cursor + delta, resources_for_selected_app(state))
+          clamp_index(state.resource_cursor + delta, resources_for_selected_app(state)),
+        action_cursor: 0,
+        confirming_action: nil
     }
   end
 

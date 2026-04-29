@@ -3,7 +3,7 @@
 This directory holds runnable examples that prove the real Switchyard seams,
 not parallel demo scaffolding.
 
-## Current Example
+## Current Full TUI Example
 
 `full_featured_workbench.exs` is the primary example. It exercises:
 
@@ -102,3 +102,61 @@ The example is doing its job if all of the following are true:
 - `--smoke` runs the same example in `test_mode` and drives it through
   `Workbench.Devtools.Driver`, so it validates the reducer runtime through the
   named deterministic automation seam rather than ad hoc helpers.
+
+## Generic Site Adapter Example
+
+`generic_site_adapter/` is a standalone Mix project that models how external
+Elixir code can implement a Switchyard site provider without depending on the
+daemon, CLI, or TUI.
+
+Run from the repo root:
+
+```bash
+cd examples/generic_site_adapter
+SWITCHYARD_ROOT=/path/to/switchyard mix deps.get
+SWITCHYARD_ROOT=/path/to/switchyard mix test
+```
+
+`SWITCHYARD_ROOT` is required so the example fails clearly instead of guessing
+relative paths. The example uses only `switchyard_contracts` and
+`switchyard_platform` path dependencies.
+
+## Daemon Smoke Example
+
+`repo_copy_tests/current_daemon_smoke_test.exs` is a focused daemon smoke test
+that can be run from the daemon package:
+
+```bash
+cd core/workbench_daemon
+mix test ../../examples/repo_copy_tests/current_daemon_smoke_test.exs
+```
+
+It starts an in-process daemon, starts a managed process through the public
+daemon API, checks snapshot/job/stream state, and reads process logs.
+
+## CLI Smoke Script
+
+`scripts/cli_current_smoke.sh` exercises the JSON CLI against the source tree:
+
+```bash
+SWITCHYARD_ROOT=/path/to/switchyard bash examples/scripts/cli_current_smoke.sh
+```
+
+The script checks output fragments for sites, apps, actions, generic action
+execution, process start output, and recovery status. Each CLI invocation starts
+a fresh runtime, so the script does not claim that process state survives across
+separate invocations.
+
+## Future Red Tests
+
+The files in `repo_copy_tests/future_*_red_test.exs` are intentionally failing
+future tests. They document work that must remain future-tense until implemented
+and proven:
+
+- provider-owned async action jobs
+- safe restart from persisted restart specs
+- durable stream follow cursors across restarts
+- transport-proven process reconnect recovery
+
+Do not add these files to a package test suite unless you are intentionally
+starting the corresponding red phase.

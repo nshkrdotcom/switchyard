@@ -1,6 +1,11 @@
 defmodule Switchyard.Daemon do
   @moduledoc """
   Local control-plane daemon API.
+
+  The daemon is the authority for local Switchyard process, job, stream, log,
+  action, snapshot, and recovery state. Clients should use these functions or
+  the `%{kind: ...}` request envelope instead of mutating runtime packages
+  directly.
   """
 
   alias Switchyard.Daemon.Server

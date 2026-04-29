@@ -151,6 +151,10 @@ defmodule Switchyard.TUI do
     Local.request(daemon, Map.merge(%{kind: :logs, stream_id: stream_id}, Map.new(log_opts)))
   end
 
+  defp request_handler(daemon, %{kind: :execute_action} = payload, _opts) do
+    Local.request(daemon, payload)
+  end
+
   defp request_handler(daemon, :streams, opts) do
     case Keyword.get(opts, :resource) do
       nil -> Local.request(daemon, %{kind: :streams})

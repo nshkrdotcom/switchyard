@@ -9,8 +9,12 @@ available to automation.
 - inspect configured sites
 - inspect site apps
 - inspect registered actions
+- execute registered actions through the daemon request seam
 - fetch the daemon snapshot
+- inspect daemon recovery status
 - start managed processes through the daemon action request seam
+- list, inspect, stop, and read logs for managed processes
+- list streams and read stream logs
 - keep core platform behavior usable without terminal rendering
 
 ## Quick Start
@@ -24,14 +28,17 @@ mix escript.build
 ./switchyard_cli sites
 ./switchyard_cli apps execution_plane
 ./switchyard_cli actions
+./switchyard_cli actions --site execution_plane
+./switchyard_cli action run jido.review.refresh --site jido --input-json '{"force":true}'
 ./switchyard_cli snapshot
+./switchyard_cli recovery
 ./switchyard_cli process start --id echo --command "printf 'hello\n'"
 ./switchyard_cli process list
 ./switchyard_cli process inspect echo
 ./switchyard_cli streams
 ./switchyard_cli logs logs/echo --tail 20
 ./switchyard_cli process logs echo --after-seq 10
-./switchyard_cli process stop echo
+./switchyard_cli process stop echo --confirm
 ```
 
 The current CLI surface is intentionally small and JSON-oriented. It is the
@@ -55,11 +62,17 @@ does not treat it as a flag. For example:
   --sandbox-prefix=sandbox
 ```
 
-Lifecycle and log commands use the same daemon request seam. `process stop` is
-supported for managed local processes. `process restart` and `process signal`
-return machine-readable unsupported or retry guidance until the underlying
-transport can honestly provide those capabilities. Log commands return stable
-JSON `LogEvent` objects with per-stream sequence numbers and output metadata.
+Generic `action run` accepts `--site`, `--app`, `--resource kind:id` or
+`site_id:kind:id`, `--input-json`, repeated `--input key=value`, and
+`--confirm`.
+
+Lifecycle and log commands use the same daemon request seam. `process stop`
+requires `--confirm` and is supported for managed local processes. `process
+restart` also requires `--confirm` and currently returns machine-readable retry
+guidance until restart support is backed by explicit safe restart specs.
+`process signal` returns explicit unsupported guidance until transport support
+exists. Log commands return stable JSON `LogEvent` objects with per-stream
+sequence numbers and output metadata.
 
 ## Developer Workflow
 
@@ -84,7 +97,8 @@ mix ci
 ## Examples
 
 - [test/switchyard/cli_test.exs](test/switchyard/cli_test.exs) covers the supported command surface and expected JSON payloads.
-- The current usage string is `switchyard_cli sites | apps <site-id> | actions [site-id] | snapshot | streams | logs <stream-id> | process start|list|inspect|stop|restart|signal|logs`.
+- [../../examples/scripts/cli_current_smoke.sh](../../examples/scripts/cli_current_smoke.sh) exercises the current JSON CLI from the source tree.
+- The current usage string is `switchyard_cli sites | apps <site-id> | actions [site-id|--site <site-id>] | action run <action-id> [--site <site-id>] [--resource kind:id] [--input-json JSON] [--confirm] | snapshot | recovery | streams | logs <stream-id> | process start|list|inspect|stop|restart|signal|logs`.
 
 ## Related Reading
 

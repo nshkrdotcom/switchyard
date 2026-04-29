@@ -1,6 +1,6 @@
 # Switchyard Local Store
 
-`switchyard_store_local` provides local JSON snapshot persistence for the
+`switchyard_store_local` provides local JSON persistence primitives for the
 daemon.
 
 ## Responsibilities
@@ -8,6 +8,11 @@ daemon.
 - persist named snapshots to disk
 - read persisted snapshots back
 - enumerate stored snapshot keys
+- read and write daemon manifests
+- read and write versioned snapshots under a namespace
+- append and read JSONL journals
+- return explicit malformed snapshot and journal errors
+- migrate schema-version 0 snapshots to the current schema
 
 ## Quick Start
 
@@ -19,8 +24,8 @@ mix deps.get
 mix test
 ```
 
-The storage seam is intentionally simple: filesystem-backed JSON snapshots for
-local daemon state.
+The storage seam is intentionally small and filesystem-backed. It stores safe
+daemon summaries as JSON, not raw runtime processes or secret material.
 
 ## Developer Workflow
 
@@ -44,7 +49,7 @@ mix ci
 
 ## Examples
 
-- [test/switchyard/store/local_test.exs](test/switchyard/store/local_test.exs) covers snapshot persistence, retrieval, and key listing behavior.
+- [test/switchyard/store/local_test.exs](test/switchyard/store/local_test.exs) covers snapshot persistence, retrieval, key listing, manifest read/write, versioned snapshots, migration, journal append/read, and malformed snapshot errors.
 
 ## Related Reading
 

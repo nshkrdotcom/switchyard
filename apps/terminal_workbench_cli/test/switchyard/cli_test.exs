@@ -1,6 +1,8 @@
 defmodule Switchyard.CLITest do
   use ExUnit.Case, async: false
 
+  import ExUnit.CaptureIO
+
   alias Switchyard.CLI
   alias Switchyard.Daemon
   alias Switchyard.Site.{ExecutionPlane, Jido}
@@ -38,6 +40,53 @@ defmodule Switchyard.CLITest do
     assert Enum.any?(actions, &(&1.id == "jido.review.refresh"))
   end
 
+  test "main encodes action tuple scopes as stable JSON", %{daemon: daemon} do
+    previous_runtime = Application.get_env(:switchyard_cli, :runtime)
+    Application.put_env(:switchyard_cli, :runtime, daemon: daemon)
+
+    on_exit(fn ->
+      if is_nil(previous_runtime) do
+        Application.delete_env(:switchyard_cli, :runtime)
+      else
+        Application.put_env(:switchyard_cli, :runtime, previous_runtime)
+      end
+    end)
+
+    output = capture_io(fn -> CLI.main(["actions", "--site", "execution_plane"]) end)
+    decoded = Jason.decode!(output)
+
+    assert Enum.any?(decoded, fn action ->
+             action["id"] == "execution_plane.process.start" and
+               action["scope"] == ["site", "execution_plane"]
+           end)
+  end
+
+  test "lists actions for one site with explicit option syntax", %{daemon: daemon} do
+    assert {:ok, actions} = CLI.run(["actions", "--site", "execution_plane"], daemon: daemon)
+
+    assert Enum.any?(actions, &(&1.id == "execution_plane.process.start"))
+    refute Enum.any?(actions, &(&1.id == "jido.review.refresh"))
+  end
+
+  test "runs site actions through the generic action command", %{daemon: daemon} do
+    assert {:ok, result} =
+             CLI.run(
+               [
+                 "action",
+                 "run",
+                 "jido.review.refresh",
+                 "--site",
+                 "jido",
+                 "--input-json",
+                 ~s({"force":true})
+               ],
+               daemon: daemon
+             )
+
+    assert result.status == :succeeded
+    assert result.output == %{input: %{"force" => true}}
+  end
+
   test "returns the workspace snapshot", %{daemon: daemon} do
     assert {:ok, snapshot} = CLI.run(["snapshot"], daemon: daemon)
 
@@ -47,9 +96,15 @@ defmodule Switchyard.CLITest do
              jobs: [],
              operator_terminals: [],
              processes: [],
+             recovery_status: %{mode: :memory_only, status: :ok, warnings: []},
              runs: [],
              streams: []
            }
+  end
+
+  test "reports daemon recovery status", %{daemon: daemon} do
+    assert {:ok, %{status: :ok, mode: :memory_only, warnings: []}} =
+             CLI.run(["recovery"], daemon: daemon)
   end
 
   test "parses explicit process start flags into a structured execution spec" do
@@ -127,9 +182,52 @@ defmodule Switchyard.CLITest do
     assert process.status == :running
     assert process.stream_ids == ["logs/cli-long", "jobs/job-cli-long"]
 
-    assert {:ok, stop_result} = CLI.run(["process", "stop", "cli-long"], daemon: daemon)
+    assert {:error, confirm_message} = CLI.run(["process", "stop", "cli-long"], daemon: daemon)
+    assert confirm_message =~ "--confirm"
+
+    assert {:ok, stop_result} =
+             CLI.run(["process", "stop", "cli-long", "--confirm"], daemon: daemon)
+
     assert stop_result.status == :accepted
     assert stop_result.job_id == "job-stop-cli-long"
+  end
+
+  test "runs destructive resource actions through the generic action command", %{daemon: daemon} do
+    assert {:ok, _result} =
+             CLI.run(
+               ["process", "start", "--id", "generic-stop", "--command", "sleep 5"],
+               daemon: daemon
+             )
+
+    assert {:error, confirm_message} =
+             CLI.run(
+               [
+                 "action",
+                 "run",
+                 "execution_plane.process.stop",
+                 "--resource",
+                 "process:generic-stop"
+               ],
+               daemon: daemon
+             )
+
+    assert confirm_message =~ "confirmation_required"
+
+    assert {:ok, result} =
+             CLI.run(
+               [
+                 "action",
+                 "run",
+                 "execution_plane.process.stop",
+                 "--resource",
+                 "process:generic-stop",
+                 "--confirm"
+               ],
+               daemon: daemon
+             )
+
+    assert result.status == :accepted
+    assert result.job_id == "job-stop-generic-stop"
   end
 
   test "lists streams and tails logs", %{daemon: daemon} do
@@ -161,7 +259,8 @@ defmodule Switchyard.CLITest do
     assert {:ok, []} =
              CLI.run(["logs", "logs/cli-logs", "--process-id", "other"], daemon: daemon)
 
-    assert {:ok, _stop_result} = CLI.run(["process", "stop", "cli-logs"], daemon: daemon)
+    assert {:ok, _stop_result} =
+             CLI.run(["process", "stop", "cli-logs", "--confirm"], daemon: daemon)
   end
 
   test "reports unsupported restart and signal process actions", %{daemon: daemon} do
@@ -172,7 +271,7 @@ defmodule Switchyard.CLITest do
              )
 
     assert {:error, restart_message} =
-             CLI.run(["process", "restart", "cli-unsupported"], daemon: daemon)
+             CLI.run(["process", "restart", "cli-unsupported", "--confirm"], daemon: daemon)
 
     assert restart_message =~ "restart_requires_explicit_spec"
 
@@ -181,7 +280,8 @@ defmodule Switchyard.CLITest do
 
     assert signal_message =~ "unsupported_capability"
 
-    assert {:ok, _stop_result} = CLI.run(["process", "stop", "cli-unsupported"], daemon: daemon)
+    assert {:ok, _stop_result} =
+             CLI.run(["process", "stop", "cli-unsupported", "--confirm"], daemon: daemon)
   end
 
   test "rejects unknown commands", %{daemon: daemon} do

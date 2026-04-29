@@ -123,6 +123,8 @@ defmodule Switchyard.Workspace.MixProject do
         {"guides/workspace_workflow.md", title: "Workspace Workflow"},
         {"guides/testing_and_delivery.md", title: "Testing And Delivery"},
         {"docs/implementation_checklist.md", title: "Implementation Checklist"},
+        {"docs/adr/0001-daemon-persistence-recovery.md",
+         title: "ADR 0001: Daemon Persistence And Recovery Semantics"},
         {"CHANGELOG.md", title: "Changelog"},
         {"LICENSE", title: "License"}
       ],
@@ -131,7 +133,7 @@ defmodule Switchyard.Workspace.MixProject do
         Architecture:
           ~r/guides\/monorepo_strategy.md|guides\/package_boundaries.md|guides\/runtime_model.md/,
         Workflow: ~r/guides\/workspace_workflow.md|guides\/testing_and_delivery.md/,
-        Delivery: ~r/docs\/implementation_checklist.md|CHANGELOG.md/,
+        Delivery: ~r/docs\/implementation_checklist.md|docs\/adr\/0001|CHANGELOG.md/,
         Project: ~r/LICENSE/
       ]
     ]

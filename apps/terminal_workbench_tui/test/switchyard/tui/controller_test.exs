@@ -1,7 +1,7 @@
 defmodule Switchyard.TUI.RootTest do
   use ExUnit.Case, async: true
 
-  alias Switchyard.Contracts.{AppDescriptor, Resource, ResourceDetail, SiteDescriptor}
+  alias Switchyard.Contracts.{Action, AppDescriptor, Resource, ResourceDetail, SiteDescriptor}
   alias Switchyard.TUI.{Root, State}
   alias Workbench.{Cmd, Context, Node}
   alias Workbench.Widgets.Pane
@@ -129,7 +129,29 @@ defmodule Switchyard.TUI.RootTest do
     end
 
     @impl true
-    def actions, do: []
+    def actions do
+      [
+        Action.new!(%{
+          id: "execution_plane.process.stop",
+          title: "Stop process",
+          scope: {:resource, :process},
+          provider: __MODULE__,
+          confirmation: :if_destructive
+        }),
+        Action.new!(%{
+          id: "execution_plane.process.signal",
+          title: "Signal process",
+          scope: {:resource, :process},
+          provider: __MODULE__,
+          input_schema: %{
+            "type" => "object",
+            "properties" => %{
+              "signal" => %{"type" => "string", "default" => "TERM"}
+            }
+          }
+        })
+      ]
+    end
 
     @impl true
     def resources(_snapshot) do
@@ -378,6 +400,62 @@ defmodule Switchyard.TUI.RootTest do
     assert Enum.any?(bindings, &(&1.message == :load_selected_logs))
   end
 
+  test "generic process route renders resource action list" do
+    rendered = Root.render(process_state(), %{}, %Context{app_env: %{}})
+    lines = node_lines(rendered)
+
+    assert "Available Actions" in lines
+    assert "  > Stop process" in lines
+    assert "    Signal process" in lines
+  end
+
+  test "generic process route keeps action form state in the product reducer" do
+    assert {:ok, next_state, []} =
+             Root.update(
+               {:set_action_input, "execution_plane.process.signal", "signal", "HUP"},
+               process_state(),
+               %{},
+               %Context{app_env: %{}}
+             )
+
+    assert next_state.action_form["execution_plane.process.signal"] == %{"signal" => "HUP"}
+  end
+
+  test "generic process route confirms destructive actions through request handler commands" do
+    ctx = %Context{request_handler: fn _request, _opts -> :ok end, app_env: %{}}
+
+    assert {:ok, confirming_state, []} =
+             Root.update(:run_selected_action, process_state(), %{}, ctx)
+
+    assert confirming_state.status_line == "Confirm action: Stop process."
+    assert confirming_state.confirming_action.id == "execution_plane.process.stop"
+
+    assert {:ok, submitted_state,
+            [
+              %Cmd{
+                kind: :request,
+                payload:
+                  {%{
+                     kind: :execute_action,
+                     action_id: "execution_plane.process.stop",
+                     resource: %{site_id: "execution_plane", kind: :process, id: "proc-1"},
+                     input: %{},
+                     confirmed?: true
+                   }, [], mapper}
+              }
+            ]} = Root.update(:confirm_action, confirming_state, %{}, ctx)
+
+    assert submitted_state.confirming_action == nil
+    result = {:ok, %{status: :accepted, message: "process stopped"}}
+    assert mapper.(result) == {:action_completed, result}
+
+    assert {:ok, completed_state, []} =
+             Root.handle_info({:action_completed, result}, submitted_state, %{}, ctx)
+
+    assert completed_state.last_action_result == result
+    assert completed_state.status_line == "Action completed: process stopped"
+  end
+
   test "handle_info updates snapshot state after a refresh" do
     snapshot = %{processes: [%{id: "echo"}], jobs: []}
 
@@ -391,6 +469,26 @@ defmodule Switchyard.TUI.RootTest do
 
     assert next_state.snapshot == snapshot
     assert next_state.status_line == "Snapshot refreshed."
+  end
+
+  test "handle_info surfaces degraded recovery status after a refresh" do
+    snapshot = %{
+      processes: [],
+      jobs: [],
+      recovery_status: %{status: :degraded, warnings: ["process proc-1 marked lost"]}
+    }
+
+    assert {:ok, next_state, []} =
+             Root.handle_info(
+               {:snapshot_loaded, snapshot},
+               base_state(),
+               %{},
+               %Context{app_env: %{}}
+             )
+
+    assert next_state.snapshot == snapshot
+    assert next_state.status_line == "Recovery warning: process proc-1 marked lost"
+    assert next_state.status_severity == :warn
   end
 
   defp node_lines(%Node{props: props, children: children}) do

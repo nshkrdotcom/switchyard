@@ -29,7 +29,9 @@ proves the main platform seams and ships a coherent internal operator stack.
   a UI-agnostic transport path.
 - `core/workbench_process_runtime`, `core/workbench_job_runtime`,
   `core/workbench_log_runtime`, and `core/workbench_store_local` hold the
-  runtime primitives under that daemon boundary.
+  runtime and persistence primitives under that daemon boundary.
+- `core/workbench_store_local` now supports manifests, versioned snapshots,
+  JSONL journals, explicit malformed snapshot errors, and schema migration.
 - `core/workbench_process_runtime` now acts as the unified execution plane with
   explicit execution surfaces for local subprocesses and SSH exec plus honest
   sandbox policy handling.
@@ -50,9 +52,10 @@ proves the main platform seams and ships a coherent internal operator stack.
 ### Built-In Product Surfaces
 
 - `sites/site_execution_plane` maps live runtime substrate state into process,
-  operator-terminal, and job resources.
+  operator-terminal, job, stream, and site-state resources.
 - `sites/site_jido` maps durable Jido runs, boundary sessions, and attach
-  grants into the same contract surface.
+  grants into the same contract surface, including explicit site-state
+  resources.
 - `sites/site_local` remains in the repo as a focused local reference site.
 - `apps/terminal_workbenchd` starts the daemon with the first-party site set.
 - `apps/terminal_workbench_cli` exposes headless JSON inspection commands.
@@ -68,7 +71,10 @@ The built-in Switchyard shell already supports:
 - generic list/detail screens for resource-backed apps
 - daemon-backed snapshot refresh from the product shell
 - a minimal process-start action on the Execution Plane processes app
+- resource-scoped action listing, form defaults, confirmation, and result
+  status in generic TUI detail views
 - recent process log preview through the daemon log request path
+- degraded recovery warnings after snapshot refresh
 - custom framework-native app components through `AppDescriptor.tui_component`
 
 The TUI can now be run in three operator-access modes:
@@ -80,7 +86,8 @@ The TUI can now be run in three operator-access modes:
 The active first-party site catalog now splits live and durable truth
 explicitly:
 
-- `site_execution_plane` exposes processes, operator terminals, and jobs
+- `site_execution_plane` exposes processes, operator terminals, jobs, streams,
+  search, and explicit site-state resources
 - `site_jido` exposes runs, boundary sessions, and attach grants
 
 Process details still surface command preview, execution surface, target, and
@@ -93,15 +100,19 @@ The CLI currently supports:
 - `switchyard_cli sites`
 - `switchyard_cli apps <site-id>`
 - `switchyard_cli actions [site-id]`
+- `switchyard_cli actions --site <site-id>`
+- `switchyard_cli action run <action-id> [--site <site-id>] [--resource kind:id]
+  [--input-json JSON] [--confirm]`
 - `switchyard_cli snapshot`
+- `switchyard_cli recovery`
 - `switchyard_cli process start ...`
 - `switchyard_cli process list`
 - `switchyard_cli process inspect <process-id>`
-- `switchyard_cli process stop <process-id>`
+- `switchyard_cli process stop <process-id> --confirm`
 - `switchyard_cli streams`
 - `switchyard_cli logs <stream-id> --tail <n>`
 - `switchyard_cli process logs <process-id> --after-seq <n>`
-- `switchyard_cli process restart <process-id>` with explicit unsupported/retry
+- `switchyard_cli process restart <process-id> --confirm` with explicit unsupported/retry
   guidance until restart support is backed by safe restart specs
 - `switchyard_cli process signal <process-id> <signal>` with explicit
   unsupported guidance until transport support exists
@@ -126,10 +137,11 @@ That posture is explicit:
 Future work should extend breadth and depth without re-litigating the existing
 architecture:
 
-- broaden the built-in site and app catalog
-- deepen resource/detail/action coverage, especially around logs and process
-  control
-- harden the current operator flows
+- add richer command palette/text editing ergonomics over the existing generic
+  TUI action flow
+- add durable stream follow cursors and transport-proven reconnect only when
+  lower surfaces can prove those semantics
+- harden the current operator flows and release packaging posture
 - keep the daemon, shell, framework, and site boundaries explicit
 - keep adding execution surfaces and sandbox capabilities through the unified
   execution-plane seam instead of bypassing the daemon

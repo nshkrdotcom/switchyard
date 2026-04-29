@@ -30,7 +30,8 @@ daemon, CLI, and TUI entrypoints.
   generic list/detail flows, live daemon-backed refresh/actions, and custom
   framework-native app components
 - headless CLI and daemon entrypoints that prove meaningful behavior exists
-  beneath the UI, including structured process start requests
+  beneath the UI, including generic action execution, structured process
+  lifecycle requests, logs, streams, and recovery inspection
 - Weld projection metadata and tracked projection flow for the internal
   `switchyard_foundation` artifact
 
@@ -43,7 +44,8 @@ hardening those seams rather than inventing them.
 - `apps/terminal_workbenchd` starts the local daemon with the first-party site
   catalog.
 - `apps/terminal_workbench_cli` exposes a JSON-oriented control surface:
-  `sites`, `apps <site-id>`, `snapshot`, and `process start`.
+  `sites`, `apps <site-id>`, `actions`, `action run`, `snapshot`,
+  `recovery`, process lifecycle commands, streams, and logs.
 - `apps/terminal_workbench_tui` boots the Switchyard shell on top of the
   reusable Workbench runtime and serves operators locally or through the
   `execution_plane_operator_terminal` ingress package.
@@ -91,8 +93,12 @@ cd apps/terminal_workbench_cli
 mix escript.build
 ./switchyard_cli sites
 ./switchyard_cli apps execution_plane
+./switchyard_cli actions --site execution_plane
 ./switchyard_cli snapshot
+./switchyard_cli recovery
 ./switchyard_cli process start --id echo --command "printf 'hello\n'"
+./switchyard_cli process stop echo --confirm
+./switchyard_cli action run jido.review.refresh --site jido --input-json '{"force":true}'
 ```
 
 Run the TUI:

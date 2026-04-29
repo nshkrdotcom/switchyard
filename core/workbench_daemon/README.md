@@ -10,6 +10,7 @@
 - preserve execution-surface and sandbox metadata for managed processes
 - list and execute registered operator actions through the daemon request seam
 - answer local transport requests through a stable seam
+- persist safe local snapshots and recover audit state after daemon restart
 
 ## Quick Start
 
@@ -34,13 +35,18 @@ The runtime currently supports:
   related job IDs, and related stream IDs
 - listing stream descriptors and reading filtered/tail log events with
   per-stream sequence numbers
-- persisting a daemon snapshot to local storage
+- persisting daemon manifests, versioned snapshots, and recovery summaries to
+  local storage
+- replaying recovery journals and marking non-reconnectable running process
+  records as `:lost` after daemon restart
 
 The snapshot now carries both live and durable operator state:
 
 - live Execution Plane processes, operator terminals, jobs, process log streams,
   and job event streams
 - durable Jido runs, boundary sessions, and attach grants
+- recovery status for memory-only, initialized, recovered, or degraded daemon
+  state
 
 Managed-process snapshot records now include:
 
@@ -56,6 +62,11 @@ Managed-process snapshot records now include:
 
 Log events now include per-stream sequence numbers in `fields.seq`, process
 output metadata such as `fields.fd`, and job event metadata for lifecycle jobs.
+
+Recovery is intentionally conservative. If a daemon restarts and no
+transport-specific reconnect path proves that a running process is still
+attached, the recovered process record becomes `:lost` with
+`:daemon_restarted_without_reconnect`. Terminal process records remain terminal.
 
 ## Developer Workflow
 
@@ -79,7 +90,8 @@ mix ci
 
 ## Examples
 
-- [test/switchyard/daemon_test.exs](test/switchyard/daemon_test.exs) shows the end-to-end in-process daemon flow, including action listing/execution, process lifecycle state, execution metadata preservation, log capture, and persisted snapshot state.
+- [test/switchyard/daemon_test.exs](test/switchyard/daemon_test.exs) shows the end-to-end in-process daemon flow, including action listing/execution, process lifecycle state, execution metadata preservation, log capture, persisted snapshot state, and recovery behavior.
+- [../../examples/repo_copy_tests/current_daemon_smoke_test.exs](../../examples/repo_copy_tests/current_daemon_smoke_test.exs) is a focused public-seam daemon smoke example.
 
 ## Related Reading
 

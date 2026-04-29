@@ -1,6 +1,10 @@
 defmodule Switchyard.CLI do
   @moduledoc """
-  Minimal headless CLI for the Switchyard daemon.
+  JSON-oriented headless CLI for the Switchyard daemon.
+
+  Commands parse operator input into daemon request maps and print normalized
+  JSON. Mutating operations stay behind the daemon action seam; destructive
+  process commands require explicit `--confirm`.
   """
 
   alias Switchyard.Daemon
@@ -37,6 +41,15 @@ defmodule Switchyard.CLI do
     process_id: :string,
     job_id: :string
   ]
+  @action_run_switches [
+    site: :string,
+    app: :string,
+    resource: :string,
+    input_json: :string,
+    input: :keep,
+    confirm: :boolean
+  ]
+  @confirm_switches [confirm: :boolean]
 
   @spec main([String.t()]) :: :ok
   def main(argv) do
@@ -73,14 +86,33 @@ defmodule Switchyard.CLI do
     {:ok, Local.request(daemon, %{kind: :actions})}
   end
 
+  def run(["actions", "--site", site_id], opts) do
+    daemon = Keyword.fetch!(opts, :daemon)
+    {:ok, Local.request(daemon, %{kind: :actions, site_id: site_id})}
+  end
+
   def run(["actions", site_id], opts) do
     daemon = Keyword.fetch!(opts, :daemon)
     {:ok, Local.request(daemon, %{kind: :actions, site_id: site_id})}
   end
 
+  def run(["action", "run", action_id | argv], opts) do
+    daemon = Keyword.fetch!(opts, :daemon)
+
+    with {:ok, request} <- parse_action_run_request(action_id, argv) do
+      normalize_action_result(Local.request(daemon, request))
+    end
+  end
+
   def run(["snapshot"], opts) do
     daemon = Keyword.fetch!(opts, :daemon)
     {:ok, Local.request(daemon, %{kind: :local_snapshot})}
+  end
+
+  def run(["recovery"], opts) do
+    daemon = Keyword.fetch!(opts, :daemon)
+    snapshot = Local.request(daemon, %{kind: :local_snapshot})
+    {:ok, Map.get(snapshot, :recovery_status, %{status: :unknown, warnings: []})}
   end
 
   def run(["streams"], opts) do
@@ -131,18 +163,20 @@ defmodule Switchyard.CLI do
     end
   end
 
-  def run(["process", "stop", process_id], opts) do
+  def run(["process", "stop", process_id | argv], opts) do
     daemon = Keyword.fetch!(opts, :daemon)
 
-    normalize_action_result(
-      Local.request(daemon, %{
-        kind: :execute_action,
-        action_id: "execution_plane.process.stop",
-        resource: %{site_id: "execution_plane", kind: :process, id: process_id},
-        input: %{"process_id" => process_id},
-        confirmed?: true
-      })
-    )
+    with :ok <- require_confirm(argv, "process stop") do
+      normalize_action_result(
+        Local.request(daemon, %{
+          kind: :execute_action,
+          action_id: "execution_plane.process.stop",
+          resource: %{site_id: "execution_plane", kind: :process, id: process_id},
+          input: %{"process_id" => process_id},
+          confirmed?: true
+        })
+      )
+    end
   end
 
   def run(["process", "logs", process_id | argv], opts) do
@@ -157,17 +191,19 @@ defmodule Switchyard.CLI do
     end
   end
 
-  def run(["process", "restart", process_id], opts) do
+  def run(["process", "restart", process_id | argv], opts) do
     daemon = Keyword.fetch!(opts, :daemon)
 
-    normalize_action_result(
-      Local.request(daemon, %{
-        kind: :execute_action,
-        action_id: "execution_plane.process.restart",
-        resource: %{site_id: "execution_plane", kind: :process, id: process_id},
-        confirmed?: true
-      })
-    )
+    with :ok <- require_confirm(argv, "process restart") do
+      normalize_action_result(
+        Local.request(daemon, %{
+          kind: :execute_action,
+          action_id: "execution_plane.process.restart",
+          resource: %{site_id: "execution_plane", kind: :process, id: process_id},
+          confirmed?: true
+        })
+      )
+    end
   end
 
   def run(["process", "signal", process_id, signal], opts) do
@@ -330,6 +366,133 @@ defmodule Switchyard.CLI do
     end
   end
 
+  defp parse_action_run_request(action_id, argv) when is_binary(action_id) do
+    {opts, args, invalid} = OptionParser.parse(argv, strict: @action_run_switches)
+
+    cond do
+      invalid != [] ->
+        {:error, "invalid action run options: #{inspect(invalid)}"}
+
+      args != [] ->
+        {:error, "unexpected action run arguments: #{inspect(args)}"}
+
+      true ->
+        with {:ok, input} <- parse_action_input(opts),
+             {:ok, resource} <- parse_resource_ref(Keyword.get(opts, :resource), action_id, opts) do
+          request =
+            %{
+              kind: :execute_action,
+              action_id: action_id,
+              input: input
+            }
+            |> maybe_put(:site_id, Keyword.get(opts, :site))
+            |> maybe_put(:app_id, Keyword.get(opts, :app))
+            |> maybe_put(:resource, resource)
+            |> maybe_confirm(Keyword.get(opts, :confirm, false))
+
+          {:ok, request}
+        end
+    end
+  end
+
+  defp parse_action_input(opts) do
+    with {:ok, json_input} <- decode_input_json(Keyword.get(opts, :input_json)),
+         {:ok, pair_input} <- parse_input_pairs(Keyword.get_values(opts, :input)) do
+      {:ok, Map.merge(json_input, pair_input)}
+    end
+  end
+
+  defp decode_input_json(nil), do: {:ok, %{}}
+
+  defp decode_input_json(input_json) do
+    case Jason.decode(input_json) do
+      {:ok, %{} = input} -> {:ok, input}
+      {:ok, _other} -> {:error, "--input-json must decode to an object"}
+      {:error, reason} -> {:error, "invalid --input-json: #{Exception.message(reason)}"}
+    end
+  end
+
+  defp parse_input_pairs(values) do
+    Enum.reduce_while(values, {:ok, %{}}, fn pair, {:ok, acc} ->
+      case String.split(pair, "=", parts: 2) do
+        [key, value] when key != "" ->
+          {:cont, {:ok, Map.put(acc, key, parse_scalar(value))}}
+
+        _other ->
+          {:halt, {:error, "--input expects key=value"}}
+      end
+    end)
+  end
+
+  defp parse_scalar("true"), do: true
+  defp parse_scalar("false"), do: false
+
+  defp parse_scalar(value) do
+    case Integer.parse(value) do
+      {integer, ""} -> integer
+      _other -> value
+    end
+  end
+
+  defp parse_resource_ref(nil, _action_id, _opts), do: {:ok, nil}
+
+  defp parse_resource_ref(resource_ref, action_id, opts) when is_binary(resource_ref) do
+    resource_ref
+    |> String.split(":", parts: 3)
+    |> parse_resource_ref_parts(resource_ref, action_id, opts)
+  end
+
+  defp parse_resource_ref_parts([site_id, kind, id], _resource_ref, _action_id, _opts)
+       when site_id != "" and kind != "" and id != "" do
+    {:ok, %{site_id: site_id, kind: kind, id: id}}
+  end
+
+  defp parse_resource_ref_parts([kind, id], resource_ref, action_id, opts)
+       when kind != "" and id != "" do
+    site_id = Keyword.get(opts, :site) || infer_site_id(action_id)
+
+    if is_binary(site_id) and site_id != "" do
+      {:ok, %{site_id: site_id, kind: kind, id: id}}
+    else
+      {:error, "--resource #{resource_ref} requires --site or a site-prefixed action id"}
+    end
+  end
+
+  defp parse_resource_ref_parts(_parts, _resource_ref, _action_id, _opts) do
+    {:error, "--resource must be kind:id or site_id:kind:id"}
+  end
+
+  defp infer_site_id(action_id) do
+    case String.split(action_id, ".", parts: 2) do
+      [site_id, _rest] -> site_id
+      _other -> nil
+    end
+  end
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
+
+  defp maybe_confirm(map, true), do: Map.put(map, :confirmed?, true)
+  defp maybe_confirm(map, _confirmed?), do: map
+
+  defp require_confirm(argv, command_name) do
+    {opts, args, invalid} = OptionParser.parse(argv, strict: @confirm_switches)
+
+    cond do
+      invalid != [] ->
+        {:error, "invalid #{command_name} options: #{inspect(invalid)}"}
+
+      args != [] ->
+        {:error, "unexpected #{command_name} arguments: #{inspect(args)}"}
+
+      Keyword.get(opts, :confirm, false) ->
+        :ok
+
+      true ->
+        {:error, "#{command_name} requires --confirm"}
+    end
+  end
+
   defp maybe_existing_atom(value) when is_binary(value) do
     String.to_existing_atom(value)
   rescue
@@ -347,10 +510,12 @@ defmodule Switchyard.CLI do
   defp normalize_action_result(other), do: {:error, inspect(other)}
 
   defp usage do
-    "usage: switchyard_cli sites | apps <site-id> | actions [site-id] | snapshot | streams | logs <stream-id> | process start|list|inspect|stop|restart|signal|logs"
+    "usage: switchyard_cli sites | apps <site-id> | actions [site-id|--site <site-id>] | action run <action-id> [--site <site-id>] [--resource kind:id] [--input-json JSON] [--confirm] | snapshot | recovery | streams | logs <stream-id> | process start|list|inspect|stop|restart|signal|logs"
   end
 
   defp normalize(payload) when is_list(payload), do: Enum.map(payload, &normalize/1)
+
+  defp normalize(payload) when is_tuple(payload), do: payload |> Tuple.to_list() |> normalize()
 
   defp normalize(%DateTime{} = value), do: DateTime.to_iso8601(value)
 

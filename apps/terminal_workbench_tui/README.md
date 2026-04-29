@@ -49,8 +49,13 @@ The current startup path opens the generic home screen. From there you can:
 - use list/detail views for generic resource-backed apps
 - refresh the daemon snapshot from the product shell
 - trigger a demo process start from the Execution Plane processes app
+- see resource-scoped action lists in generic detail views
+- keep action form input state from action schemas
+- confirm destructive actions before the TUI sends `confirmed?: true`
+- see action result status after daemon-backed execution
 - load a recent log preview for a selected process through the daemon request
   path
+- see degraded recovery warnings from daemon snapshots
 - hand off to framework-native app components for richer product-specific flows
 
 With `--debug` enabled, the app now also:
@@ -64,11 +69,11 @@ current app is a mounted custom component.
 
 If no `request_handler` is supplied, `Switchyard.TUI` now starts or reuses a
 daemon, loads the initial snapshot, and wires a default daemon-backed request
-handler for snapshot refresh, action-backed process start, stream listing, and
-log fetch requests.
+handler for snapshot refresh, generic action execution, action-backed process
+start, stream listing, and log fetch requests.
 
 The default request handler also exposes stream listing and log tail/filter
-requests so future TUI log views use the same daemon path as the CLI.
+requests so TUI log previews use the same daemon path as the CLI.
 
 The product TUI can run in three operator modes:
 
@@ -117,7 +122,7 @@ mix ci
 
 - [test/switchyard/tui_cli_test.exs](test/switchyard/tui_cli_test.exs) exercises the escript CLI surface.
 - [test/switchyard/tui_test.exs](test/switchyard/tui_test.exs) covers the public `Switchyard.TUI` startup seam.
-- [test/switchyard/tui/controller_test.exs](test/switchyard/tui/controller_test.exs) is the best entry point for understanding root-component routing, daemon-backed refresh, and custom app component flow.
+- [test/switchyard/tui/controller_test.exs](test/switchyard/tui/controller_test.exs) is the best entry point for understanding root-component routing, daemon-backed refresh, resource action rendering, confirmation flow, recovery warnings, and custom app component flow.
 - [test/full_featured_workbench_example_test.exs](test/full_featured_workbench_example_test.exs) proves the example’s local and distributed smoke paths.
 
 ## Related Reading

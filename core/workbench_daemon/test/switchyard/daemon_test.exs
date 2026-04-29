@@ -3,6 +3,7 @@ defmodule Switchyard.DaemonTest do
 
   alias Switchyard.Contracts.{Action, ActionResult, AppDescriptor, SiteDescriptor}
   alias Switchyard.Daemon
+  alias Switchyard.Store.Local
 
   defmodule FakeLocalSite do
     def site_definition do
@@ -376,6 +377,91 @@ defmodule Switchyard.DaemonTest do
     assert {:ok, %ActionResult{status: :accepted}} = Daemon.stop_process(daemon, "redacted")
   end
 
+  test "boots without a store in memory-only recovery mode" do
+    {:ok, daemon} = start_supervised({Daemon, site_modules: [FakeLocalSite], name: nil})
+
+    assert %{recovery_status: %{status: :ok, mode: :memory_only}} = Daemon.snapshot(daemon)
+  end
+
+  test "boots from a persisted snapshot and marks running processes lost" do
+    root = store_root("daemon-recovery-running")
+    on_exit(fn -> File.rm_rf(root) end)
+
+    :ok = write_recovery_snapshot(root, [persisted_process("lost-running", "running")])
+
+    {:ok, daemon} =
+      start_supervised({Daemon, site_modules: [FakeLocalSite], store_root: root, name: nil})
+
+    snapshot = Daemon.snapshot(daemon)
+    process = Enum.find(snapshot.processes, &(&1.id == "lost-running"))
+
+    assert process.status == :lost
+    assert process.status_reason == :daemon_restarted_without_reconnect
+    assert process.pid == nil
+    assert snapshot.recovery_status.status == :degraded
+    assert "lost-running" in snapshot.recovery_status.lost_processes
+  end
+
+  test "keeps terminal processes terminal during recovery" do
+    root = store_root("daemon-recovery-terminal")
+    on_exit(fn -> File.rm_rf(root) end)
+
+    :ok = write_recovery_snapshot(root, [persisted_process("stopped-process", "stopped")])
+
+    {:ok, daemon} =
+      start_supervised({Daemon, site_modules: [FakeLocalSite], store_root: root, name: nil})
+
+    snapshot = Daemon.snapshot(daemon)
+    process = Enum.find(snapshot.processes, &(&1.id == "stopped-process"))
+
+    assert process.status == :stopped
+    assert process.status_reason == :operator_requested
+    assert snapshot.recovery_status.status == :ok
+  end
+
+  test "replays process journal events after the current snapshot" do
+    root = store_root("daemon-recovery-journal")
+    on_exit(fn -> File.rm_rf(root) end)
+
+    :ok = write_recovery_snapshot(root, [])
+
+    :ok =
+      Local.append_journal(root, "daemon", "journal-current", %{
+        "schema_version" => 1,
+        "seq" => 1,
+        "kind" => "process_started",
+        "payload" => %{"process" => persisted_process("journaled-running", "running")}
+      })
+
+    {:ok, daemon} =
+      start_supervised({Daemon, site_modules: [FakeLocalSite], store_root: root, name: nil})
+
+    snapshot = Daemon.snapshot(daemon)
+    assert Enum.any?(snapshot.processes, &(&1.id == "journaled-running" and &1.status == :lost))
+  end
+
+  test "fails boot with an explicit malformed persisted snapshot error" do
+    previous_trap_exit = Process.flag(:trap_exit, true)
+    on_exit(fn -> Process.flag(:trap_exit, previous_trap_exit) end)
+
+    root = store_root("daemon-recovery-malformed")
+    on_exit(fn -> File.rm_rf(root) end)
+
+    :ok =
+      Local.put_manifest(root, "daemon", %{
+        "schema_version" => 1,
+        "current_snapshot" => "current",
+        "current_journal" => "journal-current"
+      })
+
+    snapshot_path = Path.join([root, "daemon", "snapshots", "current.json"])
+    File.mkdir_p!(Path.dirname(snapshot_path))
+    File.write!(snapshot_path, "{bad-json")
+
+    assert {:error, {:recovery_failed, {:malformed_snapshot, _reason}}} =
+             Daemon.start_link(site_modules: [FakeLocalSite], store_root: root, name: nil)
+  end
+
   test "records successful and failed process exits", %{daemon: daemon} do
     assert {:ok, %ActionResult{status: :accepted}} =
              Daemon.start_process(daemon, %{id: "success", command: "exit 0"})
@@ -508,4 +594,58 @@ defmodule Switchyard.DaemonTest do
   end
 
   defp request(daemon, payload), do: GenServer.call(daemon, {:switchyard_request, payload})
+
+  defp store_root(label) do
+    Path.join(System.tmp_dir!(), "#{label}-#{System.unique_integer([:positive])}")
+  end
+
+  defp write_recovery_snapshot(root, processes) do
+    with :ok <-
+           Local.put_manifest(root, "daemon", %{
+             "schema_version" => 1,
+             "daemon_instance_id" => "test-daemon",
+             "current_snapshot" => "current",
+             "current_journal" => "journal-current"
+           }) do
+      Local.put_versioned_snapshot(root, "daemon", "current", %{
+        "schema_version" => 1,
+        "written_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
+        "daemon_instance_id" => "test-daemon",
+        "processes" => processes,
+        "jobs" => [],
+        "streams" => [],
+        "operator_terminals" => [],
+        "runs" => [],
+        "boundary_sessions" => [],
+        "attach_grants" => [],
+        "recovery_status" => %{"status" => "ok", "warnings" => []}
+      })
+    end
+  end
+
+  defp persisted_process(process_id, status) do
+    %{
+      "id" => process_id,
+      "label" => process_id,
+      "status" => status,
+      "status_reason" => status_reason(status),
+      "exit_status" => nil,
+      "started_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "stopped_at" => nil,
+      "last_seen_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "command" => "sleep 5",
+      "command_preview" => "sleep 5",
+      "args" => [],
+      "shell?" => true,
+      "cwd" => nil,
+      "env_summary" => %{"keys" => [], "count" => 0, "clear_env?" => false},
+      "execution_surface" => %{"surface_kind" => "local_subprocess"},
+      "sandbox" => %{"mode" => "inherit"},
+      "job_ids" => ["job-#{process_id}"],
+      "stream_ids" => ["logs/#{process_id}", "jobs/job-#{process_id}"]
+    }
+  end
+
+  defp status_reason("stopped"), do: "operator_requested"
+  defp status_reason(_status), do: "runtime_started"
 end

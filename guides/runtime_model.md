@@ -12,11 +12,13 @@ The daemon owns long-lived local operational state:
 - managed processes
 - job lifecycles
 - log buffers
-- persisted snapshots
+- persisted manifests, snapshots, journals, and recovery summaries
 - local transport request handling
 - execution-surface placement and sandbox metadata for managed processes
 
-The daemon should survive TUI restarts. The UI is a client, not the authority.
+The daemon is the local authority for operator state. Persisted recovery keeps
+safe summaries visible after daemon restart, but it does not claim process
+reconnect support unless a transport-specific reconnect path proves it.
 
 ### Execution Plane
 
@@ -129,6 +131,13 @@ Unsupported force-stop, restart, and signal requests return explicit
 machine-readable errors instead of claiming transport support that does not
 exist.
 
+On daemon boot with a configured store, Switchyard reads the manifest, current
+versioned snapshot, and current journal. Previously running/starting/stopping
+process summaries recover as `:lost` with
+`:daemon_restarted_without_reconnect`; terminal process summaries remain
+terminal. Recovery status is included in the daemon snapshot and can be
+inspected through the CLI and surfaced by the TUI.
+
 Process output and job lifecycle events are exposed through daemon stream
 descriptors. Log requests support tailing, `after_seq`, and simple level/source
 filters while keeping buffers bounded in memory by default.
@@ -141,7 +150,7 @@ For the built-in TUI path specifically:
 3. the runtime resolves layout and derives focus and mouse indexes
 4. effects are lowered onto `ex_ratatui` commands
 5. site or integration components route requests back through the daemon seam,
-   including process log preview requests
+   including process log preview and generic action execution requests
 6. the product shell remains a client; it does not become the source of
    process truth
 
@@ -165,8 +174,11 @@ For the active first-party sites today:
    details
 4. `site_jido` maps durable run/session/grant state into generic resources and
    details
-5. the product TUI renders those resources through reusable Workbench widgets
-6. the CLI can inspect the same site and snapshot data without rendering
+5. the product TUI renders those resources, available resource actions,
+   confirmation prompts, action results, log previews, and recovery warnings
+   through reusable Workbench widgets
+6. the CLI can inspect the same site, action, snapshot, log, and recovery data
+   without rendering
 
 ## Why The Daemon Matters
 
