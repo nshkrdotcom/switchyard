@@ -114,7 +114,7 @@ projection, not as a Hex-first published product suite.
 That posture is explicit:
 
 - the Workbench runtime depends on `ex_ratatui` from Hex
-- the current workspace tracks `ex_ratatui` `0.8.0`
+- the current workspace tracks `ex_ratatui` `0.8.1`
 - Weld projects the internal `switchyard_foundation` artifact
 - `mix release.prepare` builds the prepared bundle,
   `mix release.track` updates `projection/switchyard_foundation`,

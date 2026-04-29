@@ -60,7 +60,7 @@ defmodule Switchyard.Build.WeldContract do
         end
     ],
     weld: [requirement: "~> 0.7.2"],
-    ex_ratatui: [requirement: "~> 0.8.0"]
+    ex_ratatui: [requirement: "~> 0.8.1"]
   ]
 
   def manifest do

@@ -71,7 +71,7 @@ defmodule Switchyard.Build.DependencyResolver do
     )
   end
 
-  def ex_ratatui(opts \\ []), do: {:ex_ratatui, "~> 0.8.0", opts}
+  def ex_ratatui(opts \\ []), do: {:ex_ratatui, "~> 0.8.1", opts}
 
   def execution_plane_process(opts \\ []) do
     resolve_external(
