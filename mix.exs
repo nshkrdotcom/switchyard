@@ -70,9 +70,15 @@ defmodule Switchyard.Workspace.MixProject do
       "monorepo.docs": ["blitz.workspace docs"]
     ]
 
-    mr_aliases =
-      ~w[deps.get format compile test credo dialyzer docs]
-      |> Enum.map(fn task -> {:"mr.#{task}", ["monorepo.#{task}"]} end)
+    mr_aliases = [
+      "mr.deps.get": ["monorepo.deps.get"],
+      "mr.format": ["monorepo.format"],
+      "mr.compile": ["monorepo.compile"],
+      "mr.test": ["monorepo.test"],
+      "mr.credo": ["monorepo.credo"],
+      "mr.dialyzer": ["monorepo.dialyzer"],
+      "mr.docs": ["monorepo.docs"]
+    ]
 
     [
       ci: [
@@ -129,12 +135,24 @@ defmodule Switchyard.Workspace.MixProject do
         {"LICENSE", title: "License"}
       ],
       groups_for_extras: [
-        Overview: ~r/README.md|guides\/index.md|guides\/current_state.md|guides\/vision.md/,
-        Architecture:
-          ~r/guides\/monorepo_strategy.md|guides\/package_boundaries.md|guides\/runtime_model.md/,
-        Workflow: ~r/guides\/workspace_workflow.md|guides\/testing_and_delivery.md/,
-        Delivery: ~r/docs\/implementation_checklist.md|docs\/adr\/0001|CHANGELOG.md/,
-        Project: ~r/LICENSE/
+        Overview: [
+          "README.md",
+          "guides/index.md",
+          "guides/current_state.md",
+          "guides/vision.md"
+        ],
+        Architecture: [
+          "guides/monorepo_strategy.md",
+          "guides/package_boundaries.md",
+          "guides/runtime_model.md"
+        ],
+        Workflow: ["guides/workspace_workflow.md", "guides/testing_and_delivery.md"],
+        Delivery: [
+          "docs/implementation_checklist.md",
+          "docs/adr/0001-daemon-persistence-recovery.md",
+          "CHANGELOG.md"
+        ],
+        Project: ["LICENSE"]
       ]
     ]
   end

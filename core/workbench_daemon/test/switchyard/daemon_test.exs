@@ -132,6 +132,19 @@ defmodule Switchyard.DaemonTest do
              })
   end
 
+  test "accepts bounded string resource kinds", %{daemon: daemon} do
+    assert [
+             %Action{id: "local.process.stop"},
+             %Action{id: "local.process.force_stop"},
+             %Action{id: "local.process.signal"},
+             %Action{id: "local.process.restart"}
+           ] =
+             request(daemon, %{
+               kind: :actions,
+               resource: %{site_id: "local", kind: "process", id: "echo"}
+             })
+  end
+
   test "rejects unknown actions", %{daemon: daemon} do
     assert {:error,
             %{
@@ -331,6 +344,18 @@ defmodule Switchyard.DaemonTest do
              })
 
     assert [] = request(daemon, %{kind: :logs, stream_id: "logs/loggy", level: :error})
+
+    assert ["one", "two", "three"] =
+             daemon
+             |> request(%{
+               kind: :logs,
+               stream_id: "logs/loggy",
+               level: "info",
+               source_kind: "process",
+               process_id: "loggy"
+             })
+             |> Enum.map(& &1.message)
+
     assert {:ok, %ActionResult{status: :accepted}} = Daemon.stop_process(daemon, "loggy")
   end
 

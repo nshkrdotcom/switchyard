@@ -60,6 +60,15 @@ defmodule Switchyard.ProcessRuntimeTest do
              })
   end
 
+  test "rejects unknown sandbox policy keys without atomizing them" do
+    assert {:error, {:invalid_sandbox_policy_key, "unexpected_policy"}} =
+             ProcessRuntime.spec(%{
+               id: "bad-sandbox-key",
+               command: "hostname",
+               sandbox_policy: %{"unexpected_policy" => true}
+             })
+  end
+
   test "starts a managed local process and forwards output and exit status" do
     spec = ProcessRuntime.spec!(%{id: "echo", command: "printf 'hello\\nworld\\n'"})
 

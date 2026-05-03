@@ -111,6 +111,18 @@ defmodule Switchyard.Site.JidoTest do
     end
   end
 
+  test "site state accepts the owned atom key without creating atoms" do
+    resources =
+      Jido.resources(%{
+        site_states: %{
+          jido: %{status: "degraded", message: "durable store degraded"}
+        }
+      })
+
+    assert [%Resource{kind: :site_state, status: :degraded}] = resources
+    assert hd(resources).summary == "durable store degraded"
+  end
+
   test "search returns typed Jido results without secret metadata" do
     assert [%SearchResult{} | _] = results = Jido.search("run-1", @snapshot)
 

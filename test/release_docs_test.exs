@@ -39,5 +39,5 @@ defmodule Switchyard.ReleaseDocsTest do
     end)
   end
 
-  defp normalize_whitespace(text), do: String.replace(text, ~r/\s+/, " ")
+  defp normalize_whitespace(text), do: text |> String.split() |> Enum.join(" ")
 end

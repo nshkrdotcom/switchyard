@@ -15,7 +15,18 @@ defmodule Switchyard.CLITest do
   end
 
   test "ensure_runtime_started boots an in-process daemon when missing" do
-    daemon_name = :"switchyard-cli-daemon-#{System.unique_integer([:positive])}"
+    daemon_name = :switchyard_cli_test_daemon
+
+    if pid = Process.whereis(daemon_name) do
+      GenServer.stop(pid)
+    end
+
+    on_exit(fn ->
+      if pid = Process.whereis(daemon_name) do
+        GenServer.stop(pid)
+      end
+    end)
+
     refute Process.whereis(daemon_name)
 
     assert :ok = CLI.ensure_runtime_started(daemon: daemon_name)

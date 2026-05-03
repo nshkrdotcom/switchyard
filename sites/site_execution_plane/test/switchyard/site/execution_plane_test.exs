@@ -147,6 +147,18 @@ defmodule Switchyard.Site.ExecutionPlaneTest do
     end
   end
 
+  test "site state accepts the owned atom key without creating atoms" do
+    resources =
+      ExecutionPlane.resources(%{
+        site_states: %{
+          execution_plane: %{status: "degraded", message: "runtime degraded"}
+        }
+      })
+
+    assert [%Resource{kind: :site_state, status: :degraded}] = resources
+    assert hd(resources).summary == "runtime degraded"
+  end
+
   test "search returns typed navigation results without secret metadata" do
     snapshot =
       Map.update!(@snapshot, :processes, fn [process] ->

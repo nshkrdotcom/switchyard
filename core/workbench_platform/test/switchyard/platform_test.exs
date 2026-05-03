@@ -168,15 +168,21 @@ defmodule Switchyard.PlatformTest do
   end
 
   test "rejects malformed action definitions" do
-    assert_raise ArgumentError, ~r/action definitions/, fn ->
-      Registry.actions([FakeMalformedActionSite])
-    end
+    error =
+      assert_raise ArgumentError, fn ->
+        Registry.actions([FakeMalformedActionSite])
+      end
+
+    assert Exception.message(error) =~ "action definitions"
   end
 
   test "rejects duplicate action ids" do
-    assert_raise ArgumentError, ~r/duplicate action id/, fn ->
-      Registry.actions([FakeLocalSite, FakeDuplicateActionSite])
-    end
+    error =
+      assert_raise ArgumentError, fn ->
+        Registry.actions([FakeLocalSite, FakeDuplicateActionSite])
+      end
+
+    assert Exception.message(error) =~ "duplicate action id"
   end
 
   test "builds a flat catalog" do

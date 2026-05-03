@@ -17,6 +17,7 @@ defmodule Switchyard.Site.Jido do
   }
 
   @site_id "jido"
+  @site_atom :jido
   @site_title "Jido"
   @state_kind :site_state
   @status_atoms %{
@@ -332,7 +333,7 @@ defmodule Switchyard.Site.Jido do
     |> Map.get(:site_states, %{})
     |> case do
       states when is_map(states) ->
-        Map.get(states, @site_id) || Map.get(states, String.to_atom(@site_id))
+        Map.get(states, @site_id) || Map.get(states, @site_atom)
 
       _other ->
         nil

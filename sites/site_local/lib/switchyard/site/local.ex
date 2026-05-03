@@ -14,6 +14,27 @@ defmodule Switchyard.Site.Local do
   }
 
   @site_id "local"
+  @status_atoms %{
+    "accepted" => :accepted,
+    "attached" => :attached,
+    "available" => :available,
+    "cancelled" => :cancelled,
+    "canceled" => :canceled,
+    "completed" => :completed,
+    "degraded" => :degraded,
+    "empty" => :empty,
+    "error" => :error,
+    "failed" => :failed,
+    "issued" => :issued,
+    "lost" => :lost,
+    "pending" => :pending,
+    "queued" => :queued,
+    "running" => :running,
+    "stopped" => :stopped,
+    "succeeded" => :succeeded,
+    "terminal" => :terminal,
+    "unavailable" => :unavailable
+  }
 
   @impl true
   def site_definition do
@@ -219,5 +240,13 @@ defmodule Switchyard.Site.Local do
   end
 
   defp status_atom(status) when is_atom(status), do: status
-  defp status_atom(status) when is_binary(status), do: String.to_atom(status)
+
+  defp status_atom(status) when is_binary(status) do
+    status
+    |> String.downcase()
+    |> String.replace("-", "_")
+    |> then(&Map.get(@status_atoms, &1, :unknown))
+  end
+
+  defp status_atom(_status), do: :unknown
 end

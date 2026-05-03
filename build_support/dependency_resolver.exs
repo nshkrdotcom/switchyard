@@ -2,6 +2,7 @@ defmodule Switchyard.Build.DependencyResolver do
   @moduledoc false
 
   @repo_root Path.expand("..", __DIR__)
+  @execution_plane_source "nshkrdotcom/execution_plane"
   @execution_plane_process_version "~> 0.1.0"
   @execution_plane_operator_terminal_version "~> 0.1.0"
 
@@ -72,6 +73,15 @@ defmodule Switchyard.Build.DependencyResolver do
   end
 
   def ex_ratatui(opts \\ []), do: {:ex_ratatui, "~> 0.8.1", opts}
+
+  def execution_plane(opts \\ []) do
+    resolve_external(
+      :execution_plane,
+      local_root_path("../execution_plane/core/execution_plane"),
+      [github: @execution_plane_source, branch: "main", subdir: "core/execution_plane"],
+      opts
+    )
+  end
 
   def execution_plane_process(opts \\ []) do
     resolve_external(

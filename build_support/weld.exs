@@ -24,9 +24,29 @@ defmodule Switchyard.Build.WeldContract do
     execution_plane: [
       opts:
         if File.dir?(@execution_plane_repo_path) do
-          [git: @execution_plane_repo_path]
+          [git: @execution_plane_repo_path, subdir: "core/execution_plane", override: true]
         else
-          [github: "nshkrdotcom/execution_plane", branch: "main"]
+          [
+            github: "nshkrdotcom/execution_plane",
+            branch: "main",
+            subdir: "core/execution_plane",
+            override: true
+          ]
+        end
+    ],
+    execution_plane_process: [
+      opts:
+        if File.dir?(@execution_plane_repo_path) do
+          [
+            git: @execution_plane_repo_path,
+            subdir: "runtimes/execution_plane_process"
+          ]
+        else
+          [
+            github: "nshkrdotcom/execution_plane",
+            branch: "main",
+            subdir: "runtimes/execution_plane_process"
+          ]
         end
     ],
     execution_plane_operator_terminal: [
@@ -34,13 +54,13 @@ defmodule Switchyard.Build.WeldContract do
         if File.dir?(@execution_plane_repo_path) do
           [
             git: @execution_plane_repo_path,
-            sparse: "runtimes/execution_plane_operator_terminal"
+            subdir: "runtimes/execution_plane_operator_terminal"
           ]
         else
           [
             github: "nshkrdotcom/execution_plane",
             branch: "main",
-            sparse: "runtimes/execution_plane_operator_terminal"
+            subdir: "runtimes/execution_plane_operator_terminal"
           ]
         end
     ],
@@ -49,13 +69,13 @@ defmodule Switchyard.Build.WeldContract do
         if File.dir?(@jido_integration_repo_path) do
           [
             git: @jido_integration_repo_path,
-            sparse: "core/platform"
+            subdir: "core/platform"
           ]
         else
           [
             github: "nshkrdotcom/jido_integration",
             branch: "main",
-            sparse: "core/platform"
+            subdir: "core/platform"
           ]
         end
     ],

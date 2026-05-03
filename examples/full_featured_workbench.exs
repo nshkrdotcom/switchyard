@@ -1707,9 +1707,14 @@ defmodule Switchyard.Examples.FullFeatured.Runner do
   end
 
   defp normalize_node(node_name) do
-    node_name
-    |> String.trim()
-    |> String.to_atom()
+    normalized = String.trim(node_name)
+
+    [Node.self() | Node.list([:visible, :hidden])]
+    |> Enum.find(fn node -> Atom.to_string(node) == normalized end)
+    |> case do
+      nil -> raise "unknown distributed node: #{normalized}"
+      node -> node
+    end
   end
 
   defp format_dimensions({width, height}), do: "#{width}x#{height}"

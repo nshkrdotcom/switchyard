@@ -109,13 +109,35 @@ defmodule Workbench.Devtools.SessionArtifacts do
     value
     |> to_string()
     |> String.downcase()
-    |> String.replace(~r/[^a-z0-9_-]+/u, "-")
+    |> String.graphemes()
+    |> Enum.reduce([], &sanitize_path_grapheme/2)
+    |> Enum.reverse()
+    |> Enum.join()
     |> String.trim("-")
     |> case do
       "" -> "session"
       sanitized -> sanitized
     end
   end
+
+  defp sanitize_path_grapheme(grapheme, acc) do
+    cond do
+      allowed_path_grapheme?(grapheme) ->
+        [grapheme | acc]
+
+      acc == [] or hd(acc) == "-" ->
+        acc
+
+      true ->
+        ["-" | acc]
+    end
+  end
+
+  defp allowed_path_grapheme?(<<char::utf8>>) when char >= ?a and char <= ?z, do: true
+  defp allowed_path_grapheme?(<<char::utf8>>) when char >= ?0 and char <= ?9, do: true
+  defp allowed_path_grapheme?("-"), do: true
+  defp allowed_path_grapheme?("_"), do: true
+  defp allowed_path_grapheme?(_grapheme), do: false
 end
 
 defmodule Workbench.Devtools.Overlay do

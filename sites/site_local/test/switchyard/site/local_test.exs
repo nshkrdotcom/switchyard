@@ -43,6 +43,13 @@ defmodule Switchyard.Site.LocalTest do
     refute Enum.any?(resources, &(&1.kind in [:operator_terminal, :run, :attach_grant]))
   end
 
+  test "unknown process statuses are bounded" do
+    snapshot =
+      put_in(@snapshot.processes, [Map.put(hd(@snapshot.processes), :status, "surprising")])
+
+    assert [%Resource{kind: :process, status: :unknown} | _rest] = Local.resources(snapshot)
+  end
+
   test "builds detail views from resources and snapshot" do
     resource =
       Resource.new!(%{

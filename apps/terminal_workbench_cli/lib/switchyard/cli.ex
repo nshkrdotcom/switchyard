@@ -41,6 +41,21 @@ defmodule Switchyard.CLI do
     process_id: :string,
     job_id: :string
   ]
+  @log_level_strings %{
+    "debug" => :debug,
+    "error" => :error,
+    "info" => :info,
+    "warn" => :warn,
+    "warning" => :warning
+  }
+  @log_source_kind_strings %{
+    "daemon" => :daemon,
+    "job" => :job,
+    "operator_terminal" => :operator_terminal,
+    "process" => :process,
+    "site" => :site,
+    "stream" => :stream
+  }
   @action_run_switches [
     site: :string,
     app: :string,
@@ -359,7 +374,7 @@ defmodule Switchyard.CLI do
     if invalid == [] do
       {:ok,
        opts
-       |> Enum.map(fn {key, value} -> {key, maybe_existing_atom(value)} end)
+       |> Enum.map(&normalize_log_opt/1)
        |> Map.new()}
     else
       {:error, "invalid log options: #{inspect(invalid)}"}
@@ -493,13 +508,13 @@ defmodule Switchyard.CLI do
     end
   end
 
-  defp maybe_existing_atom(value) when is_binary(value) do
-    String.to_existing_atom(value)
-  rescue
-    ArgumentError -> value
-  end
+  defp normalize_log_opt({:level, value}) when is_binary(value),
+    do: {:level, Map.get(@log_level_strings, value, value)}
 
-  defp maybe_existing_atom(value), do: value
+  defp normalize_log_opt({:source_kind, value}) when is_binary(value),
+    do: {:source_kind, Map.get(@log_source_kind_strings, value, value)}
+
+  defp normalize_log_opt(opt), do: opt
 
   defp normalize_start_process_result({:ok, payload}), do: {:ok, payload}
   defp normalize_start_process_result({:error, payload}), do: {:error, inspect(payload)}

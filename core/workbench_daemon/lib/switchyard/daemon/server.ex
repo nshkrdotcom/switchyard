@@ -26,6 +26,84 @@ defmodule Switchyard.Daemon.Server do
   @schema_version 1
   @current_snapshot "current"
   @current_journal "journal-current"
+  @resource_kind_strings %{
+    "attach_grant" => :attach_grant,
+    "boundary_session" => :boundary_session,
+    "job" => :job,
+    "log_stream" => :log_stream,
+    "operator_terminal" => :operator_terminal,
+    "process" => :process,
+    "run" => :run,
+    "site_state" => :site_state,
+    "stream" => :stream,
+    "workspace" => :workspace
+  }
+  @log_level_strings %{
+    "debug" => :debug,
+    "error" => :error,
+    "info" => :info,
+    "warn" => :warn,
+    "warning" => :warning
+  }
+  @log_source_kind_strings %{
+    "daemon" => :daemon,
+    "job" => :job,
+    "operator_terminal" => :operator_terminal,
+    "process" => :process,
+    "site" => :site,
+    "stream" => :stream
+  }
+  @atomish_strings %{
+    "accepted" => :accepted,
+    "attach_grant" => :attach_grant,
+    "available" => :available,
+    "boundary_session" => :boundary_session,
+    "bounded" => :bounded,
+    "cancelled" => :cancelled,
+    "canceled" => :canceled,
+    "completed" => :completed,
+    "daemon_restarted_without_reconnect" => :daemon_restarted_without_reconnect,
+    "debug" => :debug,
+    "degraded" => :degraded,
+    "empty" => :empty,
+    "error" => :error,
+    "exit_nonzero" => :exit_nonzero,
+    "exit_zero" => :exit_zero,
+    "failed" => :failed,
+    "filter" => :filter,
+    "id" => :id,
+    "info" => :info,
+    "issued" => :issued,
+    "job" => :job,
+    "job_events" => :job_events,
+    "local_subprocess" => :local_subprocess,
+    "lost" => :lost,
+    "memory_only" => :memory_only,
+    "operator_requested" => :operator_requested,
+    "operator_terminal" => :operator_terminal,
+    "pending" => :pending,
+    "process" => :process,
+    "process_combined" => :process_combined,
+    "process_id" => :process_id,
+    "process_stop" => :process_stop,
+    "queued" => :queued,
+    "retention" => :retention,
+    "run" => :run,
+    "running" => :running,
+    "site_id" => :site_id,
+    "site_state" => :site_state,
+    "ssh_exec" => :ssh_exec,
+    "stopped" => :stopped,
+    "stream" => :stream,
+    "succeeded" => :succeeded,
+    "tail" => :tail,
+    "terminal" => :terminal,
+    "unknown" => :unknown,
+    "unavailable" => :unavailable,
+    "warn" => :warn,
+    "warning" => :warning,
+    "workspace" => :workspace
+  }
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
@@ -732,9 +810,10 @@ defmodule Switchyard.Daemon.Server do
   defp normalize_resource_kind(kind) when is_atom(kind), do: {:ok, kind}
 
   defp normalize_resource_kind(kind) when is_binary(kind) do
-    {:ok, String.to_existing_atom(kind)}
-  rescue
-    ArgumentError -> {:error, :invalid_resource_kind}
+    case Map.fetch(@resource_kind_strings, kind) do
+      {:ok, atom} -> {:ok, atom}
+      :error -> {:error, :invalid_resource_kind}
+    end
   end
 
   defp normalize_resource_kind(_kind), do: {:error, :invalid_resource_kind}
@@ -783,9 +862,7 @@ defmodule Switchyard.Daemon.Server do
   end
 
   defp input_key?(input, key) do
-    Map.has_key?(input, key) or Map.has_key?(input, String.to_atom(key))
-  rescue
-    ArgumentError -> false
+    Map.has_key?(input, key) or atom_key?(input, key)
   end
 
   defp logs_for_stream(state, stream_id) do
@@ -869,21 +946,28 @@ defmodule Switchyard.Daemon.Server do
     [
       tail: fetch(payload, :tail),
       after_seq: fetch(payload, :after_seq),
-      level: normalize_optional_atom(fetch(payload, :level)),
-      source_kind: normalize_optional_atom(fetch(payload, :source_kind)),
+      level: normalize_log_level(fetch(payload, :level)),
+      source_kind: normalize_log_source_kind(fetch(payload, :source_kind)),
       process_id: fetch(payload, :process_id),
       job_id: fetch(payload, :job_id)
     ]
   end
 
-  defp normalize_optional_atom(nil), do: nil
-  defp normalize_optional_atom(value) when is_atom(value), do: value
+  defp normalize_log_level(nil), do: nil
+  defp normalize_log_level(value) when is_atom(value), do: value
 
-  defp normalize_optional_atom(value) when is_binary(value) do
-    String.to_existing_atom(value)
-  rescue
-    ArgumentError -> value
-  end
+  defp normalize_log_level(value) when is_binary(value),
+    do: Map.get(@log_level_strings, value, value)
+
+  defp normalize_log_level(value), do: value
+
+  defp normalize_log_source_kind(nil), do: nil
+  defp normalize_log_source_kind(value) when is_atom(value), do: value
+
+  defp normalize_log_source_kind(value) when is_binary(value),
+    do: Map.get(@log_source_kind_strings, value, value)
+
+  defp normalize_log_source_kind(value), do: value
 
   defp filter_log_fields(events, opts) do
     process_id = Keyword.get(opts, :process_id)
@@ -1355,7 +1439,12 @@ defmodule Switchyard.Daemon.Server do
     |> Map.new()
   end
 
-  defp string_field(map, key), do: map[key] || map[String.to_atom(key)]
+  defp string_field(map, key) do
+    case Map.fetch(map, key) do
+      {:ok, value} -> value
+      :error -> atom_value_for_string_key(map, key)
+    end
+  end
 
   defp atom_field(map, key, default) do
     case string_field(map, key) do
@@ -1409,10 +1498,31 @@ defmodule Switchyard.Daemon.Server do
   defp atomish(value) when is_atom(value), do: value
 
   defp atomish(value) when is_binary(value) do
-    String.to_existing_atom(value)
-  rescue
-    ArgumentError -> :unknown
+    Map.get(@atomish_strings, value, :unknown)
   end
+
+  defp atomish(_value), do: :unknown
+
+  defp atom_key?(map, key) when is_map(map) and is_binary(key) do
+    Enum.any?(map, fn
+      {atom_key, _value} when is_atom(atom_key) -> Atom.to_string(atom_key) == key
+      _entry -> false
+    end)
+  end
+
+  defp atom_key?(_map, _key), do: false
+
+  defp atom_value_for_string_key(map, key) when is_map(map) and is_binary(key) do
+    Enum.find_value(map, fn
+      {atom_key, value} when is_atom(atom_key) ->
+        if Atom.to_string(atom_key) == key, do: value
+
+      _entry ->
+        nil
+    end)
+  end
+
+  defp atom_value_for_string_key(_map, _key), do: nil
 
   defp execution_surface_summary(%{execution_surface: execution_surface}) do
     transport_options =

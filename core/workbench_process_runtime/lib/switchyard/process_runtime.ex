@@ -16,6 +16,36 @@ defmodule Switchyard.ProcessRuntime do
     "local_subprocess" => :local_subprocess,
     "ssh_exec" => :ssh_exec
   }
+  @transport_option_key_strings %{
+    "args" => :args,
+    "clear_env?" => :clear_env?,
+    "command" => :command,
+    "cwd" => :cwd,
+    "env" => :env
+  }
+  @sandbox_mode_strings %{
+    "danger_full_access" => :danger_full_access,
+    "external" => :external,
+    "inherit" => :inherit,
+    "read_only" => :read_only,
+    "workspace_write" => :workspace_write
+  }
+  @sandbox_policy_keys [
+    :type,
+    :writable_roots,
+    :network_access,
+    :exclude_tmpdir_env_var,
+    :exclude_slash_tmp,
+    :command_prefix
+  ]
+  @sandbox_policy_key_strings %{
+    "command_prefix" => :command_prefix,
+    "exclude_slash_tmp" => :exclude_slash_tmp,
+    "exclude_tmpdir_env_var" => :exclude_tmpdir_env_var,
+    "network_access" => :network_access,
+    "type" => :type,
+    "writable_roots" => :writable_roots
+  }
 
   @type spec_error ::
           {:invalid_command, term()}
@@ -161,11 +191,18 @@ defmodule Switchyard.ProcessRuntime do
   defp normalize_env(env), do: {:error, {:invalid_env, env}}
 
   defp normalize_boolean(value, _field) when is_boolean(value), do: {:ok, value}
-  defp normalize_boolean(value, field), do: {:error, {:"invalid_#{field}", value}}
+  defp normalize_boolean(value, field), do: {:error, {invalid_boolean_field(field), value}}
 
   defp validate_optional_binary(nil, _field), do: :ok
   defp validate_optional_binary(value, _field) when is_binary(value), do: :ok
-  defp validate_optional_binary(value, field), do: {:error, {:"invalid_#{field}", value}}
+  defp validate_optional_binary(value, field), do: {:error, {invalid_binary_field(field), value}}
+
+  defp invalid_boolean_field(:clear_env), do: :invalid_clear_env
+  defp invalid_boolean_field(:pty), do: :invalid_pty
+  defp invalid_boolean_field(:shell), do: :invalid_shell
+
+  defp invalid_binary_field(:cwd), do: :invalid_cwd
+  defp invalid_binary_field(:user), do: :invalid_user
 
   defp normalize_execution_surface(nil), do: EPSurface.new([])
   defp normalize_execution_surface(%EPSurface{} = surface), do: {:ok, surface}
@@ -257,10 +294,7 @@ defmodule Switchyard.ProcessRuntime do
   defp normalize_transport_option_key(key) when is_atom(key), do: key
 
   defp normalize_transport_option_key(key) when is_binary(key) do
-    case safe_existing_atom(key) do
-      {:ok, atom} -> atom
-      :error -> key
-    end
+    Map.get(@transport_option_key_strings, key, key)
   end
 
   defp normalize_transport_option_key(key), do: key
@@ -297,9 +331,9 @@ defmodule Switchyard.ProcessRuntime do
   defp normalize_sandbox_mode(mode, _policy) when mode in @modes, do: {:ok, mode}
 
   defp normalize_sandbox_mode(mode, _policy) when is_binary(mode) do
-    case safe_existing_atom(mode) do
-      {:ok, atom} when atom in @modes -> {:ok, atom}
-      _other -> {:error, {:invalid_sandbox_mode, mode}}
+    case Map.fetch(@sandbox_mode_strings, mode) do
+      {:ok, atom} -> {:ok, atom}
+      :error -> {:error, {:invalid_sandbox_mode, mode}}
     end
   end
 
@@ -308,44 +342,52 @@ defmodule Switchyard.ProcessRuntime do
   defp normalize_sandbox_policy(nil), do: {:ok, %{}}
 
   defp normalize_sandbox_policy(policy) when is_map(policy) do
-    policy =
-      Enum.into(policy, %{}, fn {key, value} -> {normalize_sandbox_key(key), value} end)
-
-    case Map.get(policy, :command_prefix) do
-      nil ->
-        {:ok, Map.delete(policy, :type)}
-
-      prefix when is_list(prefix) ->
-        if Enum.all?(prefix, &is_binary/1) do
-          {:ok, Map.delete(policy, :type)}
-        else
-          {:error, {:invalid_command_prefix, prefix}}
-        end
-
-      prefix ->
-        {:error, {:invalid_command_prefix, prefix}}
+    with {:ok, policy} <- normalize_sandbox_policy_keys(policy),
+         {:ok, policy} <- validate_sandbox_command_prefix(policy) do
+      {:ok, Map.delete(policy, :type)}
     end
   end
 
   defp normalize_sandbox_policy(policy), do: {:error, {:invalid_sandbox_policy, policy}}
 
-  defp normalize_sandbox_key(key) when is_atom(key), do: key
-
-  defp normalize_sandbox_key(key) when is_binary(key) do
-    case key do
-      "type" -> :type
-      "writable_roots" -> :writable_roots
-      "network_access" -> :network_access
-      "exclude_tmpdir_env_var" -> :exclude_tmpdir_env_var
-      "exclude_slash_tmp" -> :exclude_slash_tmp
-      "command_prefix" -> :command_prefix
-      other -> String.to_atom(other)
+  defp validate_sandbox_command_prefix(%{command_prefix: prefix} = policy) when is_list(prefix) do
+    if Enum.all?(prefix, &is_binary/1) do
+      {:ok, policy}
+    else
+      {:error, {:invalid_command_prefix, prefix}}
     end
   end
 
-  defp safe_existing_atom(value) when is_binary(value) do
-    {:ok, String.to_existing_atom(value)}
-  rescue
-    ArgumentError -> :error
+  defp validate_sandbox_command_prefix(%{command_prefix: prefix}) do
+    {:error, {:invalid_command_prefix, prefix}}
   end
+
+  defp validate_sandbox_command_prefix(policy), do: {:ok, policy}
+
+  defp normalize_sandbox_policy_keys(policy) do
+    Enum.reduce_while(policy, {:ok, %{}}, fn {key, value}, {:ok, acc} ->
+      case normalize_sandbox_key(key) do
+        {:ok, normalized_key} ->
+          {:cont, {:ok, Map.put(acc, normalized_key, value)}}
+
+        {:error, reason} ->
+          {:halt, {:error, reason}}
+      end
+    end)
+  end
+
+  defp normalize_sandbox_key(key) when is_atom(key) and key in @sandbox_policy_keys,
+    do: {:ok, key}
+
+  defp normalize_sandbox_key(key) when is_atom(key),
+    do: {:error, {:invalid_sandbox_policy_key, Atom.to_string(key)}}
+
+  defp normalize_sandbox_key(key) when is_binary(key) do
+    case Map.fetch(@sandbox_policy_key_strings, key) do
+      {:ok, atom} -> {:ok, atom}
+      :error -> {:error, {:invalid_sandbox_policy_key, key}}
+    end
+  end
+
+  defp normalize_sandbox_key(key), do: {:error, {:invalid_sandbox_policy_key, key}}
 end
