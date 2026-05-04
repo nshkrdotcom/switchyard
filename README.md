@@ -5,6 +5,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-nshkrdotcom%2Fswitchyard-181717.svg?logo=github)](https://github.com/nshkrdotcom/switchyard)
 
+> `using a TUI is like moving to Miami to find a tech job`  -A user on X.com
+
 # Switchyard
 
 Switchyard is a terminal-native operator workbench workspace for local
