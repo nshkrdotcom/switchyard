@@ -9,6 +9,8 @@ Versioning where practical for published artifacts.
 
 ### Added
 
+- Governed route authority contracts for Switchyard dispatch, process env,
+  target routing, daemon site routing, and operator transport materialization.
 - Non-umbrella workspace structure with reusable core packages, built-in site
   package, and runnable daemon, CLI, and TUI apps.
 - Workbench node IR, reusable widgets, and BEAM-native TUI runtime over
@@ -23,6 +25,10 @@ Versioning where practical for published artifacts.
 
 ### Changed
 
+- Split standalone Switchyard env/config behavior from governed routing:
+  governed process specs now reject direct env, target, credential, and
+  singleton-client fields, and daemon process logs redact materialized env
+  values before storage.
 - Refreshed the workspace README, guide set, and HexDocs navigation to describe
   the delivered architecture in present tense.
 - Updated CLI, TUI, daemon, store, and first-party site docs for action,

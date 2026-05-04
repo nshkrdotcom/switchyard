@@ -402,6 +402,52 @@ defmodule Switchyard.DaemonTest do
     assert {:ok, %ActionResult{status: :accepted}} = Daemon.stop_process(daemon, "redacted")
   end
 
+  test "governed process start rejects unmanaged direct env", %{daemon: daemon} do
+    assert {:error, %{reason: {:unmanaged_governed_field, :env}}} =
+             Daemon.start_process(daemon, %{
+               id: "governed-direct-env",
+               command: "env",
+               env: %{"SECRET_TOKEN" => "direct-secret"},
+               governed_authority: %{authority_ref: "authority-switchyard-1"}
+             })
+  end
+
+  test "governed process output and snapshots redact materialized env values", %{
+    daemon: daemon,
+    store_root: store_root
+  } do
+    assert {:ok, %ActionResult{status: :accepted}} =
+             Daemon.start_process(daemon, %{
+               id: "governed-redacted",
+               command: "printf \"$SECRET_TOKEN\\n\"",
+               governed_authority: %{
+                 authority_ref: "authority-switchyard-1",
+                 env: %{"SECRET_TOKEN" => "governed-secret"},
+                 clear_env?: true
+               }
+             })
+
+    Process.sleep(200)
+
+    logs = Daemon.logs(daemon, "logs/governed-redacted")
+    persisted = File.read!(Path.join([store_root, "daemon", "local_snapshot.json"]))
+
+    assert Enum.any?(logs, &(&1.message == "[REDACTED]"))
+    refute Enum.any?(logs, &(&1.message == "governed-secret"))
+    refute persisted =~ "governed-secret"
+  end
+
+  test "governed daemon boot rejects direct site module routing" do
+    previous_trap_exit = Process.flag(:trap_exit, true)
+    on_exit(fn -> Process.flag(:trap_exit, previous_trap_exit) end)
+
+    assert {:error, {:unmanaged_governed_field, :site_modules}} =
+             Daemon.start_link(
+               site_modules: [FakeLocalSite],
+               governed_authority: %{authority_ref: "authority-switchyard-1"}
+             )
+  end
+
   test "boots without a store in memory-only recovery mode" do
     {:ok, daemon} = start_supervised({Daemon, site_modules: [FakeLocalSite], name: nil})
 

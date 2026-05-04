@@ -50,6 +50,49 @@ defmodule Switchyard.ProcessRuntimeTest do
              })
   end
 
+  test "materializes governed process env and target routing from authority" do
+    assert {:ok, spec} =
+             ProcessRuntime.spec(%{
+               id: "governed",
+               command: "env",
+               governed_authority: %{
+                 authority_ref: "authority-switchyard-1",
+                 env: %{"SECRET_TOKEN" => "governed-secret"},
+                 clear_env?: true,
+                 execution_surface: %{
+                   "surface_kind" => "ssh_exec",
+                   "target_id" => "target-1",
+                   "transport_options" => %{"user" => "deploy"}
+                 }
+               }
+             })
+
+    assert spec.authority_ref == "authority-switchyard-1"
+    assert spec.env == %{"SECRET_TOKEN" => "governed-secret"}
+    assert spec.clear_env? == true
+    assert spec.execution_surface.surface_kind == :ssh_exec
+    assert spec.execution_surface.target_id == "target-1"
+    assert spec.execution_surface.transport_options[:ssh_user] == "deploy"
+  end
+
+  test "rejects unmanaged direct env and target routing when governed" do
+    assert {:error, {:unmanaged_governed_field, :env}} =
+             ProcessRuntime.spec(%{
+               id: "bad-env",
+               command: "env",
+               env: %{"SECRET_TOKEN" => "direct-secret"},
+               governed_authority: %{authority_ref: "authority-switchyard-1"}
+             })
+
+    assert {:error, {:unmanaged_governed_field, :execution_surface}} =
+             ProcessRuntime.spec(%{
+               id: "bad-target",
+               command: "env",
+               execution_surface: %{surface_kind: :ssh_exec, target_id: "direct-target"},
+               governed_authority: %{authority_ref: "authority-switchyard-1"}
+             })
+  end
+
   test "rejects invalid sandbox command prefixes" do
     assert {:error, {:invalid_command_prefix, [:bad]}} =
              ProcessRuntime.spec(%{

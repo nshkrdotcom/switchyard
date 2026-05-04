@@ -12,6 +12,8 @@ platform.
 - streams, jobs, logs, and search results
 - provider behaviours for sites, apps, actions, and search
 - optional site-level `execute_action/3` callbacks for provider-owned actions
+- governed route authority packets for process env, target routing, daemon site
+  routing, and operator transport materialization
 
 ## Quick Start
 
@@ -37,6 +39,14 @@ instance scopes. Site providers may optionally implement `execute_action/3`;
 the daemon remains responsible for action lookup, scope validation, input
 validation, and confirmation before invoking provider-owned execution.
 
+`Switchyard.Contracts.GovernedRouteAuthority` is the governed-mode boundary for
+authority-bearing Switchyard runtime settings. It carries the selected
+authority ref, route/provider/target refs, credential ref, process env,
+execution surface, daemon site modules, and operator transport options. Callers
+that pass this packet must not also pass direct env, singleton-client,
+default-auth, target-routing, daemon-routing, or operator-transport settings on
+the governed request.
+
 ## Developer Workflow
 
 Run package-local checks:
@@ -60,6 +70,7 @@ mix ci
 ## Examples
 
 - [test/switchyard/contracts_test.exs](test/switchyard/contracts_test.exs) is the canonical example set for descriptors, resources, actions, jobs, search results, streams, and logs.
+- [test/switchyard/governed_route_authority_test.exs](test/switchyard/governed_route_authority_test.exs) covers governed authority materialization and bounded operator-transport parsing.
 
 ## Related Reading
 

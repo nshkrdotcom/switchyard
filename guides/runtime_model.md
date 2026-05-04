@@ -48,6 +48,12 @@ The public process spec now carries explicit placement and policy metadata:
 - `user`
 - `pty?`
 
+Standalone process specs may pass those fields directly. Governed process
+specs carry `governed_authority` instead. In that mode Switchyard rejects
+direct env, target routing, credential, user, singleton-client, default-auth,
+and global-client fields, then materializes process env, `clear_env?`, and
+execution-surface data from `Switchyard.Contracts.GovernedRouteAuthority`.
+
 The currently supported execution surfaces are:
 
 - `:local_subprocess`
@@ -142,6 +148,12 @@ Process output and job lifecycle events are exposed through daemon stream
 descriptors. Log requests support tailing, `after_seq`, and simple level/source
 filters while keeping buffers bounded in memory by default.
 
+When a governed process materializes env values, the daemon keeps those values
+only as in-memory redaction material. Process command previews and output log
+messages replace matching materialized env values with `[REDACTED]`, persisted
+snapshots store only env keys/counts, and recovery snapshots do not include the
+raw values.
+
 For the built-in TUI path specifically:
 
 1. the product app boots a root Workbench component
@@ -163,6 +175,12 @@ transports:
 
 Those are UI session transports. They are not execution surfaces for managed
 processes.
+
+Governed operator access uses the same authority split: standalone TUI boot may
+pass explicit local, SSH, or distributed transport options, while governed boot
+rejects direct daemon singleton, transport, port, auth method, user password,
+surface ref, boundary class, and observability options unless they are
+materialized through the governed route authority packet.
 
 For the active first-party sites today:
 

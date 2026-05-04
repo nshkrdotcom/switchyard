@@ -44,6 +44,14 @@ The public request map now carries explicit execution metadata:
 - `user`
 - `pty?`
 
+Standalone specs keep that direct shape. Governed specs pass
+`governed_authority` and may not also pass direct `env`, `clear_env?`,
+`execution_surface`, target, provider, credential, token, default-auth,
+global-client, singleton-client, or user fields. In governed mode the process
+runtime materializes env, `clear_env?`, execution surface, and authority ref
+from `Switchyard.Contracts.GovernedRouteAuthority` before transport
+normalization.
+
 Supported execution surfaces today:
 
 - `:local_subprocess`
@@ -75,7 +83,7 @@ mix ci
 
 ## Examples
 
-- [test/switchyard/process_runtime_test.exs](test/switchyard/process_runtime_test.exs) demonstrates spec normalization, command preview, transport routing, sandbox validation, process startup, output forwarding, and exit reporting.
+- [test/switchyard/process_runtime_test.exs](test/switchyard/process_runtime_test.exs) demonstrates spec normalization, governed authority rejection/materialization, command preview, transport routing, sandbox validation, process startup, output forwarding, and exit reporting.
 
 ## Related Reading
 

@@ -33,6 +33,9 @@ The runtime currently supports:
 - starting and stopping managed processes through the generic action path
 - tracking typed lifecycle state, status reasons, exit status, timestamps,
   related job IDs, and related stream IDs
+- rejecting governed daemon/process requests that combine an authority packet
+  with direct daemon-site routing, singleton-client, env, credential, or target
+  fields
 - listing stream descriptors and reading filtered/tail log events with
   per-stream sequence numbers
 - persisting daemon manifests, versioned snapshots, and recovery summaries to
@@ -59,6 +62,11 @@ Managed-process snapshot records now include:
 - execution-surface summary
 - sandbox summary
 - related job IDs and stream IDs
+
+For governed processes, materialized env values are held only in daemon memory
+as redaction values. Command previews and process-output log messages replace
+those values with `[REDACTED]`; persisted snapshots store env key summaries but
+not the values.
 
 Log events now include per-stream sequence numbers in `fields.seq`, process
 output metadata such as `fields.fd`, and job event metadata for lifecycle jobs.
@@ -90,7 +98,7 @@ mix ci
 
 ## Examples
 
-- [test/switchyard/daemon_test.exs](test/switchyard/daemon_test.exs) shows the end-to-end in-process daemon flow, including action listing/execution, process lifecycle state, execution metadata preservation, log capture, persisted snapshot state, and recovery behavior.
+- [test/switchyard/daemon_test.exs](test/switchyard/daemon_test.exs) shows the end-to-end in-process daemon flow, including governed authority rejection, process env redaction, action listing/execution, process lifecycle state, execution metadata preservation, log capture, persisted snapshot state, and recovery behavior.
 - [../../examples/repo_copy_tests/current_daemon_smoke_test.exs](../../examples/repo_copy_tests/current_daemon_smoke_test.exs) is a focused public-seam daemon smoke example.
 
 ## Related Reading

@@ -98,6 +98,13 @@ The product TUI can run in three operator modes:
 These are UI transports served through `execution_plane_operator_terminal`.
 They do not replace the execution surface used for managed processes.
 
+Standalone TUI startup may pass direct local, SSH, or distributed operator
+transport options. Governed startup passes
+`Switchyard.Contracts.GovernedRouteAuthority` and rejects direct daemon,
+transport, port, auth method, password, surface ref, boundary class, and
+observability settings so operator access cannot be selected from singleton
+config or unmanaged env.
+
 ## Developer Workflow
 
 Run package-local checks from this directory:

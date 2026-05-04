@@ -9,6 +9,7 @@ defmodule Switchyard.ProcessRuntime do
 
   alias __MODULE__.Transport
   alias ExecutionPlane.Process.Transport.Surface, as: EPSurface
+  alias Switchyard.Contracts.GovernedRouteAuthority
 
   @modes [:inherit, :danger_full_access, :read_only, :workspace_write, :external]
   @forbidden_transport_option_keys [:command, :args, :cwd, :env, :clear_env?]
@@ -46,6 +47,22 @@ defmodule Switchyard.ProcessRuntime do
     "type" => :type,
     "writable_roots" => :writable_roots
   }
+  @governed_direct_fields [
+    :api_key,
+    :clear_env?,
+    :client,
+    :credential_ref,
+    :default_auth,
+    :env,
+    :execution_surface,
+    :global_client,
+    :headers,
+    :provider_id,
+    :singleton_client,
+    :target_id,
+    :token,
+    :user
+  ]
 
   @type spec_error ::
           {:invalid_command, term()}
@@ -84,14 +101,16 @@ defmodule Switchyard.ProcessRuntime do
           user: String.t() | nil,
           pty?: boolean(),
           execution_surface: EPSurface.t(),
-          sandbox: sandbox()
+          sandbox: sandbox(),
+          authority_ref: String.t() | nil
         }
 
   @spec spec(map() | keyword()) :: {:ok, t()} | {:error, spec_error()}
   def spec(attrs) when is_map(attrs) or is_list(attrs) do
     attrs = Map.new(attrs)
 
-    with {:ok, command} <- normalize_command(fetch(attrs, :command)),
+    with {:ok, attrs} <- apply_governed_authority(attrs),
+         {:ok, command} <- normalize_command(fetch(attrs, :command)),
          {:ok, args} <- normalize_args(fetch(attrs, :args, [])),
          {:ok, shell?} <- normalize_boolean(fetch(attrs, :shell?, true), :shell),
          {:ok, env} <- normalize_env(fetch(attrs, :env, %{})),
@@ -114,7 +133,8 @@ defmodule Switchyard.ProcessRuntime do
          user: fetch(attrs, :user),
          pty?: pty?,
          execution_surface: execution_surface,
-         sandbox: sandbox
+         sandbox: sandbox,
+         authority_ref: fetch(attrs, :authority_ref)
        }}
     end
   end
@@ -163,6 +183,38 @@ defmodule Switchyard.ProcessRuntime do
        do: {:ok, spec}
 
   defp ensure_spec(attrs) when is_map(attrs) or is_list(attrs), do: spec(attrs)
+
+  defp apply_governed_authority(attrs) do
+    case fetch(attrs, :governed_authority) do
+      nil -> {:ok, attrs}
+      authority_attrs -> materialize_governed_authority(attrs, authority_attrs)
+    end
+  end
+
+  defp materialize_governed_authority(attrs, authority_attrs) do
+    case find_governed_direct_field(attrs) do
+      nil -> merge_governed_authority(attrs, authority_attrs)
+      field -> {:error, {:unmanaged_governed_field, field}}
+    end
+  end
+
+  defp merge_governed_authority(attrs, authority_attrs) do
+    with {:ok, authority} <- GovernedRouteAuthority.new(authority_attrs) do
+      {:ok,
+       attrs
+       |> Map.delete(:governed_authority)
+       |> Map.delete("governed_authority")
+       |> Map.merge(GovernedRouteAuthority.process_attrs(authority))}
+    end
+  end
+
+  defp find_governed_direct_field(attrs) do
+    Enum.find(@governed_direct_fields, &present_key?(attrs, &1))
+  end
+
+  defp present_key?(attrs, key) do
+    Map.has_key?(attrs, key) or Map.has_key?(attrs, Atom.to_string(key))
+  end
 
   defp fetch(attrs, key, default \\ nil) do
     Map.get(attrs, key, Map.get(attrs, Atom.to_string(key), default))

@@ -34,6 +34,9 @@ daemon, CLI, and TUI entrypoints.
   lifecycle requests, logs, streams, and recovery inspection
 - Weld projection metadata and tracked projection flow for the internal
   `switchyard_foundation` artifact
+- governed route authority contracts that split standalone env/config
+  compatibility from authority-materialized process env, target routing,
+  daemon site routing, and operator transport
 
 Switchyard is no longer just a scaffold. The baseline architecture is in place,
 the package boundaries are explicit, and the current work is about extending and
@@ -126,6 +129,15 @@ environment:
 process execution still goes through Switchyard's execution plane using
 execution surfaces such as `:local_subprocess` and `:ssh_exec`, while remote
 operator serving flows through `execution_plane_operator_terminal`.
+
+Standalone CLI, TUI, daemon, and process-runtime calls may still pass explicit
+env, target, and operator transport settings at boot/config boundaries. When a
+`Switchyard.Contracts.GovernedRouteAuthority` is present, Switchyard rejects
+direct env, target-routing, credential, singleton-client, daemon-site, and
+operator-transport fields and materializes those values from the authority
+packet. Daemon snapshots keep env summaries only, command previews and process
+logs redact materialized env values, and persisted receipts never store the
+secret values themselves.
 
 ## Workspace Commands
 

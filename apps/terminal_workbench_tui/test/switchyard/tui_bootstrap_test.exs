@@ -124,6 +124,20 @@ defmodule Switchyard.TUIBootstrapTest do
     assert :ok = Task.await(task, 5_000)
   end
 
+  test "governed TUI boot rejects direct singleton daemon and transport config" do
+    assert {:error, {:unmanaged_governed_field, :daemon}} =
+             TUI.run(
+               daemon: self(),
+               governed_authority: %{authority_ref: "authority-switchyard-1"}
+             )
+
+    assert {:error, {:unmanaged_governed_field, :transport}} =
+             TUI.run(
+               transport: :ssh,
+               governed_authority: %{authority_ref: "authority-switchyard-1"}
+             )
+  end
+
   defp stop_application(app) do
     case Application.stop(app) do
       :ok -> :ok

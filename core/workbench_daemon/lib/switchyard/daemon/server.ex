@@ -4,7 +4,17 @@ defmodule Switchyard.Daemon.Server do
 
   alias ExecutionPlane.OperatorTerminal
   alias Jido.Integration.V2
-  alias Switchyard.Contracts.{Action, ActionResult, Job, LogEvent, Resource, StreamDescriptor}
+
+  alias Switchyard.Contracts.{
+    Action,
+    ActionResult,
+    GovernedRouteAuthority,
+    Job,
+    LogEvent,
+    Resource,
+    StreamDescriptor
+  }
+
   alias Switchyard.JobRuntime
   alias Switchyard.LogRuntime
   alias Switchyard.Platform.Registry
@@ -104,6 +114,15 @@ defmodule Switchyard.Daemon.Server do
     "warning" => :warning,
     "workspace" => :workspace
   }
+  @governed_daemon_direct_fields [
+    :client,
+    :daemon,
+    :default_auth,
+    :global_client,
+    :runtime,
+    :singleton_client,
+    :site_modules
+  ]
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
@@ -116,24 +135,9 @@ defmodule Switchyard.Daemon.Server do
 
   @impl true
   def init(opts) do
-    state = %{
-      daemon_instance_id:
-        Keyword.get_lazy(opts, :daemon_instance_id, fn ->
-          "daemon-#{System.unique_integer([:positive])}"
-        end),
-      site_modules: Keyword.get(opts, :site_modules, []),
-      processes: %{},
-      jobs: %{},
-      logs: %{},
-      streams: %{},
-      stream_sequences: %{},
-      recovery_status: memory_only_recovery_status(),
-      store_root: Keyword.get(opts, :store_root)
-    }
-
-    case recover_from_store(state) do
-      {:ok, recovered_state} -> {:ok, recovered_state}
-      {:error, reason} -> {:stop, {:recovery_failed, reason}}
+    case apply_governed_daemon_authority(opts) do
+      {:ok, opts} -> initialize_state(opts)
+      {:error, reason} -> {:stop, reason}
     end
   end
 
@@ -252,6 +256,8 @@ defmodule Switchyard.Daemon.Server do
 
   def handle_info({:process_output, process_id, line, fields}, state) do
     stream_id = stream_id(process_id)
+
+    line = redact_process_output(state, process_id, line)
 
     event =
       LogEvent.new!(%{
@@ -505,6 +511,7 @@ defmodule Switchyard.Daemon.Server do
               env_summary: env_summary(spec),
               execution_surface: execution_surface_summary(spec),
               sandbox: sandbox_summary(spec),
+              redaction_values: redaction_values(spec),
               pid: pid,
               job_ids: [job_id],
               stream_ids: [stream_id, job_stream_id]
@@ -891,6 +898,28 @@ defmodule Switchyard.Daemon.Server do
 
   defp env_summary(%{env: env, clear_env?: clear_env?}) when is_map(env) do
     %{keys: env |> Map.keys() |> Enum.sort(), count: map_size(env), clear_env?: clear_env?}
+  end
+
+  defp redaction_values(%{env: env}) when is_map(env) do
+    env
+    |> Map.values()
+    |> Enum.map(&to_string/1)
+    |> Enum.reject(&(&1 == ""))
+  end
+
+  defp redact_process_output(state, process_id, line) when is_binary(line) do
+    state
+    |> get_in([:processes, process_id, :redaction_values])
+    |> List.wrap()
+    |> redact_values(line)
+  end
+
+  defp redact_process_output(_state, _process_id, line), do: line
+
+  defp redact_values(values, text) do
+    Enum.reduce(values, text, fn value, acc ->
+      String.replace(acc, value, "[REDACTED]")
+    end)
   end
 
   defp redact_command_preview(preview, %{env: env}) when is_binary(preview) and is_map(env) do
@@ -1686,4 +1715,61 @@ defmodule Switchyard.Daemon.Server do
 
   defp stream_id(process_id), do: "logs/#{process_id}"
   defp job_stream_id(job_id), do: "jobs/#{job_id}"
+
+  defp initialize_state(opts) do
+    opts
+    |> initial_state()
+    |> recover_initial_state()
+  end
+
+  defp initial_state(opts) do
+    %{
+      daemon_instance_id:
+        Keyword.get_lazy(opts, :daemon_instance_id, fn ->
+          "daemon-#{System.unique_integer([:positive])}"
+        end),
+      site_modules: Keyword.get(opts, :site_modules, []),
+      processes: %{},
+      jobs: %{},
+      logs: %{},
+      streams: %{},
+      stream_sequences: %{},
+      recovery_status: memory_only_recovery_status(),
+      store_root: Keyword.get(opts, :store_root)
+    }
+  end
+
+  defp recover_initial_state(state) do
+    case recover_from_store(state) do
+      {:ok, recovered_state} -> {:ok, recovered_state}
+      {:error, reason} -> {:stop, {:recovery_failed, reason}}
+    end
+  end
+
+  defp apply_governed_daemon_authority(opts) do
+    case Keyword.get(opts, :governed_authority) do
+      nil -> {:ok, opts}
+      authority_attrs -> materialize_governed_daemon_authority(opts, authority_attrs)
+    end
+  end
+
+  defp materialize_governed_daemon_authority(opts, authority_attrs) do
+    case find_governed_daemon_direct_field(opts) do
+      nil -> merge_governed_daemon_authority(opts, authority_attrs)
+      field -> {:error, {:unmanaged_governed_field, field}}
+    end
+  end
+
+  defp merge_governed_daemon_authority(opts, authority_attrs) do
+    with {:ok, authority} <- GovernedRouteAuthority.new(authority_attrs) do
+      {:ok,
+       opts
+       |> Keyword.delete(:governed_authority)
+       |> Keyword.merge(GovernedRouteAuthority.daemon_opts(authority))}
+    end
+  end
+
+  defp find_governed_daemon_direct_field(opts) do
+    Enum.find(@governed_daemon_direct_fields, &Keyword.has_key?(opts, &1))
+  end
 end

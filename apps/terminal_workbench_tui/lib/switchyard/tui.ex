@@ -4,6 +4,7 @@ defmodule Switchyard.TUI do
   """
 
   alias ExecutionPlane.OperatorTerminal
+  alias Switchyard.Contracts.GovernedRouteAuthority
   alias Switchyard.Daemon
   alias Switchyard.Shell
   alias Switchyard.Transport.Local
@@ -23,13 +24,26 @@ defmodule Switchyard.TUI do
     :store_root
   ]
   @operator_terminal_surface_option_keys [:surface_ref, :boundary_class, :observability]
+  @governed_operator_direct_fields [
+    :auth_methods,
+    :boundary_class,
+    :daemon,
+    :daemon_starter,
+    :daemon_stopper,
+    :observability,
+    :port,
+    :surface_ref,
+    :transport,
+    :user_passwords
+  ]
 
   @spec initial_shell_state() :: Shell.State.t()
   def initial_shell_state, do: Shell.new()
 
   @spec run(keyword()) :: :ok | {:error, term()}
   def run(opts \\ []) do
-    with :ok <- ensure_operator_terminal_runtime(),
+    with {:ok, opts} <- apply_governed_operator_authority(opts),
+         :ok <- ensure_operator_terminal_runtime(),
          {:ok, opts} <- runtime_opts(opts),
          {:ok, pid} <- start_operator_terminal(opts) do
       ref = Process.monitor(pid)
@@ -164,5 +178,32 @@ defmodule Switchyard.TUI do
 
   defp request_handler(_daemon, request, _opts) do
     {:error, {:unknown_request, request}}
+  end
+
+  defp apply_governed_operator_authority(opts) do
+    case Keyword.get(opts, :governed_authority) do
+      nil -> {:ok, opts}
+      authority_attrs -> materialize_governed_operator_authority(opts, authority_attrs)
+    end
+  end
+
+  defp materialize_governed_operator_authority(opts, authority_attrs) do
+    case find_governed_operator_direct_field(opts) do
+      nil -> merge_governed_operator_authority(opts, authority_attrs)
+      field -> {:error, {:unmanaged_governed_field, field}}
+    end
+  end
+
+  defp merge_governed_operator_authority(opts, authority_attrs) do
+    with {:ok, authority} <- GovernedRouteAuthority.new(authority_attrs) do
+      {:ok,
+       opts
+       |> Keyword.delete(:governed_authority)
+       |> Keyword.merge(GovernedRouteAuthority.operator_terminal_opts(authority))}
+    end
+  end
+
+  defp find_governed_operator_direct_field(opts) do
+    Enum.find(@governed_operator_direct_fields, &Keyword.has_key?(opts, &1))
   end
 end
