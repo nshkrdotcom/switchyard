@@ -56,7 +56,8 @@ defmodule Switchyard.SourcePolicyTest do
       {join(["Reg", "Exp"]), join(["Reg", "Exp"])},
       {join(["reg", "exp"]), join(["reg", "exp"])},
       {join(["re", ".compile"]), join(["re", ".compile"])},
-      {join(["import ", "re"]), join(["import ", "re"])}
+      {join(["import ", "re"]), join(["import ", "re"])},
+      {join(["Module", ".concat"]), join(["Module", ".concat"])}
     ]
   end
 
