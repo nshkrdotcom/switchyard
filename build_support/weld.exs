@@ -20,7 +20,7 @@ defmodule Switchyard.Build.WeldContract do
   ]
 
   @dependencies [
-    blitz: [requirement: "~> 0.2.0"],
+    blitz: [requirement: "~> 0.3.0"],
     execution_plane: [
       opts:
         if File.dir?(@execution_plane_repo_path) do

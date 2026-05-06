@@ -61,13 +61,13 @@ defmodule Switchyard.Workspace.MixProject do
 
   defp aliases do
     monorepo_aliases = [
-      "monorepo.deps.get": ["blitz.workspace deps_get"],
-      "monorepo.format": ["blitz.workspace format"],
-      "monorepo.compile": ["blitz.workspace compile"],
-      "monorepo.test": ["blitz.workspace test"],
-      "monorepo.credo": ["blitz.workspace credo"],
-      "monorepo.dialyzer": ["blitz.workspace dialyzer"],
-      "monorepo.docs": ["blitz.workspace docs"]
+      "monorepo.deps.get": ["blitz.workspace.impact deps_get --"],
+      "monorepo.format": ["blitz.workspace.impact format --"],
+      "monorepo.compile": ["blitz.workspace.impact compile --"],
+      "monorepo.test": ["blitz.workspace.impact test --"],
+      "monorepo.credo": ["blitz.workspace.impact credo --"],
+      "monorepo.dialyzer": ["blitz.workspace.impact dialyzer --"],
+      "monorepo.docs": ["blitz.workspace.impact docs --"]
     ]
 
     mr_aliases = [

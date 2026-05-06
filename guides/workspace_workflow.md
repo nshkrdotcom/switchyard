@@ -23,8 +23,8 @@ That sequence does three different jobs:
 ## Dependency Policy
 
 - `blitz`
-  resolves from `../blitz` if that sibling checkout exists outside `deps`;
-  otherwise the root workspace uses the Hex package
+  resolves from published Hex `~> 0.3.0` by default; use a local checkout only
+  in an explicit Blitz-development branch
 - `weld`
   stays on the committed Hex dependency line in the repo root
 - prerelease Weld validation should happen through normal prerelease version

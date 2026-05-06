@@ -63,14 +63,7 @@ defmodule Switchyard.Build.DependencyResolver do
   def switchyard_daemon_app(opts \\ []),
     do: resolve_internal(:switchyard_daemon_app, "apps/terminal_workbenchd", opts)
 
-  def blitz(opts \\ []) do
-    resolve_external(
-      :blitz,
-      local_root_path("../blitz"),
-      "~> 0.2.0",
-      opts
-    )
-  end
+  def blitz(opts \\ []), do: {:blitz, "~> 0.3.0", opts}
 
   def ex_ratatui(opts \\ []), do: {:ex_ratatui, "~> 0.8.1", opts}
 
