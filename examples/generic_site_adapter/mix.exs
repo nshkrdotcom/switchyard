@@ -18,7 +18,7 @@ defmodule GenericSiteAdapter.MixProject do
   end
 
   defp deps do
-    root = switchyard_root!()
+    root = switchyard_root()
 
     [
       {:switchyard_contracts, path: Path.join(root, "core/workbench_contracts")},
@@ -26,14 +26,5 @@ defmodule GenericSiteAdapter.MixProject do
     ]
   end
 
-  defp switchyard_root! do
-    System.get_env("SWITCHYARD_ROOT") ||
-      raise """
-      SWITCHYARD_ROOT is required.
-
-      Run with:
-
-          SWITCHYARD_ROOT=/path/to/switchyard mix test
-      """
-  end
+  defp switchyard_root, do: Path.expand("../..", __DIR__)
 end

@@ -1,10 +1,6 @@
 defmodule Switchyard.Build.WeldContract do
   @moduledoc false
 
-  @repo_root Path.expand("..", __DIR__)
-  @execution_plane_repo_path Path.expand("../execution_plane", @repo_root)
-  @jido_integration_repo_path Path.expand("../jido_integration", @repo_root)
-
   @artifact_docs [
     "README.md",
     "guides/index.md",
@@ -22,64 +18,35 @@ defmodule Switchyard.Build.WeldContract do
   @dependencies [
     blitz: [requirement: "~> 0.3.0"],
     execution_plane: [
-      opts:
-        if File.dir?(@execution_plane_repo_path) do
-          [git: @execution_plane_repo_path, subdir: "core/execution_plane", override: true]
-        else
-          [
-            github: "nshkrdotcom/execution_plane",
-            branch: "main",
-            subdir: "core/execution_plane",
-            override: true
-          ]
-        end
+      opts: [
+        github: "nshkrdotcom/execution_plane",
+        branch: "main",
+        subdir: "core/execution_plane",
+        override: true
+      ]
     ],
     execution_plane_process: [
-      opts:
-        if File.dir?(@execution_plane_repo_path) do
-          [
-            git: @execution_plane_repo_path,
-            subdir: "runtimes/execution_plane_process"
-          ]
-        else
-          [
-            github: "nshkrdotcom/execution_plane",
-            branch: "main",
-            subdir: "runtimes/execution_plane_process"
-          ]
-        end
+      opts: [
+        github: "nshkrdotcom/execution_plane",
+        branch: "main",
+        subdir: "runtimes/execution_plane_process"
+      ]
     ],
     execution_plane_operator_terminal: [
-      opts:
-        if File.dir?(@execution_plane_repo_path) do
-          [
-            git: @execution_plane_repo_path,
-            subdir: "runtimes/execution_plane_operator_terminal"
-          ]
-        else
-          [
-            github: "nshkrdotcom/execution_plane",
-            branch: "main",
-            subdir: "runtimes/execution_plane_operator_terminal"
-          ]
-        end
+      opts: [
+        github: "nshkrdotcom/execution_plane",
+        branch: "main",
+        subdir: "runtimes/execution_plane_operator_terminal"
+      ]
     ],
     jido_integration_v2: [
-      opts:
-        if File.dir?(@jido_integration_repo_path) do
-          [
-            git: @jido_integration_repo_path,
-            subdir: "core/platform"
-          ]
-        else
-          [
-            github: "nshkrdotcom/jido_integration",
-            branch: "main",
-            subdir: "core/platform"
-          ]
-        end
+      opts: [
+        github: "agentjido/jido_integration",
+        branch: "main",
+        subdir: "core/platform"
+      ]
     ],
-    weld: [requirement: "~> 0.7.2"],
+    weld: [requirement: "~> 0.8.1"],
     ex_ratatui: [requirement: "~> 0.8.1"]
   ]
 

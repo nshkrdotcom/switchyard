@@ -1,10 +1,11 @@
+unless Code.ensure_loaded?(DependencySources) do
+  Code.require_file("dependency_sources.exs", __DIR__)
+end
+
 defmodule Switchyard.Build.DependencyResolver do
   @moduledoc false
 
   @repo_root Path.expand("..", __DIR__)
-  @execution_plane_source "nshkrdotcom/execution_plane"
-  @execution_plane_process_version "~> 0.1.0"
-  @execution_plane_operator_terminal_version "~> 0.1.0"
 
   def switchyard_contracts(opts \\ []),
     do: resolve_internal(:switchyard_contracts, "core/workbench_contracts", opts)
@@ -63,45 +64,20 @@ defmodule Switchyard.Build.DependencyResolver do
   def switchyard_daemon_app(opts \\ []),
     do: resolve_internal(:switchyard_daemon_app, "apps/terminal_workbenchd", opts)
 
-  def blitz(opts \\ []), do: {:blitz, "~> 0.3.0", opts}
+  def blitz(opts \\ []), do: DependencySources.dep(:blitz, @repo_root, opts)
 
   def ex_ratatui(opts \\ []), do: {:ex_ratatui, "~> 0.8.1", opts}
 
-  def execution_plane(opts \\ []) do
-    resolve_external(
-      :execution_plane,
-      local_root_path("../execution_plane/core/execution_plane"),
-      [github: @execution_plane_source, branch: "main", subdir: "core/execution_plane"],
-      opts
-    )
-  end
+  def execution_plane(opts \\ []), do: DependencySources.dep(:execution_plane, @repo_root, opts)
 
-  def execution_plane_process(opts \\ []) do
-    resolve_external(
-      :execution_plane_process,
-      local_root_path("../execution_plane/runtimes/execution_plane_process"),
-      @execution_plane_process_version,
-      opts
-    )
-  end
+  def execution_plane_process(opts \\ []),
+    do: DependencySources.dep(:execution_plane_process, @repo_root, opts)
 
-  def execution_plane_operator_terminal(opts \\ []) do
-    resolve_external(
-      :execution_plane_operator_terminal,
-      local_root_path("../execution_plane/runtimes/execution_plane_operator_terminal"),
-      @execution_plane_operator_terminal_version,
-      opts
-    )
-  end
+  def execution_plane_operator_terminal(opts \\ []),
+    do: DependencySources.dep(:execution_plane_operator_terminal, @repo_root, opts)
 
-  def jido_integration_v2(opts \\ []) do
-    resolve_external(
-      :jido_integration_v2,
-      local_root_path("../jido_integration/core/platform"),
-      [],
-      opts
-    )
-  end
+  def jido_integration_v2(opts \\ []),
+    do: DependencySources.dep(:jido_integration_v2, @repo_root, opts)
 
   def jason(opts \\ []) do
     {:jason, "~> 1.4", opts}
@@ -120,42 +96,10 @@ defmodule Switchyard.Build.DependencyResolver do
     end
   end
 
-  defp resolve_external(app, path, requirement_or_opts, opts) do
-    case existing_path(path) do
-      nil ->
-        build_external_dependency(app, requirement_or_opts, opts)
-
-      resolved_path ->
-        {app, Keyword.merge([path: resolved_path], opts)}
-    end
-  end
-
-  defp build_external_dependency(app, requirement_or_opts, opts)
-       when is_list(requirement_or_opts) do
-    if Keyword.keyword?(requirement_or_opts) do
-      {app, Keyword.merge(requirement_or_opts, opts)}
-    else
-      {app, requirement_or_opts, opts}
-    end
-  end
-
-  defp build_external_dependency(app, requirement_or_opts, opts),
-    do: {app, requirement_or_opts, opts}
-
   defp internal_workspace_path(subdir) do
     Path.join(@repo_root, subdir)
     |> existing_path()
   end
-
-  defp local_root_path(default_relative_path) do
-    if local_workspace_deps?() do
-      default_relative_path
-      |> Path.expand(@repo_root)
-      |> existing_path()
-    end
-  end
-
-  defp local_workspace_deps?, do: not Enum.member?(Path.split(@repo_root), "deps")
 
   defp existing_path(nil), do: nil
 

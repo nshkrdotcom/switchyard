@@ -10,3 +10,6 @@
 /.DS_Store
 apps/terminal_workbench_tui/switchyard
 apps/terminal_workbench_cli/switchyard_cli
+
+# Workspace-local dependency source overrides.
+/.dependency_sources.local.exs

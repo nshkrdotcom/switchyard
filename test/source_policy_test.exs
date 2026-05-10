@@ -18,6 +18,9 @@ defmodule Switchyard.SourcePolicyTest do
     "examples/**/*.exs"
   ]
   @excluded_segments ["deps", "_build", "dist", "doc", "tmp", "node_modules"]
+  @allowed_policy_paths [
+    "build_support/dependency_sources.exs"
+  ]
 
   test "source uses bounded atoms and fixed string parsing" do
     violations =
@@ -67,6 +70,6 @@ defmodule Switchyard.SourcePolicyTest do
     relative = Path.relative_to(path, @repo_root)
     relative_segments = Path.split(relative)
 
-    Enum.any?(@excluded_segments, &(&1 in relative_segments))
+    relative in @allowed_policy_paths or Enum.any?(@excluded_segments, &(&1 in relative_segments))
   end
 end

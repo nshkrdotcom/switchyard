@@ -91,6 +91,6 @@ defmodule Switchyard.TUI.EscriptBootstrap do
   end
 
   defp xdg_config_root do
-    System.get_env("XDG_CONFIG_HOME") || Path.join(System.user_home!(), ".config")
+    Application.get_env(:switchyard_tui, :config_root, Path.join(System.user_home!(), ".config"))
   end
 end

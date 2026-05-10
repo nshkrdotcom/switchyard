@@ -2,14 +2,6 @@
 
 repo_root = Path.expand("..", __DIR__)
 project_path = Path.join(repo_root, "apps/terminal_workbench_tui")
-hex_home = Path.join(repo_root, ".tmp/example_hex")
-mix_home = Path.join(repo_root, ".tmp/example_mix")
-
-File.mkdir_p!(hex_home)
-File.mkdir_p!(mix_home)
-
-System.put_env("HEX_HOME", hex_home)
-System.put_env("MIX_HOME", mix_home)
 
 Mix.start()
 

@@ -1,3 +1,7 @@
+unless Code.ensure_loaded?(DependencySources) do
+  Code.require_file("build_support/dependency_sources.exs", __DIR__)
+end
+
 unless Code.ensure_loaded?(Switchyard.Build.DependencyResolver) do
   Code.require_file("build_support/dependency_resolver.exs", __DIR__)
 end
@@ -37,12 +41,8 @@ defmodule Switchyard.Workspace.MixProject do
     [preferred_envs: preferred_cli_env()]
   end
 
-  def blitz_workspace_env(%{root: root}) do
-    repo_bin = Path.join(root, "bin")
-    path = prepend_path(repo_bin, System.get_env("PATH"))
-
+  def blitz_workspace_env(_context) do
     [
-      {"PATH", path},
       {"SSLKEYLOGFILE", nil}
     ]
   end
@@ -169,7 +169,7 @@ defmodule Switchyard.Workspace.MixProject do
         unset_env: ["HEX_API_KEY", "SSLKEYLOGFILE"]
       ],
       parallelism: [
-        env: "SWITCHYARD_MAX_CONCURRENCY",
+        max_concurrency: nil,
         multiplier: :auto,
         base: [
           deps_get: 2,
@@ -211,8 +211,4 @@ defmodule Switchyard.Workspace.MixProject do
       ]
     ]
   end
-
-  defp prepend_path(dir, nil), do: dir
-  defp prepend_path(dir, ""), do: dir
-  defp prepend_path(dir, path), do: dir <> ":" <> path
 end
